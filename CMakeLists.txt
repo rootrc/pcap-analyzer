@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(network_lib
     src/net/capture/pcap.cpp
+    src/net/core/checksum.cpp
     src/net/protocols/ethernet.cpp
     src/net/protocols/ipv4.cpp
     src/net/protocols/ipv6.cpp
