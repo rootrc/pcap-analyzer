@@ -24,7 +24,7 @@ namespace net::tcp {
 
         size_t header_len = 4 * data_offset;
 
-        if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN || header_len > buf.length() || length > buf.length()) {
+        if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN || header_len > buf.length()) {
             return 0;
         }
         if (reserved != 0) {
