@@ -5,25 +5,23 @@
 #include <iomanip>
 
 namespace net::ip::v6 {
-    size_t parse(BufferView& buf, Header& header, Endian endian) {
-        if (buf.length() < HEADER_LEN) return 0;
+    ParseError parse(BufferView& buf, Header& header, Endian endian) {
+        if (buf.length() < HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, buf.current(), HEADER_LEN);
 
         header.version_tc_fl = toHost32(header.version_tc_fl, endian);
         header.payload_length = toHost16(header.payload_length, endian);
 
         uint32_t version = header.version_tc_fl >> 28;
-        if (version != 6) {
-            return 0;
+        if (version != 6 || header.payload_length == 0) {
+            return ParseError::InvalidFieldValue;
         }
-
         buf.advance(HEADER_LEN);
-        return HEADER_LEN;
+        return ParseError::None;
     }
     uint64_t computePseudoHeaderSum(const Header& header) {
         uint64_t sum = 0;
 
-        // TODO: Verify checksum
         for (int i = 0; i < 16; i += 2) {
             sum += (header.src_ip[i] << 8) | header.src_ip[i + 1];
         }
@@ -32,8 +30,6 @@ namespace net::ip::v6 {
             sum += (header.dst_ip[i] << 8) | header.dst_ip[i + 1];
         }
 
-        uint16_t payload_length = bswap16(payload_length);
-        sum += (header.payload_length >> 16);
         sum += header.payload_length;
         sum += header.next_header;
         return sum;

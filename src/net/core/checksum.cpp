@@ -1,8 +1,7 @@
 #include <net/core/checksum.h>
 
 bool net::verifyChecksum(const uint8_t* data, size_t len, uint64_t pseudo_header_sum ) {
-    // TODO: Verify checksum
-    uint64_t sum = pseudo_header_sum ;
+    uint64_t sum = pseudo_header_sum;
 
     for (size_t i = 0; i < len; i += 2) {
         if (i + 1 < len) {

@@ -1,98 +1,109 @@
 #include <net/capture/pcap_reader.h>
 
 namespace net::pcap {
-    bool Reader::next(Packet& out) {
+    ParseError Reader::next(Packet& out) {
         if (fread(buffer_, 1, PACKET_HEADER_LEN, f_) != PACKET_HEADER_LEN) {
-            return false;
+            return ParseError::UnexpectedEofF;
         }
-        
+
         BufferView packet_header_view{buffer_, PACKET_HEADER_LEN };
-        if (parse(packet_header_view, out.record, endian_) == 0) {
-            return false;
+                    
+        ParseError err = parse(packet_header_view, out.record, endian_);
+        if (err != ParseError::None) {
+            return err;
         }
 
         out.raw.resize(out.record.incl_len);
         if (out.record.incl_len > 0) {
-            size_t nr = fread(out.raw.data(), 1, out.record.incl_len, f_);
-            if (nr != out.record.incl_len) {
-                return false;
+            if (fread(out.raw.data(), 1, out.record.incl_len, f_) != out.record.incl_len) {
+                return ParseError::UnexpectedEofF;
             }
         }
+
         BufferView buf{ out.raw.data(), out.raw.size() };
         decodePacket(buf, out);
-        return true;
+        return ParseError::None;
     }
 
-    bool Reader::readFileHeader() {
+    Packet::TransportType Reader::transportFromProtocol(uint8_t protocal) {
+        switch (protocal) {
+            case ip::PROTOCOL_TCP: return Packet::TransportType::TCP;
+            case ip::PROTOCOL_UDP: return Packet::TransportType::UDP;
+            default: return Packet::TransportType::None;
+        }
+    }
+
+    ParseError Reader::readFileHeader() {
         if (fread(buffer_, 1, FILE_HEADER_LEN, f_) != FILE_HEADER_LEN)
-            return false;
+            return ParseError::UnexpectedEofF;
         BufferView file_header_view{buffer_, FILE_HEADER_LEN};
-        return parse(file_header_view, file_header_, endian_) != 0;
+        return parse(file_header_view, file_header_, endian_);
     }
 
-    bool Reader::decodePacket(BufferView& buf, Packet& out) {
-        if (ethernet::parse(buf, out.eth, Endian::Big) == 0) {
-            return false;
+    ParseError Reader::decodePacket(BufferView& buf, Packet& out) {
+        ParseError err = ethernet::parse(buf, out.eth, Endian::Big);
+        if (err != ParseError::None) {
+            return err;
         }
-        
-        if (decodeLayer3(buf, out) == 0) {
-            return false;
+        err = decodeLayer3(buf, out);
+        if (err != ParseError::None) {
+            return err;
         }
-        if (decodeLayer4(buf, out) == 0) {
-            return false;
+        err = decodeLayer4(buf, out);
+        if (err != ParseError::None) {
+            return err;
         }
-        return true;
+        return ParseError::None;
     }
 
-    bool Reader::decodeLayer3(BufferView& buf, Packet& out) {
+    ParseError Reader::decodeLayer3(BufferView& buf, Packet& out) {
+        ParseError err;
         switch (out.eth.ethertype) {
             case ethernet::ETHERTYPE_IPV4:
-                if (ip::v4::parse(buf, out.ipv4, Endian::Big) == 0) {
-                    return false;
+                    err = ip::v4::parse(buf, out.ipv4, Endian::Big);
+                if (err != ParseError::None) {
+                    return err;
                 }
                 out.network = Packet::NetworkType::IPv4;
                 out.transport = transportFromProtocol(out.ipv4.protocol);
-                break;
+                break;  
             case ethernet::ETHERTYPE_IPV6:
-                if (ip::v6::parse(buf, out.ipv6, Endian::Big) == 0) {
-                    return false;
+                    err = ip::v6::parse(buf, out.ipv6, Endian::Big);
+                if (err != ParseError::None) {
+                    return err;
                 }
                 out.network = Packet::NetworkType::IPv6;
                 out.transport = transportFromProtocol(out.ipv6.next_header);
                 break;
-            
             default:
-                return false;
+                return ParseError::UnsupportedNetworkType;
         }
-        return true;
+        return ParseError::None;
     }
 
-    bool Reader::decodeLayer4(BufferView& buf, Packet& out) {
+    ParseError Reader::decodeLayer4(BufferView& buf, Packet& out) {
         auto parse = [&](auto& ip) {
             switch (out.transport) {
                 case Packet::TransportType::TCP:
-                    if (tcp::parse(buf, out.tcp, ip, Endian::Big) == 0) {
-                        return false;
-                    }
-                    
-                    break;
+                    return tcp::parse(buf, out.tcp, ip, Endian::Big);
                 case Packet::TransportType::UDP:
-                    if (udp::parse(buf, out.udp, ip, Endian::Big) == 0) {
-                        return false;
-                    }
-                    break;
-                
+                    return udp::parse(buf, out.udp, ip, Endian::Big);
                 default:
-                    return false;
+                    return ParseError::UnsupportedTransportType;
             }
-            return true;
         };
 
         if (out.network == Packet::NetworkType::IPv4) {
-            parse(out.ipv4);
+            ParseError err = parse(out.ipv4);
+            if (err != ParseError::None) {
+                return err;
+            }
         } else if (out.network == Packet::NetworkType::IPv6) {
-            parse(out.ipv6);
+            ParseError err = parse(out.ipv6);
+            if (err != ParseError::None) {
+                return err;
+            }
         }
-        return true;
+        return ParseError::None;
     }
 }

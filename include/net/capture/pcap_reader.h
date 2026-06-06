@@ -20,25 +20,19 @@ namespace net::pcap {
         const FileHeader& fileHeader() const { return file_header_; }
         Endian endian() const { return endian_; }
         
-        bool next(Packet& out);
+        ParseError next(Packet& out);
 
     private:
         FILE* f_;
         FileHeader file_header_{};
         Endian endian_;
         uint8_t buffer_[FILE_HEADER_LEN];
-
-        static Packet::TransportType transportFromProtocol(uint8_t proto) {
-            switch (proto) {
-                case ip::PROTOCOL_TCP: return Packet::TransportType::TCP;
-                case ip::PROTOCOL_UDP: return Packet::TransportType::UDP;
-                default: return Packet::TransportType::None;
-            }
-        }
         
-        bool readFileHeader();
-        bool decodePacket(BufferView& buf, Packet& out);
-        bool decodeLayer3(BufferView& buf, Packet& out);
-        bool decodeLayer4(BufferView& buf, Packet& out);
+        static Packet::TransportType transportFromProtocol(uint8_t protocal);
+
+        ParseError readFileHeader();
+        ParseError decodePacket(BufferView& buf, Packet& out);
+        ParseError decodeLayer3(BufferView& buf, Packet& out);
+        ParseError decodeLayer4(BufferView& buf, Packet& out);
     };
 }

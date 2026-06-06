@@ -4,17 +4,14 @@
 #include <iomanip>
 
 namespace net::ethernet {
-    size_t parse(BufferView& buf, Header& header, Endian endian) {
-        if (buf.length() < HEADER_LEN) return 0;
+    ParseError parse(BufferView& buf, Header& header, Endian endian) {
+        if (buf.length() < HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, buf.current(), HEADER_LEN);
 
         header.ethertype = toHost16(header.ethertype, endian);
-        if (header.ethertype != ETHERTYPE_IPV4 && header.ethertype != ETHERTYPE_IPV6) {
-            return 0;
-        }
         
         buf.advance(HEADER_LEN);
-        return HEADER_LEN;
+        return ParseError::None;
     }
     std::ostream& operator<<(std::ostream& os, const Header& h) {
         os << "EthernetHeader {\n";

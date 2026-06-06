@@ -2,6 +2,7 @@
 
 #include <net/core/buffer_view.h>
 #include <net/core/endian.h>
+#include <net/core/parse_error.h>
 
 #include <cstdint>
 #include <cstddef>
@@ -24,7 +25,7 @@ namespace net::ip::v6 {
     #pragma pack(pop)
     static_assert(sizeof(Header) == HEADER_LEN);
     
-    size_t parse(BufferView& buf, Header& header, Endian endian);
+    ParseError parse(BufferView& buf, Header& header, Endian endian);
     uint64_t computePseudoHeaderSum(const Header& ip_header);
 
     std::ostream& operator<<(std::ostream& os, const Header& h);

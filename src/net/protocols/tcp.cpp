@@ -4,19 +4,20 @@
 #include <cstring>
 
 namespace net::tcp {
-    size_t parse(BufferView& buf, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
+    ParseError parse(BufferView& buf, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
 
-    size_t parse(BufferView& buf, Header& header, const ip::v4::Header& ip_header, Endian endian) {
-        size_t length = ip_header.total_length - 4 * (ip_header.version_ihl & 0x0F);
+    ParseError parse(BufferView& buf, Header& header, const ip::v4::Header& ip_header, Endian endian) {
+        size_t ip_header_len = 4 * (ip_header.version_ihl & 0x0F);
+        size_t length = ip_header.total_length - ip_header_len;
         return parse(buf, header, length, ip::v4::computePseudoHeaderSum(ip_header), endian);
     }
 
-    size_t parse(BufferView& buf, Header& header, const ip::v6::Header& ip_header, Endian endian) {
+    ParseError parse(BufferView& buf, Header& header, const ip::v6::Header& ip_header, Endian endian) {
         return parse(buf, header, ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header), endian);
     }
 
-    size_t parse(BufferView& buf, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian) {
-        if (buf.length() < MIN_HEADER_LEN) return 0;
+    ParseError parse(BufferView& buf, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian) {
+        if (buf.length() < length) return ParseError::UnexpectedEof;
         std::memcpy(&header, buf.current(), MIN_HEADER_LEN);
 
         uint8_t data_offset = header.data_offset_reserved >> 4;
@@ -24,14 +25,17 @@ namespace net::tcp {
 
         size_t header_len = 4 * data_offset;
 
-        if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN || header_len > buf.length()) {
-            return 0;
+        if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN) {
+            return ParseError::MalformedHeader;
+        }
+        if (buf.length() < header_len) {
+            return ParseError::UnexpectedEof;
         }
         if (reserved != 0) {
-            return 0;
+            return ParseError::InvalidFieldValue;
         }
         if (!verifyChecksum(buf.current(), length, pseudoHeaderSum)) {
-            return 0;
+            return ParseError::ChecksumMismatch;
         }
 
         header.src_port = toHost16(header.src_port, endian);
@@ -39,10 +43,9 @@ namespace net::tcp {
         header.seq_number = toHost32(header.seq_number, endian);
         header.ack_number = toHost32(header.ack_number, endian);
         header.window_size = toHost16(header.window_size, endian);
-        header.checksum = toHost16(header.checksum, endian);
         header.urgent_pointer = toHost16(header.urgent_pointer, endian);
         buf.advance(header_len);
-        return header_len;
+        return ParseError::None;
     }
 
     std::ostream& operator<<(std::ostream& os, const Header& h) {

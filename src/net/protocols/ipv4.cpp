@@ -4,22 +4,24 @@
 #include <cstring>
 
 namespace net::ip::v4 {
-    size_t parse(BufferView& buf, Header& header, Endian endian) {
-        if (buf.length() < MIN_HEADER_LEN) return 0;
+    ParseError parse(BufferView& buf, Header& header, Endian endian) {
+        if (buf.length() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, buf.current(), MIN_HEADER_LEN);
 
         uint8_t version = header.version_ihl >> 4;
         uint8_t ihl = header.version_ihl & 0x0F;
         size_t header_len = 4 * ihl;
-
-        if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN || header_len > buf.length()) {
-            return 0;
+        if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN) {
+            return ParseError::MalformedHeader;
+        }
+        if (buf.length() < header_len) {
+            return ParseError::UnexpectedEof;
         }
         if (version != 4) {
-            return 0;
+            return ParseError::InvalidFieldValue;
         }
         if (!verifyChecksum(buf.current(), header_len)) {
-            return 0;
+            return ParseError::ChecksumMismatch;
         }
 
         header.total_length = toHost16(header.total_length, endian);
@@ -30,10 +32,9 @@ namespace net::ip::v4 {
         header.dst_ip = toHost32(header.dst_ip, endian);
 
         buf.advance(header_len);
-        return header_len;
+        return ParseError::None;
     }
     uint64_t computePseudoHeaderSum(const Header& header) {
-        // TODO: Verify checksum
         uint64_t sum = 0;
         
         sum += header.src_ip >> 16;
