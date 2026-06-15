@@ -1,0 +1,47 @@
+#pragma once
+
+#include <gtest/gtest.h>
+#include <net/core/buffer_view.h>
+#include <net/core/parse_error.h>
+#include <net/core/endian.h>
+#include <tuple>
+#include <utility>
+
+namespace test {
+
+template <typename ParseFn, size_t N>
+void runProtocolTest(const uint8_t (&data)[N], net::ParseError expected, ParseFn&& parseFn) {
+    net::BufferView buf{data, N};
+    net::ParseError result = parseFn(buf);
+
+    EXPECT_EQ(result, expected)
+        << "Expected: " << net::toString(expected)
+        << ", Got: " << net::toString(result)
+        << " (data size: " << N << " bytes)";
+}
+
+template <typename ParseFn, typename Header, typename... Args>
+auto bindProtocolParser(ParseFn&& fn, Args&&... args) {
+    auto stored = std::make_tuple(std::forward<Args>(args)...);
+
+    return [fn = std::forward<ParseFn>(fn),
+            stored = std::move(stored)]
+           (net::BufferView& buf) mutable {
+
+        Header header{};
+
+        return std::apply(
+            [&](auto&&... inner) {
+                return fn(buf, header,
+                          std::forward<decltype(inner)>(inner)...);
+            },
+            stored);
+    };
+}
+
+}
+
+#define PROTOCOL_TEST(SUITE_NAME, TEST_NAME, DATA, EXPECTED_ERROR, PARSE_FN) \
+    TEST(SUITE_NAME, TEST_NAME) { \
+        test::runProtocolTest(DATA, EXPECTED_ERROR, PARSE_FN); \
+    }

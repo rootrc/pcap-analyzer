@@ -36,14 +36,30 @@ enable_testing()
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(tests
-    tests/test_basic.cpp
+# --- Tests ---
+set(PROTOCOL_TESTS
+    ethernet
+    ipv4
+    ipv6
+    tcp
+    udp
 )
 
-target_link_libraries(tests
-    PRIVATE
-        GTest::gtest_main
-        network_lib
-)
+foreach(test IN LISTS PROTOCOL_TESTS)
+    add_executable(${test}_tests
+        tests/protocols/${test}_tests.cpp
+    )
 
-gtest_discover_tests(tests)
+    target_link_libraries(${test}_tests
+        PRIVATE
+            network_lib
+            GTest::gtest_main
+    )
+
+    target_include_directories(${test}_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+
+    gtest_discover_tests(${test}_tests)
+endforeach()

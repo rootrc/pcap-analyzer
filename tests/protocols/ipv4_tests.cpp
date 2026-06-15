@@ -1,0 +1,112 @@
+#include <gtest/gtest.h>
+#include <net/core/buffer_view.h>
+#include <net/core/parse_error.h>
+#include <net/core/endian.h>
+#include <net/protocols/ipv4.h>
+
+#include "protocol_tester.h"
+
+namespace {    
+    inline constexpr uint8_t ipv4_valid[] = {
+        0x45,
+        0x00,
+        0x00, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0xA4, 0xDA,
+        0xC0, 0xA8, 0x01, 0x64,
+        0xC0, 0xA8, 0x01, 0x01,
+    };
+    inline constexpr uint8_t ipv4_options_valid[] = {
+        0x46,
+        0x00,
+        0x00, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0x8A, 0xA4,
+        0xAC, 0x10, 0x00, 0x64,
+        0xAC, 0x10, 0x00, 0x01,
+        0x11, 0x22, 0x33, 0x44,
+    };
+    inline constexpr uint8_t ipv4_endof[] = {
+        0x45,
+        0x00,
+        0x00, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0xA4, 0xDA,
+        0xC0, 0xA8, 0x01, 0x64,
+        0xC0, 0xA8, 0x01,
+    };
+    inline constexpr uint8_t ipv4_malformed[] = {
+        0x42,
+        0x00,
+        0x00, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0xA4, 0xDA,
+        0xC0, 0xA8, 0x01, 0x64,
+        0xC0, 0xA8, 0x01, 0x01,
+    };
+    inline constexpr uint8_t ipv4_endof_options[] = {
+        0x47,
+        0x00,
+        0x00, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0x8A, 0xA4,
+        0xAC, 0x10, 0x00, 0x64,
+        0xAC, 0x10, 0x00, 0x01,
+        0x11, 0x22, 0x33, 0x44,
+    };
+    inline constexpr uint8_t ipv4_field[] = {
+        0x35,
+        0x00,
+        0x00, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0xA4, 0xDA,
+        0xC0, 0xA8, 0x01, 0x64,
+        0xC0, 0xA8, 0x01, 0x01,
+    };
+    inline constexpr uint8_t ipv4_checksum[] = {
+        0x45,
+        0x00,
+        0x00, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0xda, 0xa4,
+        0xC0, 0xA8, 0x01, 0x64,
+        0xC0, 0xA8, 0x01, 0x01,
+    };
+}
+
+auto parseIpv4 = test::bindProtocolParser<
+    decltype(net::ip::v4::parse),
+    net::ip::v4::Header
+>(
+    net::ip::v4::parse,
+    net::Endian::Big
+);
+
+PROTOCOL_TEST(IPV4, ParsesValid, ipv4_valid, net::ParseError::None, parseIpv4)
+PROTOCOL_TEST(IPV4, ParsesValidOptions, ipv4_options_valid, net::ParseError::None, parseIpv4)
+PROTOCOL_TEST(IPV4, UnexpectedEndofBuffer, ipv4_endof, net::ParseError::UnexpectedEof, parseIpv4)
+PROTOCOL_TEST(IPV4, RejectsMalformedHeader, ipv4_malformed, net::ParseError::MalformedHeader, parseIpv4)
+PROTOCOL_TEST(IPV4, UnexpectedEndofBufferOptions, ipv4_endof_options, net::ParseError::UnexpectedEof, parseIpv4)
+PROTOCOL_TEST(IPV4, RejectsInvalidFieldValue, ipv4_field, net::ParseError::InvalidFieldValue, parseIpv4)
+PROTOCOL_TEST(IPV4, RejectsChecksumMismatch, ipv4_checksum, net::ParseError::ChecksumMismatch, parseIpv4)
