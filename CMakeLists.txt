@@ -31,35 +31,37 @@ target_link_libraries(analyzer
         network_lib
 )
 
-enable_testing()
+if(BUILD_TESTING)
+    enable_testing()
 
-find_package(GTest REQUIRED)
-include(GoogleTest)
+    find_package(GTest REQUIRED)
+    include(GoogleTest)
 
-# --- Tests ---
-set(PROTOCOL_TESTS
-    ethernet
-    ipv4
-    ipv6
-    tcp
-    udp
-)
 
-foreach(test IN LISTS PROTOCOL_TESTS)
-    add_executable(${test}_tests
-        tests/protocols/${test}_tests.cpp
+    set(PROTOCOL_TESTS
+        ethernet
+        ipv4
+        ipv6
+        tcp
+        udp
     )
 
-    target_link_libraries(${test}_tests
-        PRIVATE
-            network_lib
-            GTest::gtest_main
-    )
+    foreach(test IN LISTS PROTOCOL_TESTS)
+        add_executable(${test}_tests
+            tests/protocols/${test}_tests.cpp
+        )
 
-    target_include_directories(${test}_tests
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests
-    )
+        target_link_libraries(${test}_tests
+            PRIVATE
+                network_lib
+                GTest::gtest_main
+        )
 
-    gtest_discover_tests(${test}_tests)
-endforeach()
+        target_include_directories(${test}_tests
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        )
+
+        gtest_discover_tests(${test}_tests)
+    endforeach()
+endif()
