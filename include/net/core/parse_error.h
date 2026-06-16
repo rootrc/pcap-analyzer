@@ -30,8 +30,8 @@ namespace net {
             case ParseError::MalformedHeader: return "malformed header";
             case ParseError::InvalidFieldValue: return "invalid field value";
             case ParseError::ChecksumMismatch: return "checksum mismatch";
+            default: return "unknown error";
         }
-        return "unknown error";
     }
 
     inline std::ostream& operator<<(std::ostream& os, ParseError e) {

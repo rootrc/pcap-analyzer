@@ -21,15 +21,22 @@ namespace net::pcap {
         }
 
         BufferView buf{ out.raw.data(), out.raw.size() };
-        decodePacket(buf, out);
-        return ParseError::None;
+        return decodePacket(buf, out);
     }
 
-    Packet::TransportType Reader::transportFromProtocol(uint8_t protocal) {
-        switch (protocal) {
-            case ip::PROTOCOL_TCP: return Packet::TransportType::TCP;
-            case ip::PROTOCOL_UDP: return Packet::TransportType::UDP;
-            default: return Packet::TransportType::None;
+    [[nodiscard]] Packet::NetworkHeader Reader::networkFromEthertype(uint16_t ethertype) noexcept {
+        switch (ethertype) {
+            case ethernet::ETHERTYPE_IPV4: return ip::v4::Header{};
+            case ethernet::ETHERTYPE_IPV6: return ip::v6::Header{};
+            default: return std::monostate{};
+        }
+    }
+
+    [[nodiscard]] Packet::TransportHeader Reader::transportFromProtocol(uint8_t protocol) noexcept {
+        switch (protocol) {
+            case ip::PROTOCOL_TCP: return tcp::Header{};
+            case ip::PROTOCOL_UDP: return udp::Header{};
+            default: return std::monostate{};
         }
     }
 
@@ -41,7 +48,7 @@ namespace net::pcap {
     }
 
     ParseError Reader::decodePacket(BufferView& buf, Packet& out) {
-        ParseError err = ethernet::parse(buf, out.eth, Endian::Big);
+        ParseError err = decodeLayer2(buf, out);
         if (err != ParseError::None) {
             return err;
         }
@@ -56,54 +63,76 @@ namespace net::pcap {
         return ParseError::None;
     }
 
-    ParseError Reader::decodeLayer3(BufferView& buf, Packet& out) {
-        ParseError err;
-        switch (out.eth.ethertype) {
-            case ethernet::ETHERTYPE_IPV4:
-                    err = ip::v4::parse(buf, out.ipv4, Endian::Big);
-                if (err != ParseError::None) {
-                    return err;
-                }
-                out.network = Packet::NetworkType::IPv4;
-                out.transport = transportFromProtocol(out.ipv4.protocol);
-                break;  
-            case ethernet::ETHERTYPE_IPV6:
-                    err = ip::v6::parse(buf, out.ipv6, Endian::Big);
-                if (err != ParseError::None) {
-                    return err;
-                }
-                out.network = Packet::NetworkType::IPv6;
-                out.transport = transportFromProtocol(out.ipv6.next_header);
-                break;
-            default:
-                return ParseError::UnsupportedNetworkType;
+    ParseError Reader::decodeLayer2(BufferView& buf, Packet& out) {
+        ParseError err = ethernet::parse(buf, out.eth, Endian::Big);
+        if (err != ParseError::None) {
+            return err;
+        }
+        out.network = networkFromEthertype(out.eth.ethertype);
+        if (std::get_if<std::monostate>(&out.network) != nullptr) {
+            return ParseError::UnsupportedNetworkType;
         }
         return ParseError::None;
     }
 
-    ParseError Reader::decodeLayer4(BufferView& buf, Packet& out) {
-        auto parse = [&](auto& ip) {
-            switch (out.transport) {
-                case Packet::TransportType::TCP:
-                    return tcp::parse(buf, out.tcp, ip, Endian::Big);
-                case Packet::TransportType::UDP:
-                    return udp::parse(buf, out.udp, ip, Endian::Big);
-                default:
+    ParseError Reader::decodeLayer3(BufferView& buf, Packet& out) {
+        return std::visit(overload{
+            [&](ip::v4::Header& v4) -> ParseError {
+                if (auto err = ip::v4::parse(buf, v4, Endian::Big); err != ParseError::None) return err;
+                out.transport = transportFromProtocol(v4.protocol);
+                if (std::get_if<std::monostate>(&out.network) != nullptr) {
                     return ParseError::UnsupportedTransportType;
-            }
-        };
+                }
+                return ParseError::None;
+            },
+            [&](ip::v6::Header& v6) -> ParseError {
+                if (auto err = ip::v6::parse(buf, v6, Endian::Big); err != ParseError::None) return err;
+                out.transport = transportFromProtocol(v6.next_header);
+                if (std::get_if<std::monostate>(&out.network) != nullptr) {
+                    return ParseError::UnsupportedTransportType;
+                }
+                return ParseError::None;
+            },
+            [&](std::monostate) -> ParseError { return ParseError::UnsupportedNetworkType; },
+        }, out.network);
+    }
 
-        if (out.network == Packet::NetworkType::IPv4) {
-            ParseError err = parse(out.ipv4);
-            if (err != ParseError::None) {
-                return err;
+    ParseError Reader::decodeLayer4(BufferView& buf, Packet& out) {
+        return std::visit(overload{
+            [&](const auto& ip) -> ParseError {
+                return std::visit(overload{
+                    [&](tcp::Header& tcp) { return tcp::parse(buf, tcp, ip, Endian::Big); },
+                    [&](udp::Header& udp) { return udp::parse(buf, udp, ip, Endian::Big); },
+                    [&](std::monostate)   { return ParseError::UnsupportedTransportType; },
+                }, out.transport);
+            },
+            [&](std::monostate) -> ParseError { return ParseError::UnsupportedNetworkType; },
+        }, out.network);
+    }
+
+    void Reader::printNetwork(std::ostream& os, const Packet& out) const {
+        std::visit([&](const auto& h) {
+            using T = std::decay_t<decltype(h)>;
+
+            if constexpr (std::is_same_v<T, std::monostate>) {
+                os << "None";
+            } else {
+                os << h;
             }
-        } else if (out.network == Packet::NetworkType::IPv6) {
-            ParseError err = parse(out.ipv6);
-            if (err != ParseError::None) {
-                return err;
+        }, out.network);
+        os << '\n';
+    }
+
+    void Reader::printTransport(std::ostream& os, const Packet& out) const {
+        std::visit([&](const auto& h) {
+            using T = std::decay_t<decltype(h)>;
+
+            if constexpr (std::is_same_v<T, std::monostate>) {
+                os << "None";
+            } else {
+                os << h;
             }
-        }
-        return ParseError::None;
+        }, out.transport);
+        os << '\n';
     }
 }

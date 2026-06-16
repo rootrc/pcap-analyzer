@@ -5,30 +5,49 @@
 #include <net/core/buffer_view.h>
 #include <net/protocols/protocols.h>
 
-#include "vector"
-
-#pragma once
+#include <vector>
+#include <variant>
 
 namespace net::pcap {
     struct Packet {
-        enum class NetworkType { None, IPv4, IPv6 };
-
-        enum class TransportType { None, TCP, UDP };
-
         PacketHeader record{};
     
         ethernet::Header eth{};
     
-        NetworkType network = NetworkType::None;
-        ip::v4::Header ipv4{};
-        ip::v6::Header ipv6{};
+        // Layer 3
+        using NetworkHeader = std::variant<
+            std::monostate,
+            ip::v4::Header,
+            ip::v6::Header
+        >;
+        NetworkHeader network{};
     
-        TransportType transport = TransportType::None;
-        tcp::Header tcp{};
-        udp::Header udp{};
-    
-        std::vector<uint8_t> payload;
+        // Layer 4
+        using TransportHeader = std::variant<
+            std::monostate,
+            tcp::Header,
+            udp::Header
+        >;
+        TransportHeader transport{};
     
         std::vector<uint8_t> raw;
+
+        [[nodiscard]] bool isIpv4() const noexcept { return std::holds_alternative<ip::v4::Header>(network); }
+        [[nodiscard]] bool isIpv6() const noexcept { return std::holds_alternative<ip::v6::Header>(network); }
+        [[nodiscard]] bool isTcp() const noexcept { return std::holds_alternative<tcp::Header>(transport); }
+        [[nodiscard]] bool isUdp() const noexcept { return std::holds_alternative<udp::Header>(transport); }
+
+        [[nodiscard]] const ip::v4::Header* ipv4() const noexcept { return std::get_if<ip::v4::Header>(&network); }
+        [[nodiscard]] const ip::v6::Header* ipv6() const noexcept { return std::get_if<ip::v6::Header>(&network); }
+        [[nodiscard]] const tcp::Header* tcp() const noexcept { return std::get_if<tcp::Header>(&transport); }
+        [[nodiscard]] const udp::Header* udp() const noexcept { return std::get_if<udp::Header>(&transport); }
+        
+        void reset() noexcept {
+            eth = {};
+            network = std::monostate{};
+            transport = std::monostate{};
+            record = {};
+            raw.clear();
+        }
     };
 }
