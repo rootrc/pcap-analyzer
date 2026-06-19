@@ -21,7 +21,7 @@ namespace net::pcap {
                 endian = Endian::Little;
                 break;
             default:
-                return ParseError::InvalidMagic;
+                return ParseError::InvalidFieldValue;
         }
         header.major_version = toHost16(header.major_version, endian);
         header.minor_version = toHost16(header.minor_version, endian);

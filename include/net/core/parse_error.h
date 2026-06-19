@@ -7,7 +7,6 @@ namespace net {
         None,
         UnexpectedEofF,
         UnexpectedEof,
-        InvalidMagic,
         UnsupportedVersion,
         UnsupportedLinktype,
         UnsupportedNetworkType,
@@ -22,7 +21,6 @@ namespace net {
             case ParseError::None: return "no error";
             case ParseError::UnexpectedEofF: return "unexpected end of file";
             case ParseError::UnexpectedEof: return "unexpected end of buffer";
-            case ParseError::InvalidMagic: return "invalid magic number";
             case ParseError::UnsupportedVersion: return "unsupported version";
             case ParseError::UnsupportedLinktype: return "unsupported link type";
             case ParseError::UnsupportedNetworkType: return "unsupported network type";

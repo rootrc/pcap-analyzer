@@ -3,8 +3,7 @@
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/tcp.h>
-
-#include "protocol_tester.h"
+#include <header_tester.h>
 
 namespace {    
     inline constexpr uint8_t ipv4_pseudo[] = {
@@ -133,7 +132,7 @@ auto parseTcp(const uint8_t (&pseudo_header)[N]) {
     IpHeader header{};
     parse(buf, header, net::Endian::Big);
 
-    return test::bindProtocolParser<
+    return test::bindHeaderParser<
         ParseFn,
         net::tcp::Header
     >(
@@ -143,10 +142,10 @@ auto parseTcp(const uint8_t (&pseudo_header)[N]) {
     );
 }
 
-PROTOCOL_TEST(TCP, ParsesValidIPv4, tcp_v4_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
-PROTOCOL_TEST(TCP, ParsesValidOptionsIPv4, tcp_v4_options_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo_options))
-PROTOCOL_TEST(TCP, ParsesValidIPv6, tcp_v6_valid, net::ParseError::None, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
-PROTOCOL_TEST(TCP, UnexpectedEndofBuffer, tcp_v4_endof, net::ParseError::UnexpectedEof, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
-PROTOCOL_TEST(TCP, RejectsMalformedHeader, tcp_v4_malformed, net::ParseError::MalformedHeader, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
-PROTOCOL_TEST(TCP, RejectsInvalidFieldValue, tcp_v6_field, net::ParseError::InvalidFieldValue, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
-PROTOCOL_TEST(TCP, RejectsChecksumMismatch, tcp_v6_checksum, net::ParseError::ChecksumMismatch, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
+HEADER_TEST(TCP, ParsesValidIPv4, tcp_v4_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
+HEADER_TEST(TCP, ParsesValidOptionsIPv4, tcp_v4_options_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo_options))
+HEADER_TEST(TCP, ParsesValidIPv6, tcp_v6_valid, net::ParseError::None, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
+HEADER_TEST(TCP, UnexpectedEndofBuffer, tcp_v4_endof, net::ParseError::UnexpectedEof, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
+HEADER_TEST(TCP, RejectsMalformedHeader, tcp_v4_malformed, net::ParseError::MalformedHeader, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
+HEADER_TEST(TCP, RejectsInvalidFieldValue, tcp_v6_field, net::ParseError::InvalidFieldValue, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
+HEADER_TEST(TCP, RejectsChecksumMismatch, tcp_v6_checksum, net::ParseError::ChecksumMismatch, parseTcp<net::ip::v6::Header>(ipv6_pseudo))

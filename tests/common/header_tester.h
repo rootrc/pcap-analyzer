@@ -10,7 +10,7 @@
 namespace test {
 
 template <typename ParseFn, size_t N>
-void runProtocolTest(const uint8_t (&data)[N], net::ParseError expected, ParseFn&& parseFn) {
+void runHeaderTest(const uint8_t (&data)[N], net::ParseError expected, ParseFn&& parseFn) {
     net::BufferView buf{data, N};
     net::ParseError result = parseFn(buf);
 
@@ -21,7 +21,7 @@ void runProtocolTest(const uint8_t (&data)[N], net::ParseError expected, ParseFn
 }
 
 template <typename ParseFn, typename Header, typename... Args>
-auto bindProtocolParser(ParseFn&& fn, Args&&... args) {
+auto bindHeaderParser(ParseFn&& fn, Args&&... args) {
     auto stored = std::make_tuple(std::forward<Args>(args)...);
 
     return [fn = std::forward<ParseFn>(fn),
@@ -41,7 +41,7 @@ auto bindProtocolParser(ParseFn&& fn, Args&&... args) {
 
 }
 
-#define PROTOCOL_TEST(SUITE_NAME, TEST_NAME, DATA, EXPECTED_ERROR, PARSE_FN) \
+#define HEADER_TEST(SUITE_NAME, TEST_NAME, DATA, EXPECTED_ERROR, PARSE_FN) \
     TEST(SUITE_NAME, TEST_NAME) { \
-        test::runProtocolTest(DATA, EXPECTED_ERROR, PARSE_FN); \
+        test::runHeaderTest(DATA, EXPECTED_ERROR, PARSE_FN); \
     }

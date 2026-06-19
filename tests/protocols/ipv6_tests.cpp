@@ -3,8 +3,7 @@
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/ipv6.h>
-
-#include "protocol_tester.h"
+#include <header_tester.h>
 
 namespace {    
     inline constexpr uint8_t ipv6_valid[] = {
@@ -41,7 +40,7 @@ namespace {
     };
 }
 
-auto parseIpv6 = test::bindProtocolParser<
+auto parseIpv6 = test::bindHeaderParser<
     decltype(net::ip::v6::parse),
     net::ip::v6::Header
 >(
@@ -49,7 +48,7 @@ auto parseIpv6 = test::bindProtocolParser<
     net::Endian::Big
 );
 
-PROTOCOL_TEST(IPV6, ParsesValid, ipv6_valid, net::ParseError::None, parseIpv6)
-PROTOCOL_TEST(IPV6, UnexpectedEndofBuffer, ipv6_endof, net::ParseError::UnexpectedEof, parseIpv6)
-PROTOCOL_TEST(IPV6, RejectsInvalidFieldValue0, ipv6_field_version, net::ParseError::InvalidFieldValue, parseIpv6)
-PROTOCOL_TEST(IPV6, RejectsInvalidFieldValue1, ipv6_field_length, net::ParseError::InvalidFieldValue, parseIpv6)
+HEADER_TEST(IPV6, ParsesValid, ipv6_valid, net::ParseError::None, parseIpv6)
+HEADER_TEST(IPV6, UnexpectedEndofBuffer, ipv6_endof, net::ParseError::UnexpectedEof, parseIpv6)
+HEADER_TEST(IPV6, RejectsInvalidFieldValue0, ipv6_field_version, net::ParseError::InvalidFieldValue, parseIpv6)
+HEADER_TEST(IPV6, RejectsInvalidFieldValue1, ipv6_field_length, net::ParseError::InvalidFieldValue, parseIpv6)

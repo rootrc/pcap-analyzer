@@ -3,8 +3,7 @@
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/udp.h>
-
-#include "protocol_tester.h"
+#include <header_tester.h>
 
 namespace {   
     inline constexpr uint8_t ipv4_pseudo[] = {
@@ -76,7 +75,7 @@ auto parseUdp(const uint8_t (&pseudo_header)[N]) {
     IpHeader header{};
     parse(buf, header, net::Endian::Big);
 
-    return test::bindProtocolParser<
+    return test::bindHeaderParser<
         ParseFn,
         net::udp::Header
     >(
@@ -86,8 +85,8 @@ auto parseUdp(const uint8_t (&pseudo_header)[N]) {
     );
 }
 
-PROTOCOL_TEST(UDP, ParsesValidIPv4, udp_v4_valid, net::ParseError::None, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
-PROTOCOL_TEST(UDP, ParsesValidIPv6, udp_v6_valid, net::ParseError::None, parseUdp<net::ip::v6::Header>(ipv6_pseudo))
-PROTOCOL_TEST(UDP, UnexpectedEndofBuffer, udp_v4_endof, net::ParseError::UnexpectedEof, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
-PROTOCOL_TEST(UDP, RejectsMalformedHeader, udp_v6_malformed, net::ParseError::MalformedHeader, parseUdp<net::ip::v6::Header>(ipv6_pseudo))
-PROTOCOL_TEST(UDP, RejectsChecksumMismatch, udp_v4_checksum, net::ParseError::ChecksumMismatch, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
+HEADER_TEST(UDP, ParsesValidIPv4, udp_v4_valid, net::ParseError::None, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
+HEADER_TEST(UDP, ParsesValidIPv6, udp_v6_valid, net::ParseError::None, parseUdp<net::ip::v6::Header>(ipv6_pseudo))
+HEADER_TEST(UDP, UnexpectedEndofBuffer, udp_v4_endof, net::ParseError::UnexpectedEof, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
+HEADER_TEST(UDP, RejectsMalformedHeader, udp_v6_malformed, net::ParseError::MalformedHeader, parseUdp<net::ip::v6::Header>(ipv6_pseudo))
+HEADER_TEST(UDP, RejectsChecksumMismatch, udp_v4_checksum, net::ParseError::ChecksumMismatch, parseUdp<net::ip::v4::Header>(ipv4_pseudo))

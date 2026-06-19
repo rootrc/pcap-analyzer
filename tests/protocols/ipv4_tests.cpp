@@ -3,8 +3,7 @@
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/ipv4.h>
-
-#include "protocol_tester.h"
+#include <header_tester.h>
 
 namespace {    
     inline constexpr uint8_t ipv4_valid[] = {
@@ -95,7 +94,7 @@ namespace {
     };
 }
 
-auto parseIpv4 = test::bindProtocolParser<
+auto parseIpv4 = test::bindHeaderParser<
     decltype(net::ip::v4::parse),
     net::ip::v4::Header
 >(
@@ -103,10 +102,10 @@ auto parseIpv4 = test::bindProtocolParser<
     net::Endian::Big
 );
 
-PROTOCOL_TEST(IPV4, ParsesValid, ipv4_valid, net::ParseError::None, parseIpv4)
-PROTOCOL_TEST(IPV4, ParsesValidOptions, ipv4_options_valid, net::ParseError::None, parseIpv4)
-PROTOCOL_TEST(IPV4, UnexpectedEndofBuffer, ipv4_endof, net::ParseError::UnexpectedEof, parseIpv4)
-PROTOCOL_TEST(IPV4, RejectsMalformedHeader, ipv4_malformed, net::ParseError::MalformedHeader, parseIpv4)
-PROTOCOL_TEST(IPV4, UnexpectedEndofBufferOptions, ipv4_endof_options, net::ParseError::UnexpectedEof, parseIpv4)
-PROTOCOL_TEST(IPV4, RejectsInvalidFieldValue, ipv4_field, net::ParseError::InvalidFieldValue, parseIpv4)
-PROTOCOL_TEST(IPV4, RejectsChecksumMismatch, ipv4_checksum, net::ParseError::ChecksumMismatch, parseIpv4)
+HEADER_TEST(IPV4, ParsesValid, ipv4_valid, net::ParseError::None, parseIpv4)
+HEADER_TEST(IPV4, ParsesValidOptions, ipv4_options_valid, net::ParseError::None, parseIpv4)
+HEADER_TEST(IPV4, UnexpectedEndofBuffer, ipv4_endof, net::ParseError::UnexpectedEof, parseIpv4)
+HEADER_TEST(IPV4, RejectsMalformedHeader, ipv4_malformed, net::ParseError::MalformedHeader, parseIpv4)
+HEADER_TEST(IPV4, UnexpectedEndofBufferOptions, ipv4_endof_options, net::ParseError::UnexpectedEof, parseIpv4)
+HEADER_TEST(IPV4, RejectsInvalidFieldValue, ipv4_field, net::ParseError::InvalidFieldValue, parseIpv4)
+HEADER_TEST(IPV4, RejectsChecksumMismatch, ipv4_checksum, net::ParseError::ChecksumMismatch, parseIpv4)

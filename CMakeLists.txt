@@ -37,6 +37,37 @@ if(BUILD_TESTING)
     find_package(GTest REQUIRED)
     include(GoogleTest)
 
+    add_library(test_lib INTERFACE)
+
+    target_include_directories(test_lib
+        INTERFACE
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/common
+    )
+
+    set(CAPTURE_TESTS
+        pcap_file_header
+        pcap_packet_header
+    )
+
+    foreach(test IN LISTS CAPTURE_TESTS)
+        add_executable(${test}_tests
+            tests/captures/${test}_tests.cpp
+        )
+
+        target_link_libraries(${test}_tests
+            PRIVATE
+                network_lib
+                test_lib
+                GTest::gtest_main
+        )
+
+        target_include_directories(${test}_tests
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        )
+
+        gtest_discover_tests(${test}_tests)
+    endforeach()
 
     set(PROTOCOL_TESTS
         ethernet
@@ -54,6 +85,7 @@ if(BUILD_TESTING)
         target_link_libraries(${test}_tests
             PRIVATE
                 network_lib
+                test_lib
                 GTest::gtest_main
         )
 

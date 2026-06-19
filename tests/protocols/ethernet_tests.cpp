@@ -3,8 +3,7 @@
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/ethernet.h>
-
-#include "protocol_tester.h"
+#include <header_tester.h>
 
 namespace {    
     inline constexpr uint8_t ethernet_valid[] = {
@@ -19,7 +18,7 @@ namespace {
     };
 }
 
-auto parseEthernet = test::bindProtocolParser<
+auto parseEthernet = test::bindHeaderParser<
     decltype(net::ethernet::parse),
     net::ethernet::Header
 >(
@@ -27,5 +26,5 @@ auto parseEthernet = test::bindProtocolParser<
     net::Endian::Big
 );
 
-PROTOCOL_TEST(ETHERNET, ParsesValid, ethernet_valid, net::ParseError::None, parseEthernet)
-PROTOCOL_TEST(ETHERNET, UnexpectedEndofBuffer, ethernet_endof, net::ParseError::UnexpectedEof, parseEthernet)
+HEADER_TEST(ETHERNET, ParsesValid, ethernet_valid, net::ParseError::None, parseEthernet)
+HEADER_TEST(ETHERNET, UnexpectedEndofBuffer, ethernet_endof, net::ParseError::UnexpectedEof, parseEthernet)
