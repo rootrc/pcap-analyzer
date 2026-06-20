@@ -3,9 +3,9 @@
 #include <cstring>
 
 namespace net::pcap {
-    ParseError parse(BufferView& buf, FileHeader& header, Endian& endian) {
-        if (buf.length() < FILE_HEADER_LEN) return ParseError::UnexpectedEof;
-        std::memcpy(&header, buf.current(), FILE_HEADER_LEN);
+    ParseError parse(std::span<uint8_t>& span, FileHeader& header, Endian& endian) {
+        if (span.size() < FILE_HEADER_LEN) return ParseError::UnexpectedEof;
+        std::memcpy(&header, span.data(), FILE_HEADER_LEN);
 
         switch (header.magic_number) {
             case PCAP_MAGIC_USEC_BE:
@@ -40,13 +40,13 @@ namespace net::pcap {
         if ((header.linktype & 0x0FFFFFFF) != LINKTYPE_ETHERNET) {
             return ParseError::UnsupportedLinktype;
         }
-        buf.advance(FILE_HEADER_LEN);
+        span = span.subspan(FILE_HEADER_LEN);
         return ParseError::None;
     }
 
-    ParseError parse(BufferView& buf, PacketHeader& header, Endian endian) {
-        if (buf.length() < PACKET_HEADER_LEN) return ParseError::UnexpectedEof;
-        std::memcpy(&header, buf.current(), PACKET_HEADER_LEN);
+    ParseError parse(std::span<uint8_t>& span, PacketHeader& header, Endian endian) {
+        if (span.size() < PACKET_HEADER_LEN) return ParseError::UnexpectedEof;
+        std::memcpy(&header, span.data(), PACKET_HEADER_LEN);
 
         header.ts_sec = toHost32(header.ts_sec, endian);
         header.ts_usec = toHost32(header.ts_usec, endian);
@@ -59,7 +59,7 @@ namespace net::pcap {
         if (header.incl_len > header.orig_len) {
             return ParseError::MalformedHeader;
         }
-        buf.advance(PACKET_HEADER_LEN);
+        span = span.subspan(PACKET_HEADER_LEN);
         return ParseError::None;
     }
 

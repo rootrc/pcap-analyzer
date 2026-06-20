@@ -1,11 +1,11 @@
 #pragma once
 
 #include <net/capture/packet.h>
-#include <net/core/buffer_view.h>
 
 #include <cstdio>
 #include <vector>
 #include <variant>
+#include <span>
 
 template<typename... Ts>
 struct overload : Ts... { using Ts::operator()...; };
@@ -41,9 +41,9 @@ namespace net::pcap {
         static Packet::TransportHeader transportFromProtocol(uint8_t protocal) noexcept;
 
         ParseError readFileHeader();
-        ParseError decodePacket(BufferView& buf, Packet& out);
-        ParseError decodeLayer2(BufferView& buf, Packet& out);
-        ParseError decodeLayer3(BufferView& buf, Packet& out);
-        ParseError decodeLayer4(BufferView& buf, Packet& out);
+        ParseError decodePacket(std::span<uint8_t>& span, Packet& out);
+        ParseError decodeLayer2(std::span<uint8_t>& span, Packet& out);
+        ParseError decodeLayer3(std::span<uint8_t>& span, Packet& out);
+        ParseError decodeLayer4(std::span<uint8_t>& span, Packet& out);
     };
 }

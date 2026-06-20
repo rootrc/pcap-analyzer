@@ -1,10 +1,10 @@
 #pragma once
 
-#include <net/core/buffer_view.h>
 #include <net/core/endian.h>
 #include <net/core/parse_error.h>
 
 #include <ostream>
+#include <span>
 
 // https://datatracker.ietf.org/doc/id/draft-gharris-opsawg-pcap-00.html
 namespace net::pcap {
@@ -38,8 +38,8 @@ namespace net::pcap {
     static_assert(sizeof(FileHeader) == FILE_HEADER_LEN);
     static_assert(sizeof(PacketHeader) == PACKET_HEADER_LEN);
 
-    ParseError parse(BufferView& buf, FileHeader& header, net::Endian& endian);
-    ParseError parse(BufferView& buf, PacketHeader& header, net::Endian endian);
+    ParseError parse(std::span<uint8_t>& span, FileHeader& header, net::Endian& endian);
+    ParseError parse(std::span<uint8_t>& span, PacketHeader& header, net::Endian endian);
 
     std::ostream& operator<<(std::ostream& os, const FileHeader& h);
     std::ostream& operator<<(std::ostream& os, const PacketHeader& h);

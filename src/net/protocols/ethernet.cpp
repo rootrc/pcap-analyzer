@@ -4,13 +4,13 @@
 #include <iomanip>
 
 namespace net::ethernet {
-    ParseError parse(BufferView& buf, Header& header, Endian endian) {
-        if (buf.length() < HEADER_LEN) return ParseError::UnexpectedEof;
-        std::memcpy(&header, buf.current(), HEADER_LEN);
+    ParseError parse(std::span<uint8_t>& span, Header& header, Endian endian) {
+        if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
+        std::memcpy(&header, span.data(), HEADER_LEN);
 
         header.ethertype = toHost16(header.ethertype, endian);
         
-        buf.advance(HEADER_LEN);
+        span = span.subspan(HEADER_LEN);
         return ParseError::None;
     }
     std::ostream& operator<<(std::ostream& os, const Header& h) {

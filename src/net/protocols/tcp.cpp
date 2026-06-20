@@ -4,21 +4,21 @@
 #include <cstring>
 
 namespace net::tcp {
-    ParseError parse(BufferView& buf, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
+    ParseError parse(std::span<uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
 
-    ParseError parse(BufferView& buf, Header& header, const ip::v4::Header& ip_header, Endian endian) {
+    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
         size_t ip_header_len = 4 * (ip_header.version_ihl & 0x0F);
         size_t length = ip_header.total_length - ip_header_len;
-        return parse(buf, header, length, ip::v4::computePseudoHeaderSum(ip_header), endian);
+        return parse(span, header, length, ip::v4::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(BufferView& buf, Header& header, const ip::v6::Header& ip_header, Endian endian) {
-        return parse(buf, header, ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header), endian);
+    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
+        return parse(span, header, ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(BufferView& buf, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian) {
-        if (buf.length() < length) return ParseError::UnexpectedEof;
-        std::memcpy(&header, buf.current(), MIN_HEADER_LEN);
+    ParseError parse(std::span<uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian) {
+        if (span.size() < length) return ParseError::UnexpectedEof;
+        std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
         uint8_t data_offset = header.data_offset_reserved >> 4;
         uint8_t reserved = (header.data_offset_reserved >> 1) & 0x07;
@@ -28,13 +28,13 @@ namespace net::tcp {
         if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN) {
             return ParseError::MalformedHeader;
         }
-        if (buf.length() < header_len) {
+        if (span.size() < header_len) {
             return ParseError::UnexpectedEof;
         }
         if (reserved != 0) {
             return ParseError::InvalidFieldValue;
         }
-        if (!verifyChecksum(buf.current(), length, pseudoHeaderSum)) {
+        if (!verifyChecksum(span.data(), length, pseudoHeaderSum)) {
             return ParseError::ChecksumMismatch;
         }
 
@@ -44,7 +44,7 @@ namespace net::tcp {
         header.ack_number = toHost32(header.ack_number, endian);
         header.window_size = toHost16(header.window_size, endian);
         header.urgent_pointer = toHost16(header.urgent_pointer, endian);
-        buf.advance(header_len);
+        span = span.subspan(header_len);
         return ParseError::None;
     }
 

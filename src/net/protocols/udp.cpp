@@ -4,23 +4,23 @@
 #include <cstring>
 
 namespace net::udp {
-    ParseError parse(BufferView& buf, Header& header, uint64_t pseudoHeaderSum, Endian endian);
+    ParseError parse(std::span<uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian);
 
-    ParseError parse(BufferView& buf, Header& header, const ip::v4::Header& ip_header, Endian endian) {
-        return parse(buf, header, ip::v4::computePseudoHeaderSum(ip_header), endian);
+    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
+        return parse(span, header, ip::v4::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(BufferView& buf, Header& header, const ip::v6::Header& ip_header, Endian endian) {
-        return parse(buf, header, ip::v6::computePseudoHeaderSum(ip_header), endian);
+    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
+        return parse(span, header, ip::v6::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(BufferView& buf, Header& header, uint64_t pseudoHeaderSum, Endian endian) {
-        if (buf.length() < HEADER_LEN) return ParseError::UnexpectedEof;
-        std::memcpy(&header, buf.current(), HEADER_LEN);
-        if (toHost16(header.length, endian) < HEADER_LEN || buf.length() < toHost16(header.length, endian)) {
+    ParseError parse(std::span<uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian) {
+        if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
+        std::memcpy(&header, span.data(), HEADER_LEN);
+        if (toHost16(header.length, endian) < HEADER_LEN || span.size() < toHost16(header.length, endian)) {
             return ParseError::MalformedHeader;
         }
-        if (header.checksum != 0 && !verifyChecksum(buf.current(), toHost16(header.length, endian), pseudoHeaderSum)) {
+        if (header.checksum != 0 && !verifyChecksum(span.data(), toHost16(header.length, endian), pseudoHeaderSum)) {
             return ParseError::ChecksumMismatch;
         }
         header.src_port = toHost16(header.src_port, endian);
@@ -28,7 +28,7 @@ namespace net::udp {
         header.length = toHost16(header.length, endian);
         header.checksum = toHost16(header.checksum, endian);
 
-        buf.advance(HEADER_LEN);
+        span = span.subspan(HEADER_LEN);
         return ParseError::None;
     }
         

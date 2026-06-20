@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <net/core/buffer_view.h>
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/capture/pcap.h>
@@ -32,7 +31,7 @@ namespace {
     };
 }
 
-using ParseFn = net::ParseError (*)(net::BufferView&, net::pcap::PacketHeader&, net::Endian);
+using ParseFn = net::ParseError (*)(std::span<uint8_t>&, net::pcap::PacketHeader&, net::Endian);
 auto parsePcapPacketHeader = test::bindHeaderParser<
     ParseFn,
     net::pcap::PacketHeader

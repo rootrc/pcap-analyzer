@@ -6,7 +6,7 @@ namespace net::pcap {
             return ParseError::UnexpectedEofF;
         }
 
-        BufferView packet_header_view{buffer_, PACKET_HEADER_LEN };
+        std::span<uint8_t> packet_header_view{buffer_, PACKET_HEADER_LEN };
                     
         ParseError err = parse(packet_header_view, out.record, endian_);
         if (err != ParseError::None) {
@@ -20,8 +20,8 @@ namespace net::pcap {
             }
         }
 
-        BufferView buf{ out.raw.data(), out.raw.size() };
-        return decodePacket(buf, out);
+        std::span<uint8_t> span{ out.raw.data(), out.raw.size() };
+        return decodePacket(span, out);
     }
 
     [[nodiscard]] Packet::NetworkHeader Reader::networkFromEthertype(uint16_t ethertype) noexcept {
@@ -43,28 +43,28 @@ namespace net::pcap {
     ParseError Reader::readFileHeader() {
         if (fread(buffer_, 1, FILE_HEADER_LEN, f_) != FILE_HEADER_LEN)
             return ParseError::UnexpectedEofF;
-        BufferView file_header_view{buffer_, FILE_HEADER_LEN};
+        std::span<uint8_t> file_header_view{buffer_, FILE_HEADER_LEN};
         return parse(file_header_view, file_header_, endian_);
     }
 
-    ParseError Reader::decodePacket(BufferView& buf, Packet& out) {
-        ParseError err = decodeLayer2(buf, out);
+    ParseError Reader::decodePacket(std::span<uint8_t>& span, Packet& out) {
+        ParseError err = decodeLayer2(span, out);
         if (err != ParseError::None) {
             return err;
         }
-        err = decodeLayer3(buf, out);
+        err = decodeLayer3(span, out);
         if (err != ParseError::None) {
             return err;
         }
-        err = decodeLayer4(buf, out);
+        err = decodeLayer4(span, out);
         if (err != ParseError::None) {
             return err;
         }
         return ParseError::None;
     }
 
-    ParseError Reader::decodeLayer2(BufferView& buf, Packet& out) {
-        ParseError err = ethernet::parse(buf, out.eth, Endian::Big);
+    ParseError Reader::decodeLayer2(std::span<uint8_t>& span, Packet& out) {
+        ParseError err = ethernet::parse(span, out.eth, Endian::Big);
         if (err != ParseError::None) {
             return err;
         }
@@ -75,10 +75,10 @@ namespace net::pcap {
         return ParseError::None;
     }
 
-    ParseError Reader::decodeLayer3(BufferView& buf, Packet& out) {
+    ParseError Reader::decodeLayer3(std::span<uint8_t>& span, Packet& out) {
         return std::visit(overload{
             [&](ip::v4::Header& v4) -> ParseError {
-                if (auto err = ip::v4::parse(buf, v4, Endian::Big); err != ParseError::None) return err;
+                if (auto err = ip::v4::parse(span, v4, Endian::Big); err != ParseError::None) return err;
                 out.transport = transportFromProtocol(v4.protocol);
                 if (std::get_if<std::monostate>(&out.network) != nullptr) {
                     return ParseError::UnsupportedTransportType;
@@ -86,7 +86,7 @@ namespace net::pcap {
                 return ParseError::None;
             },
             [&](ip::v6::Header& v6) -> ParseError {
-                if (auto err = ip::v6::parse(buf, v6, Endian::Big); err != ParseError::None) return err;
+                if (auto err = ip::v6::parse(span, v6, Endian::Big); err != ParseError::None) return err;
                 out.transport = transportFromProtocol(v6.next_header);
                 if (std::get_if<std::monostate>(&out.network) != nullptr) {
                     return ParseError::UnsupportedTransportType;
@@ -97,12 +97,12 @@ namespace net::pcap {
         }, out.network);
     }
 
-    ParseError Reader::decodeLayer4(BufferView& buf, Packet& out) {
+    ParseError Reader::decodeLayer4(std::span<uint8_t>& span, Packet& out) {
         return std::visit(overload{
             [&](const auto& ip) -> ParseError {
                 return std::visit(overload{
-                    [&](tcp::Header& tcp) { return tcp::parse(buf, tcp, ip, Endian::Big); },
-                    [&](udp::Header& udp) { return udp::parse(buf, udp, ip, Endian::Big); },
+                    [&](tcp::Header& tcp) { return tcp::parse(span, tcp, ip, Endian::Big); },
+                    [&](udp::Header& udp) { return udp::parse(span, udp, ip, Endian::Big); },
                     [&](std::monostate)   { return ParseError::UnsupportedTransportType; },
                 }, out.transport);
             },

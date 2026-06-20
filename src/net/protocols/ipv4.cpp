@@ -4,9 +4,9 @@
 #include <cstring>
 
 namespace net::ip::v4 {
-    ParseError parse(BufferView& buf, Header& header, Endian endian) {
-        if (buf.length() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
-        std::memcpy(&header, buf.current(), MIN_HEADER_LEN);
+    ParseError parse(std::span<uint8_t>& span, Header& header, Endian endian) {
+        if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
+        std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
         uint8_t version = header.version_ihl >> 4;
         uint8_t ihl = header.version_ihl & 0x0F;
@@ -14,13 +14,13 @@ namespace net::ip::v4 {
         if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN) {
             return ParseError::MalformedHeader;
         }
-        if (buf.length() < header_len) {
+        if (span.size() < header_len) {
             return ParseError::UnexpectedEof;
         }
         if (version != 4) {
             return ParseError::InvalidFieldValue;
         }
-        if (!verifyChecksum(buf.current(), header_len)) {
+        if (!verifyChecksum(span.data(), header_len)) {
             return ParseError::ChecksumMismatch;
         }
 
@@ -31,7 +31,7 @@ namespace net::ip::v4 {
         header.src_ip = toHost32(header.src_ip, endian);
         header.dst_ip = toHost32(header.dst_ip, endian);
 
-        buf.advance(header_len);
+        span = span.subspan(header_len);
         return ParseError::None;
     }
     uint64_t computePseudoHeaderSum(const Header& header) {

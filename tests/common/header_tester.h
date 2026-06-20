@@ -1,7 +1,6 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <net/core/buffer_view.h>
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <tuple>
@@ -11,8 +10,8 @@ namespace test {
 
 template <typename ParseFn, size_t N>
 void runHeaderTest(const uint8_t (&data)[N], net::ParseError expected, ParseFn&& parseFn) {
-    net::BufferView buf{data, N};
-    net::ParseError result = parseFn(buf);
+    std::span<uint8_t> span{data, N};
+    net::ParseError result = parseFn(span);
 
     EXPECT_EQ(result, expected)
         << "Expected: " << net::toString(expected)
@@ -26,13 +25,13 @@ auto bindHeaderParser(ParseFn&& fn, Args&&... args) {
 
     return [fn = std::forward<ParseFn>(fn),
             stored = std::move(stored)]
-           (net::BufferView& buf) mutable {
+           (std::span<uint8_t>& span) mutable {
 
         Header header{};
 
         return std::apply(
             [&](auto&&... inner) {
-                return fn(buf, header,
+                return fn(span, header,
                           std::forward<decltype(inner)>(inner)...);
             },
             stored);

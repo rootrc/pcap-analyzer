@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <net/core/buffer_view.h>
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/tcp.h>
@@ -122,15 +121,15 @@ template <typename IpHeader, size_t N>
 auto parseTcp(const uint8_t (&pseudo_header)[N]) {
     using ParseFn =
         net::ParseError (*)(
-            net::BufferView&,
+            std::span<uint8_t>&,
             net::tcp::Header&,
             const IpHeader&,
             net::Endian);
 
-    net::BufferView buf{pseudo_header, N};
+    std::span<uint8_t> span{pseudo_header, N};
 
     IpHeader header{};
-    parse(buf, header, net::Endian::Big);
+    parse(span, header, net::Endian::Big);
 
     return test::bindHeaderParser<
         ParseFn,

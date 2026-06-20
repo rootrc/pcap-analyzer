@@ -1,12 +1,12 @@
 #pragma once
 
-#include <net/core/buffer_view.h>
 #include <net/core/endian.h>
 #include <net/core/parse_error.h>
 
 #include <cstdint>
 #include <cstddef>
 #include <ostream>
+#include <span>
 
 // https://datatracker.ietf.org/doc/html/rfc791
 
@@ -30,7 +30,7 @@ namespace net::ip::v4 {
     #pragma pack(pop)
     static_assert(sizeof(Header) == MIN_HEADER_LEN);
 
-    ParseError parse(BufferView& buf, Header& header, Endian endian);
+    ParseError parse(std::span<uint8_t>& span, Header& header, Endian endian);
     uint64_t computePseudoHeaderSum(const Header& ip_header);
 
     std::ostream& operator<<(std::ostream& os, const Header& h);

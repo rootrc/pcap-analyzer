@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <net/core/buffer_view.h>
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/ethernet.h>

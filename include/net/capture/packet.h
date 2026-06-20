@@ -2,7 +2,6 @@
 #pragma once
 
 #include <net/capture/pcap.h>
-#include <net/core/buffer_view.h>
 #include <net/protocols/protocols.h>
 
 #include <vector>
