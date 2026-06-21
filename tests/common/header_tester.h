@@ -10,7 +10,7 @@ namespace test {
 
 template <typename ParseFn, size_t N>
 void runHeaderTest(const uint8_t (&data)[N], net::ParseError expected, ParseFn&& parseFn) {
-    std::span<uint8_t> span{data, N};
+    std::span<const uint8_t> span{data, N};
     net::ParseError result = parseFn(span);
 
     EXPECT_EQ(result, expected)
@@ -25,7 +25,7 @@ auto bindHeaderParser(ParseFn&& fn, Args&&... args) {
 
     return [fn = std::forward<ParseFn>(fn),
             stored = std::move(stored)]
-           (std::span<uint8_t>& span) mutable {
+           (std::span<const uint8_t>& span) mutable {
 
         Header header{};
 

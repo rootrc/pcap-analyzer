@@ -4,19 +4,19 @@
 #include <cstring>
 
 namespace net::tcp {
-    ParseError parse(std::span<uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
+    ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
 
-    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
         size_t ip_header_len = 4 * (ip_header.version_ihl & 0x0F);
         size_t length = ip_header.total_length - ip_header_len;
         return parse(span, header, length, ip::v4::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
         return parse(span, header, ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(std::span<uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian) {
         if (span.size() < length) return ParseError::UnexpectedEof;
         std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 

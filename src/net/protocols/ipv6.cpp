@@ -5,7 +5,7 @@
 #include <iomanip>
 
 namespace net::ip::v6 {
-    ParseError parse(std::span<uint8_t>& span, Header& header, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) {
         if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, span.data(), HEADER_LEN);
 

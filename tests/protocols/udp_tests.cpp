@@ -64,12 +64,12 @@ template <typename IpHeader, size_t N>
 auto parseUdp(const uint8_t (&pseudo_header)[N]) {
     using ParseFn =
         net::ParseError (*)(
-            std::span<uint8_t>&,
+            std::span<const uint8_t>&,
             net::udp::Header&,
             const IpHeader&,
             net::Endian);
 
-    std::span<uint8_t> span{pseudo_header, N};
+    std::span<const uint8_t> span{pseudo_header, N};
 
     IpHeader header{};
     parse(span, header, net::Endian::Big);

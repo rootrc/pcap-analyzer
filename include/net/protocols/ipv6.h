@@ -25,7 +25,7 @@ namespace net::ip::v6 {
     #pragma pack(pop)
     static_assert(sizeof(Header) == HEADER_LEN);
     
-    ParseError parse(std::span<uint8_t>& span, Header& header, Endian endian);
+    ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
     uint64_t computePseudoHeaderSum(const Header& ip_header);
 
     std::ostream& operator<<(std::ostream& os, const Header& h);

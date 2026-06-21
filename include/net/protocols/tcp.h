@@ -31,8 +31,8 @@ namespace net::tcp {
     #pragma pack(pop)
     static_assert(sizeof(Header) == MIN_HEADER_LEN);
 
-    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian);
-    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian);
+    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian);
+    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian);
 
     std::ostream& operator<<(std::ostream& os, const Header& h);
 }

@@ -38,8 +38,8 @@ namespace net::pcap {
     static_assert(sizeof(FileHeader) == FILE_HEADER_LEN);
     static_assert(sizeof(PacketHeader) == PACKET_HEADER_LEN);
 
-    ParseError parse(std::span<uint8_t>& span, FileHeader& header, net::Endian& endian);
-    ParseError parse(std::span<uint8_t>& span, PacketHeader& header, net::Endian endian);
+    ParseError parse(std::span<const uint8_t>& span, FileHeader& header, net::Endian& endian);
+    ParseError parse(std::span<const uint8_t>& span, PacketHeader& header, net::Endian endian);
 
     std::ostream& operator<<(std::ostream& os, const FileHeader& h);
     std::ostream& operator<<(std::ostream& os, const PacketHeader& h);

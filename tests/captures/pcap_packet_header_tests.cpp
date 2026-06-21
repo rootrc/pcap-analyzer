@@ -31,7 +31,7 @@ namespace {
     };
 }
 
-using ParseFn = net::ParseError (*)(std::span<uint8_t>&, net::pcap::PacketHeader&, net::Endian);
+using ParseFn = net::ParseError (*)(std::span<const uint8_t>&, net::pcap::PacketHeader&, net::Endian);
 auto parsePcapPacketHeader = test::bindHeaderParser<
     ParseFn,
     net::pcap::PacketHeader

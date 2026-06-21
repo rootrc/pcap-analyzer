@@ -4,7 +4,7 @@
 #include <cstring>
 
 namespace net::ip::v4 {
-    ParseError parse(std::span<uint8_t>& span, Header& header, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) {
         if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 

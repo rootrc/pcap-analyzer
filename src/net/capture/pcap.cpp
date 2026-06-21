@@ -3,7 +3,7 @@
 #include <cstring>
 
 namespace net::pcap {
-    ParseError parse(std::span<uint8_t>& span, FileHeader& header, Endian& endian) {
+    ParseError parse(std::span<const uint8_t>& span, FileHeader& header, Endian& endian) {
         if (span.size() < FILE_HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, span.data(), FILE_HEADER_LEN);
 
@@ -44,7 +44,7 @@ namespace net::pcap {
         return ParseError::None;
     }
 
-    ParseError parse(std::span<uint8_t>& span, PacketHeader& header, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, PacketHeader& header, Endian endian) {
         if (span.size() < PACKET_HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, span.data(), PACKET_HEADER_LEN);
 

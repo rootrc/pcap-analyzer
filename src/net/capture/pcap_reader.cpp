@@ -6,7 +6,7 @@ namespace net::pcap {
             return ParseError::UnexpectedEofF;
         }
 
-        std::span<uint8_t> packet_header_view{buffer_, PACKET_HEADER_LEN };
+        std::span<const uint8_t> packet_header_view{buffer_, PACKET_HEADER_LEN };
                     
         ParseError err = parse(packet_header_view, out.record, endian_);
         if (err != ParseError::None) {
@@ -20,7 +20,7 @@ namespace net::pcap {
             }
         }
 
-        std::span<uint8_t> span{ out.raw.data(), out.raw.size() };
+        std::span<const uint8_t> span{ out.raw.data(), out.raw.size() };
         return decodePacket(span, out);
     }
 
@@ -43,11 +43,11 @@ namespace net::pcap {
     ParseError Reader::readFileHeader() {
         if (fread(buffer_, 1, FILE_HEADER_LEN, f_) != FILE_HEADER_LEN)
             return ParseError::UnexpectedEofF;
-        std::span<uint8_t> file_header_view{buffer_, FILE_HEADER_LEN};
+        std::span<const uint8_t> file_header_view{buffer_, FILE_HEADER_LEN};
         return parse(file_header_view, file_header_, endian_);
     }
 
-    ParseError Reader::decodePacket(std::span<uint8_t>& span, Packet& out) {
+    ParseError Reader::decodePacket(std::span<const uint8_t>& span, Packet& out) {
         ParseError err = decodeLayer2(span, out);
         if (err != ParseError::None) {
             return err;
@@ -63,7 +63,7 @@ namespace net::pcap {
         return ParseError::None;
     }
 
-    ParseError Reader::decodeLayer2(std::span<uint8_t>& span, Packet& out) {
+    ParseError Reader::decodeLayer2(std::span<const uint8_t>& span, Packet& out) {
         ParseError err = ethernet::parse(span, out.eth, Endian::Big);
         if (err != ParseError::None) {
             return err;
@@ -75,7 +75,7 @@ namespace net::pcap {
         return ParseError::None;
     }
 
-    ParseError Reader::decodeLayer3(std::span<uint8_t>& span, Packet& out) {
+    ParseError Reader::decodeLayer3(std::span<const uint8_t>& span, Packet& out) {
         return std::visit(overload{
             [&](ip::v4::Header& v4) -> ParseError {
                 if (auto err = ip::v4::parse(span, v4, Endian::Big); err != ParseError::None) return err;
@@ -97,7 +97,7 @@ namespace net::pcap {
         }, out.network);
     }
 
-    ParseError Reader::decodeLayer4(std::span<uint8_t>& span, Packet& out) {
+    ParseError Reader::decodeLayer4(std::span<const uint8_t>& span, Packet& out) {
         return std::visit(overload{
             [&](const auto& ip) -> ParseError {
                 return std::visit(overload{

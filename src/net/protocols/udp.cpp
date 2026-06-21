@@ -4,17 +4,17 @@
 #include <cstring>
 
 namespace net::udp {
-    ParseError parse(std::span<uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian);
+    ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian);
 
-    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
         return parse(span, header, ip::v4::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(std::span<uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
         return parse(span, header, ip::v6::computePseudoHeaderSum(ip_header), endian);
     }
 
-    ParseError parse(std::span<uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian) {
+    ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian) {
         if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
         std::memcpy(&header, span.data(), HEADER_LEN);
         if (toHost16(header.length, endian) < HEADER_LEN || span.size() < toHost16(header.length, endian)) {
