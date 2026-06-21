@@ -2,7 +2,7 @@
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
 #include <net/protocols/ethernet.h>
-#include <header_tester.h>
+#include "../common/header_tester.h"
 
 namespace {    
     inline constexpr uint8_t ethernet_valid[] = {
