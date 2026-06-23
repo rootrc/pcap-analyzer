@@ -5,31 +5,6 @@
 #include "../common/header_tester.h"
 
 namespace {    
-    inline constexpr uint8_t ipv4_valid[] = {
-        0x45,
-        0x00,
-        0x00, 0x34,
-        0x12, 0x34,
-        0x40, 0x00,
-        0x40,
-        0x06,
-        0xA4, 0xDA,
-        0xC0, 0xA8, 0x01, 0x64,
-        0xC0, 0xA8, 0x01, 0x01,
-    };
-    inline constexpr uint8_t ipv4_options_valid[] = {
-        0x46,
-        0x00,
-        0x00, 0x34,
-        0x12, 0x34,
-        0x40, 0x00,
-        0x40,
-        0x06,
-        0x8A, 0xA4,
-        0xAC, 0x10, 0x00, 0x64,
-        0xAC, 0x10, 0x00, 0x01,
-        0x11, 0x22, 0x33, 0x44,
-    };
     inline constexpr uint8_t ipv4_endof[] = {
         0x45,
         0x00,
@@ -101,8 +76,7 @@ auto parseIpv4 = test::bindHeaderParser<
     net::Endian::Big
 );
 
-HEADER_TEST(IPV4, ParsesValid, ipv4_valid, net::ParseError::None, parseIpv4)
-HEADER_TEST(IPV4, ParsesValidOptions, ipv4_options_valid, net::ParseError::None, parseIpv4)
+RANDOMIZED_TEST(IPV4, Randomized, 100, [](uint8_t* data) {testgen::makeIPv4Header(data, 0, randomgen::randRange8(net::ip::v4::MIN_HEADER_LEN / 4, net::ip::v4::MAX_HEADER_LEN / 4));}, parseIpv4)
 HEADER_TEST(IPV4, UnexpectedEndofBuffer, ipv4_endof, net::ParseError::UnexpectedEof, parseIpv4)
 HEADER_TEST(IPV4, RejectsMalformedHeader, ipv4_malformed, net::ParseError::MalformedHeader, parseIpv4)
 HEADER_TEST(IPV4, UnexpectedEndofBufferOptions, ipv4_endof_options, net::ParseError::UnexpectedEof, parseIpv4)

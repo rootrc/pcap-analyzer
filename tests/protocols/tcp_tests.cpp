@@ -37,17 +37,6 @@ namespace {
         0x20, 0x01, 0x0d, 0xb8, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34,
         0x20, 0x01, 0x0d, 0xb8, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xab, 0xcd,
     };
-    inline constexpr uint8_t tcp_v4_valid[] = {
-        0xc3, 0x50,
-        0x00, 0x50,
-        0x12, 0x34, 0x56, 0x78,
-        0x00, 0x00, 0x00, 0x00,
-        0x50, 
-        0x02,
-        0x71, 0x10,
-        0xBA, 0x59,
-        0x00, 0x00,
-    };
     inline constexpr uint8_t tcp_v4_options_valid[] = {
         0x43, 0x21,
         0x12, 0x34,
@@ -59,17 +48,6 @@ namespace {
         0x1F, 0x8F,
         0x00, 0x00,
         0xBA, 0xBE, 0xCA, 0xFE,
-    };
-    inline constexpr uint8_t tcp_v6_valid[] {
-        0xc3, 0x50,
-        0x00, 0x50,
-        0x12, 0x34, 0x56, 0x78,
-        0x00, 0x00, 0x00, 0x00,
-        0x50, 
-        0x02,
-        0x71, 0x10,
-        0xF9, 0x0D,
-        0x00, 0x00,
     };
     inline constexpr uint8_t tcp_v4_endof[] = {
         0xc3, 0x50,
@@ -125,11 +103,8 @@ auto parseTcp(const uint8_t (&pseudo_header)[N]) {
             net::tcp::Header&,
             const IpHeader&,
             net::Endian);
-
-    std::span<const uint8_t> span{pseudo_header, N};
-
-    IpHeader header{};
-    parse(span, header, net::Endian::Big);
+    
+    IpHeader header = test::makePseudoHeader<IpHeader>(pseudo_header);
 
     return test::bindHeaderParser<
         ParseFn,
@@ -141,9 +116,9 @@ auto parseTcp(const uint8_t (&pseudo_header)[N]) {
     );
 }
 
-HEADER_TEST(TCP, ParsesValidIPv4, tcp_v4_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
+RANDOMIZED_TEST(TCP, RandomizedIPv4, 50, [](uint8_t* data) {testgen::makeTcpHeader(data, test::makePseudoHeader<net::ip::v4::Header>(ipv4_pseudo), 5);}, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
+RANDOMIZED_TEST(TCP, RandomizedIPv6, 50, [](uint8_t* data) {testgen::makeTcpHeader(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo), 5);}, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
 HEADER_TEST(TCP, ParsesValidOptionsIPv4, tcp_v4_options_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo_options))
-HEADER_TEST(TCP, ParsesValidIPv6, tcp_v6_valid, net::ParseError::None, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
 HEADER_TEST(TCP, UnexpectedEndofBuffer, tcp_v4_endof, net::ParseError::UnexpectedEof, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
 HEADER_TEST(TCP, RejectsMalformedHeader, tcp_v4_malformed, net::ParseError::MalformedHeader, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
 HEADER_TEST(TCP, RejectsInvalidFieldValue, tcp_v6_field, net::ParseError::InvalidFieldValue, parseTcp<net::ip::v6::Header>(ipv6_pseudo))

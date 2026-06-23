@@ -13,7 +13,7 @@ namespace net::ip::v6 {
         header.payload_length = toHost16(header.payload_length, endian);
 
         uint32_t version = header.version_tc_fl >> 28;
-        if (version != 6 || header.payload_length == 0) {
+        if (version != 6) {
             return ParseError::InvalidFieldValue;
         }
         span = span.subspan(HEADER_LEN);
@@ -44,15 +44,15 @@ namespace net::ip::v6 {
         os << "  next_header: " << (int)h.next_header << "\n";
         os << "  hop_limit: " << (int)h.hop_limit << "\n";
         os << "  src_ip: ";
-        for (int i = 0; i < 16; i++) {
-            os << std::hex << std::setfill('0') << std::setw(2) << (int)h.src_ip[i] << std::dec;
-            if (i < 15) os << ":";
+        for (int i = 0; i < 16; i+= 2) {
+            if (i) os << ':';
+            os << std::hex << std::setfill('0') << std::setw(2) << (int)h.src_ip[i] << std::setw(2) << (int)h.src_ip[i+1];
         }
         os << "\n";
         os << "  dst_ip: ";
-        for (int i = 0; i < 16; i++) {
-            os << std::hex << std::setfill('0') << std::setw(2) << (int)h.dst_ip[i] << std::dec;
-            if (i < 15) os << ":";
+        for (int i = 0; i < 16; i += 2) {
+            if (i) os << ':';
+            os << std::hex << std::setfill('0') << std::setw(2) << (int)h.dst_ip[i] << std::setw(2) << (int)h.dst_ip[i+1];
         }
         os << "\n";
         os << "}";

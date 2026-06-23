@@ -39,6 +39,20 @@ if(BUILD_TESTING)
 
     set(TEST_MAIN tests/test_main.cpp)
 
+    add_library(test_lib
+        tests/testgen/protocol_generator.cpp
+    )
+
+    target_include_directories(test_lib
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    )
+
+    target_link_libraries(test_lib
+        PUBLIC
+            network_lib
+    )
+
     set(CAPTURE_TESTS
         pcap_file_header
         pcap_packet_header
@@ -52,7 +66,8 @@ if(BUILD_TESTING)
 
         target_link_libraries(${test}_tests
             PRIVATE
-                network_lib
+                # network_lib
+                test_lib
                 GTest::gtest
         )
 
@@ -80,7 +95,8 @@ if(BUILD_TESTING)
 
         target_link_libraries(${test}_tests
             PRIVATE
-                network_lib
+                # network_lib
+                test_lib
                 GTest::gtest
         )
 
