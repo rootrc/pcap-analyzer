@@ -13,26 +13,28 @@
 // https://datatracker.ietf.org/doc/html/rfc768
 
 namespace net::tcp {
-    constexpr size_t MIN_HEADER_LEN = 20;
-    constexpr size_t MAX_HEADER_LEN = 60;
 
-    #pragma pack(push, 1)
-    struct Header {
-        uint16_t src_port;
-        uint16_t dst_port;
-        uint32_t seq_number;
-        uint32_t ack_number;
-        uint8_t data_offset_reserved;
-        uint8_t flags;
-        uint16_t window_size;
-        uint16_t checksum;
-        uint16_t urgent_pointer;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(Header) == MIN_HEADER_LEN);
+constexpr size_t MIN_HEADER_LEN = 20;
+constexpr size_t MAX_HEADER_LEN = 60;
 
-    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian);
-    ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian);
+#pragma pack(push, 1)
+struct Header {
+    uint16_t src_port;
+    uint16_t dst_port;
+    uint32_t seq_number;
+    uint32_t ack_number;
+    uint8_t data_offset_reserved;
+    uint8_t flags;
+    uint16_t window_size;
+    uint16_t checksum;
+    uint16_t urgent_pointer;
+};
+#pragma pack(pop)
+static_assert(sizeof(Header) == MIN_HEADER_LEN);
 
-    std::ostream& operator<<(std::ostream& os, const Header& h);
+ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian);
+ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian);
+
+std::ostream& operator<<(std::ostream& os, const Header& h);
+
 }

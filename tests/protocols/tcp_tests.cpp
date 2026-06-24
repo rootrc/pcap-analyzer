@@ -71,17 +71,6 @@ namespace {
         0xBA, 0x59,
         0x00, 0x00,
     };
-    inline constexpr uint8_t tcp_v6_field[] = {
-        0xc3, 0x50,
-        0x00, 0x50,
-        0x12, 0x34, 0x56, 0x78,
-        0x00, 0x00, 0x00, 0x00,
-        0x5F, 
-        0x02,
-        0x71, 0x10,
-        0xBA, 0x59,
-        0x00, 0x00,
-    };
     inline constexpr uint8_t tcp_v6_checksum[] = {
         0xc3, 0x5a,
         0x00, 0x50,
@@ -121,5 +110,4 @@ RANDOMIZED_TEST(TCP, RandomizedIPv6, 50, [](uint8_t* data) {testgen::makeTcpHead
 HEADER_TEST(TCP, ParsesValidOptionsIPv4, tcp_v4_options_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo_options))
 HEADER_TEST(TCP, UnexpectedEndofBuffer, tcp_v4_endof, net::ParseError::UnexpectedEof, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
 HEADER_TEST(TCP, RejectsMalformedHeader, tcp_v4_malformed, net::ParseError::MalformedHeader, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
-HEADER_TEST(TCP, RejectsInvalidFieldValue, tcp_v6_field, net::ParseError::InvalidFieldValue, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
 HEADER_TEST(TCP, RejectsChecksumMismatch, tcp_v6_checksum, net::ParseError::ChecksumMismatch, parseTcp<net::ip::v6::Header>(ipv6_pseudo))

@@ -11,21 +11,23 @@
 // https://www.ieee802.org/3/
 
 namespace net::ethernet {
-    constexpr size_t HEADER_LEN = 14;
 
-    constexpr uint16_t ETHERTYPE_IPV4 = 0x0800;
-    constexpr uint16_t ETHERTYPE_IPV6 = 0x86DD;
+constexpr size_t HEADER_LEN = 14;
 
-    #pragma pack(push, 1)
-    struct Header {
-        uint8_t dst_mac[6];
-        uint8_t src_mac[6];
-        uint16_t ethertype;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(Header) == HEADER_LEN);
+constexpr uint16_t ETHERTYPE_IPV4 = 0x0800;
+constexpr uint16_t ETHERTYPE_IPV6 = 0x86DD;
 
-    ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
+#pragma pack(push, 1)
+struct Header {
+    uint8_t dst_mac[6];
+    uint8_t src_mac[6];
+    uint16_t ethertype;
+};
+#pragma pack(pop)
+static_assert(sizeof(Header) == HEADER_LEN);
 
-    std::ostream& operator<<(std::ostream& os, const Header& h);
+ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
+
+std::ostream& operator<<(std::ostream& os, const Header& h);
+
 }
