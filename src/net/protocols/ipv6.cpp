@@ -38,14 +38,14 @@ uint64_t computePseudoHeaderSum(const Header& header) {
 
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     os << "IPv6Header {\n"
-        << "  version: " << (h.version_tc_fl >> 28) << '\n'
-        << "  traffic_class: " << ((h.version_tc_fl >> 20) & 0xFF) << '\n'
-        << "  flow_label: 0x" << std::hex << std::setfill('0') << std::setw(5) << (h.version_tc_fl & 0xFFFFF) << std::dec << '\n'
+        << "  version: " << (h.version_tc_fl >> VERSION_OFFSET) << '\n'
+        << "  traffic_class: " << ((h.version_tc_fl >> TC_OFFSET) & TC_FLAG) << '\n'
+        << "  flow_label: 0x" << std::hex << std::setfill('0') << std::setw(5) << (h.version_tc_fl & FL_FLAG) << std::dec << '\n'
         << "  payload_length: " << h.payload_length << '\n'
         << "  next_header: " << static_cast<int>(h.next_header) << '\n'
         << "  hop_limit: " << static_cast<int>(h.hop_limit) << '\n'
         << "  src_ip: ";
-    for (int i = 0; i < 16; i+= 2) {
+    for (int i = 0; i < 16; i += 2) {
         if (i) os << ':';
         os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.src_ip[i]) << std::setw(2) << static_cast<int>(h.src_ip[i+1]);
     }

@@ -33,7 +33,7 @@ void makeEthernetHeader(uint8_t* data, uint16_t ethertype) {
 void makeIPv4Header(uint8_t* data, uint8_t protocol, uint8_t ihl, uint16_t payload_len) {
     net::ip::v4::Header h{};
 
-    if (ihl < net::ip::v4::MIN_HEADER_LEN / 4 || ihl > net::ip::v4::MAX_HEADER_LEN / 4) {
+    if (ihl < net::ip::v4::MIN_IHL || ihl > net::ip::v4::MAX_IHL) {
         throw std::out_of_range("ihl out of range [5, 15]");
     }
     uint8_t version = 4;
@@ -78,7 +78,7 @@ void makeIPv6Header(uint8_t* data, uint8_t next_header, uint16_t payload_length)
 void makeTcpHeader(uint8_t* data, uint64_t pseudo_sum, uint8_t data_offset, size_t payload_len) {
     net::tcp::Header h{};
 
-    if (data_offset < net::tcp::MIN_HEADER_LEN / 4 || data_offset > 15) {
+    if (data_offset < net::tcp::MIN_DATA_OFFSET || data_offset > net::tcp::MAX_DATA_OFFSET) {
         throw std::out_of_range("data_offset out of range [5, 15]");
     }
     size_t header_len = 4 * data_offset;

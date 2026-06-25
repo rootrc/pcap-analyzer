@@ -22,7 +22,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, 
     if (span.size() < length) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
-    uint8_t data_offset = header.data_offset_reserved >> 4;
+    uint8_t data_offset = header.data_offset_reserved >> DATA_OFFSET_OFFSET;
     // uint8_t reserved = (header.data_offset_reserved >> 1) & 0x07;
 
     size_t header_len = 4 * data_offset;
@@ -56,7 +56,7 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  dst_port: " << h.dst_port << '\n'
         << "  seq_number: " << h.seq_number << '\n'
         << "  ack_number: " << h.ack_number << '\n'
-        << "  data_offset: 0x" << std::hex << static_cast<int>(h.data_offset_reserved >> 4) << std::dec << '\n'
+        << "  data_offset: 0x" << std::hex << static_cast<int>(h.data_offset_reserved >> DATA_OFFSET_OFFSET) << std::dec << '\n'
         << "  flags: 0x" << std::hex << static_cast<int>(h.flags) << std::dec << '\n'
         << "  window_size: " << h.window_size << '\n'
         << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.checksum << std::dec << '\n'

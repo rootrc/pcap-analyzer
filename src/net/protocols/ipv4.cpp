@@ -10,8 +10,8 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
-    uint8_t version = header.version_ihl >> 4;
-    uint8_t ihl = header.version_ihl & 0x0F;
+    uint8_t version = header.version_ihl >> VERSION_OFFSET;
+    uint8_t ihl = header.version_ihl & IHL_FLAG;
     size_t header_len = 4 * ihl;
     if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN) {
         return ParseError::MalformedHeader;
@@ -50,16 +50,16 @@ uint64_t computePseudoHeaderSum(const Header& header) {
 
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     os << "IPv4Header {\n"
-        << "  version: " << (h.version_ihl >> 4) << '\n'
-        << "  ihl: " << (h.version_ihl & 0x0F) << '\n'
+        << "  version: " << (h.version_ihl >> VERSION_OFFSET) << '\n'
+        << "  ihl: " << (h.version_ihl & IHL_FLAG) << '\n'
         << "  tos: 0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.tos) << std::dec << '\n'
         << "  total_length: " << h.total_length << '\n'
         << "  identification: " << h.identification << '\n'
-        << "  flags: 0b" << (h.flags_fragment >> 15 & 1)
-                        << (h.flags_fragment >> 14 & 1)
-                        << (h.flags_fragment >> 13 & 1)
+        << "  flags: 0b" << (h.flags_fragment >> (FLAG_OFFSET + 2) & 1)
+                        << (h.flags_fragment >> (FLAG_OFFSET + 1) & 1)
+                        << (h.flags_fragment >> FLAG_OFFSET & 1)
                         << '\n'
-        << "  fragment: " << (h.flags_fragment & 0x1FFF) << '\n'
+        << "  fragment: " << (h.flags_fragment & FRAGMENT_FLAG) << '\n'
         << "  ttl: " << static_cast<int>(h.ttl) << '\n'
         << "  protocol: " << static_cast<int>(h.protocol) << '\n'
         << "  checksum: 0x" << std::hex << static_cast<int>(h.checksum) << std::dec << '\n'

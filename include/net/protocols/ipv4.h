@@ -12,8 +12,15 @@
 
 namespace net::ip::v4 {
 
-constexpr size_t MIN_HEADER_LEN = 20;
-constexpr size_t MAX_HEADER_LEN = 60;
+constexpr size_t MIN_IHL = 5;
+constexpr size_t MAX_IHL = 15;
+constexpr size_t MIN_HEADER_LEN = 4 * MIN_IHL;
+constexpr size_t MAX_HEADER_LEN = 4 * MAX_IHL;
+
+constexpr uint8_t VERSION_OFFSET = 4;
+constexpr uint8_t IHL_FLAG = 0x0F;
+constexpr uint8_t FLAG_OFFSET = 13;
+constexpr uint16_t FRAGMENT_FLAG = 0x1FFF;
 
 #pragma pack(push, 1)
 struct Header {

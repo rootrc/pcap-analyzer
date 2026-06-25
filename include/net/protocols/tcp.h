@@ -14,8 +14,12 @@
 
 namespace net::tcp {
 
-constexpr size_t MIN_HEADER_LEN = 20;
-constexpr size_t MAX_HEADER_LEN = 60;
+constexpr size_t MIN_DATA_OFFSET = 5;
+constexpr size_t MAX_DATA_OFFSET = 15;
+constexpr size_t MIN_HEADER_LEN = 4 * MIN_DATA_OFFSET;
+constexpr size_t MAX_HEADER_LEN = 4 * MAX_DATA_OFFSET;
+
+constexpr uint8_t DATA_OFFSET_OFFSET = 4;
 
 #pragma pack(push, 1)
 struct Header {

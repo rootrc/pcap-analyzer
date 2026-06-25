@@ -14,6 +14,11 @@ namespace net::ip::v6 {
 
 constexpr size_t HEADER_LEN = 40;
 
+constexpr uint8_t VERSION_OFFSET = 28;
+constexpr uint8_t TC_OFFSET = 20;
+constexpr uint32_t TC_FLAG = 0xFF;
+constexpr uint32_t FL_FLAG = 0xFFFFF;
+
 #pragma pack(push, 1)
 struct Header {
     uint32_t version_tc_fl;
