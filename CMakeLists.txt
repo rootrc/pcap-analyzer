@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(network_lib
+    src/net/capture/decoder.cpp
     src/net/capture/pcap.cpp
     src/net/capture/pcap_reader.cpp
     src/net/core/checksum.cpp
