@@ -62,7 +62,7 @@ if(BUILD_TESTING)
     foreach(test IN LISTS CAPTURE_TESTS)
         add_executable(${test}_tests
             ${TEST_MAIN}
-            tests/captures/${test}_tests.cpp
+            tests/capture/${test}_tests.cpp
         )
 
         target_link_libraries(${test}_tests
