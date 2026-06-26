@@ -13,6 +13,16 @@ ParseError decodeLayer2(std::span<const uint8_t>& span, Packet& out) {
     return std::visit(overload{
         [&](ethernet::Header& eth) -> ParseError {
             if (auto err = ethernet::parse(span, eth, Endian::Big); err != ParseError::None) return err;
+            
+            uint16_t ethertype = eth.ethertype;
+            while (ethertype == ethernet::ETHERTYPE_VLAN || ethertype == ethernet::ETHERTYPE_VLAN_QQ) {
+                vlan::Header vtag{};
+                if (auto err = vlan::parse(span, vtag, Endian::Big); err != ParseError::None) return err;
+                ethertype = vtag.ethertype;
+                out.vlan_tags.push_back(vtag);
+            }
+            eth.ethertype = ethertype;
+            
             out.setNetworkFromEthertype(eth.ethertype);
             return ParseError::None;
         },

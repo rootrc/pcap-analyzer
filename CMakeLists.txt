@@ -12,6 +12,7 @@ add_library(network_lib
     src/net/capture/pcap_reader.cpp
     src/net/core/checksum.cpp
     src/net/protocols/ethernet.cpp
+    src/net/protocols/vlan.cpp
     src/net/protocols/ipv4.cpp
     src/net/protocols/ipv6.cpp
     src/net/protocols/tcp.cpp
@@ -84,6 +85,7 @@ if(BUILD_TESTING)
 
     set(PROTOCOL_TESTS
         ethernet
+        vlan
         ipv4
         ipv6
         tcp

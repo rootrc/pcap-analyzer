@@ -5,9 +5,6 @@
 #include <net/protocols/ipv4.h>
 #include <net/protocols/ipv6.h>
 
-#include <cstdint>
-#include <cstddef>
-#include <ostream>
 #include <span>
 
 // https://datatracker.ietf.org/doc/html/rfc768

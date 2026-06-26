@@ -27,12 +27,26 @@ void makePcapPacketHeader(uint8_t* data, uint32_t captured_len, net::Endian endi
     memcpy(data, &h, net::pcap::PACKET_HEADER_LEN);
 }
 
-inline uint16_t getRandomNetwork() {
+inline uint16_t getRandomIPNetwork() {
     int random = std::rand();
     if (random % 2 == 0) {
         return net::ethernet::ETHERTYPE_IPV4;
     } else if (random % 2 == 1) {
         return net::ethernet::ETHERTYPE_IPV6;
+    }
+    return 0;
+}
+
+inline uint16_t getRandomNetwork() {
+    int random = std::rand();
+    if (random % 4 == 0) {
+        return net::ethernet::ETHERTYPE_IPV4;
+    } else if (random % 4 == 1) {
+        return net::ethernet::ETHERTYPE_IPV6;
+    } else if (random % 4 == 2) {
+        return net::ethernet::ETHERTYPE_VLAN;
+    } else if (random % 4 == 3) {
+        return net::ethernet::ETHERTYPE_VLAN_QQ;
     }
     return 0;
 }
@@ -49,21 +63,34 @@ inline uint8_t getRandomTransport() {
 
 void makePcapPacket(uint8_t* data, size_t total_length) {
     uint16_t network = getRandomNetwork();
-    uint8_t transport = getRandomTransport();
-    uint16_t ihl = randomgen::randRange8(net::ip::v4::MIN_HEADER_LEN / 4, net::ip::v4::MAX_HEADER_LEN / 4);
-    uint16_t data_offset = randomgen::randRange8(net::tcp::MIN_HEADER_LEN / 4, net::tcp::MAX_HEADER_LEN / 4);
     
     total_length -= net::pcap::PACKET_HEADER_LEN;
-    testgen::makePcapPacketHeader(data, total_length, net::Endian::Little);
+    testgen::makePcapPacketHeader(data, total_length);
     data += net::pcap::PACKET_HEADER_LEN;
     
     total_length -= net::ethernet::HEADER_LEN;
     testgen::makeEthernetHeader(data, network);
     data += net::ethernet::HEADER_LEN;
     
+    if (network == net::ethernet::ETHERTYPE_VLAN_QQ) {
+        network = net::ethernet::ETHERTYPE_VLAN;
+        total_length -= net::vlan::HEADER_LEN;
+        testgen::makeVlanHeader(data, network);
+        data += net::vlan::HEADER_LEN;
+    }
+    if (network == net::ethernet::ETHERTYPE_VLAN) {
+        network = getRandomIPNetwork();
+        total_length -= net::vlan::HEADER_LEN;
+        testgen::makeVlanHeader(data, network);
+        data += net::vlan::HEADER_LEN;
+    }
+
+    uint8_t transport = getRandomTransport();
+    
     net::ip::v4::Header ipv4_header{};
     net::ip::v6::Header ipv6_header{};
     if (network == net::ethernet::ETHERTYPE_IPV4) {
+        uint16_t ihl = randomgen::randRange8(net::ip::v4::MIN_IHL, net::ip::v4::MAX_IHL);
         total_length -= 4 * ihl;
         testgen::makeIPv4Header(data, transport, ihl, total_length);
         std::span<const uint8_t> span{data, static_cast<size_t>(4 * ihl)};
@@ -78,6 +105,7 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
     }
 
     if (transport == net::ip::PROTOCOL_TCP) {
+        uint16_t data_offset = randomgen::randRange8(net::tcp::MIN_DATA_OFFSET, net::tcp::MAX_DATA_OFFSET);
         total_length -= 4 * data_offset;
         if (network == net::ethernet::ETHERTYPE_IPV4) {
             testgen::makeTcpHeader(data, ipv4_header, data_offset, total_length);

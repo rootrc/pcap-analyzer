@@ -30,6 +30,13 @@ void makeEthernetHeader(uint8_t* data, uint16_t ethertype) {
     memcpy(data, &h, net::ethernet::HEADER_LEN);
 }
 
+void makeVlanHeader(uint8_t* data, uint16_t ethertype) {
+    net::vlan::Header h{};
+    h.tci = randomgen::rand32();
+    h.ethertype = net::bswap16(ethertype);
+    memcpy(data, &h, net::vlan::HEADER_LEN);
+}
+
 void makeIPv4Header(uint8_t* data, uint8_t protocol, uint8_t ihl, uint16_t payload_len) {
     net::ip::v4::Header h{};
 

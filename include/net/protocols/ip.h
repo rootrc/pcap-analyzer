@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 namespace net::ip {
 
 constexpr uint8_t PROTOCOL_UDP = 17;

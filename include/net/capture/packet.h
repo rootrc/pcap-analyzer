@@ -16,6 +16,9 @@ struct Packet {
     >;
     DataLinkHeader datalink{};
 
+    // Layer 2.5
+    std::vector<vlan::Header> vlan_tags;
+
     // Layer 3
     using NetworkHeader = std::variant<
         std::monostate,
@@ -35,12 +38,14 @@ struct Packet {
     std::vector<uint8_t> raw;
 
     [[nodiscard]] bool isEthernet() const noexcept { return std::holds_alternative<ethernet::Header>(datalink); }
+    [[nodiscard]] bool isVlan() const noexcept { return !vlan_tags.empty(); }
     [[nodiscard]] bool isIpv4() const noexcept { return std::holds_alternative<ip::v4::Header>(network); }
     [[nodiscard]] bool isIpv6() const noexcept { return std::holds_alternative<ip::v6::Header>(network); }
     [[nodiscard]] bool isTcp() const noexcept { return std::holds_alternative<tcp::Header>(transport); }
     [[nodiscard]] bool isUdp() const noexcept { return std::holds_alternative<udp::Header>(transport); }
 
     [[nodiscard]] const ethernet::Header* ethernet() const noexcept { return std::get_if<ethernet::Header>(&datalink); }
+    [[nodiscard]] const std::vector<vlan::Header>& vlan() const noexcept { return vlan_tags; }
     [[nodiscard]] const ip::v4::Header* ipv4() const noexcept { return std::get_if<ip::v4::Header>(&network); }
     [[nodiscard]] const ip::v6::Header* ipv6() const noexcept { return std::get_if<ip::v6::Header>(&network); }
     [[nodiscard]] const tcp::Header* tcp() const noexcept { return std::get_if<tcp::Header>(&transport); }
@@ -71,6 +76,7 @@ struct Packet {
 
     void reset() noexcept {
         datalink = std::monostate{};
+        vlan_tags.clear();
         network = std::monostate{};
         transport = std::monostate{};
         raw.clear();
