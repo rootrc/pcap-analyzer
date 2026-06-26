@@ -3,6 +3,7 @@
 #include <net/core/endian.h>
 #include <net/protocols/ipv4.h>
 #include "../common/header_tester.h"
+#include "../testgen/protocol_generator.h"
 
 namespace {    
     inline constexpr uint8_t ipv4_endof[] = {

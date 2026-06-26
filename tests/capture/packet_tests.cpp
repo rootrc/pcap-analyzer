@@ -1,3 +1,22 @@
 #include <gtest/gtest.h>
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
+#include <net/capture/pcap.h>
+#include <net/capture/decoder.h>
+#include "../common/header_tester.h"
+#include "../testgen/packet_generator.h"
+
+net::ParseError decodePcapPacket(std::span<const uint8_t>& span, net::Packet& out) {
+    span = span.subspan(net::pcap::PACKET_HEADER_LEN);
+    out.setDatatypeFromLinktype(1);
+    return net::decode::decodePacket(span, out);
+}
+
+auto parsePcapPacket = test::bindHeaderParser<
+    decltype(decodePcapPacket),
+    net::Packet
+>(
+    decodePcapPacket
+);
+
+RANDOMIZED_TEST(PCAP_PACKET, Randomized, 100, [](uint8_t* data) {testgen::makePcapPacket(data, 1024);}, parsePcapPacket)

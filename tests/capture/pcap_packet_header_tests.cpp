@@ -3,14 +3,9 @@
 #include <net/core/endian.h>
 #include <net/capture/pcap.h>
 #include "../common/header_tester.h"
+#include "../testgen/packet_generator.h"
 
 namespace {   
-    inline constexpr uint8_t packet_header_valid[] = {
-        0x5E, 0x2A, 0x3C, 0x01,
-        0x7B, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x3C, 0x00,
-        0x00, 0x00, 0x3C, 0x00,
-    };
     inline constexpr uint8_t packet_header_endof[] = {
         0x5E, 0x2A, 0x3C, 0x01,
         0x7B, 0x00, 0x00, 0x00,
@@ -40,7 +35,7 @@ auto parsePcapPacketHeader = test::bindHeaderParser<
     net::Endian::Little
 );
 
-HEADER_TEST(PCAP_PACKET, ParsesValid, packet_header_valid, net::ParseError::None, parsePcapPacketHeader)
+RANDOMIZED_TEST(PCAP_PACKET, Randomized, 100, [](uint8_t* data) {testgen::makePcapPacketHeader(data, 1 << 16); }, parsePcapPacketHeader)
 HEADER_TEST(PCAP_PACKET, UnexpectedEndofBuffer, packet_header_endof, net::ParseError::UnexpectedEof, parsePcapPacketHeader)
 HEADER_TEST(PCAP_PACKET, RejectsInvalidFieldValue, packet_header_field, net::ParseError::InvalidFieldValue, parsePcapPacketHeader)
 HEADER_TEST(PCAP_PACKET, RejectsMalformedHeader, packet_header_malformed, net::ParseError::MalformedHeader, parsePcapPacketHeader)

@@ -3,17 +3,9 @@
 #include <net/core/endian.h>
 #include <net/capture/pcap.h>
 #include "../common/header_tester.h"
+#include "../testgen/packet_generator.h"
 
 namespace {
-    inline constexpr uint8_t file_header_valid[] = {
-        0xD4, 0xC3, 0xB2, 0xA1,
-        0x02, 0x00,
-        0x04, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0xFF, 0xFF, 0xFF,
-        0x01, 0x00, 0x00, 0x00,
-    };
     inline constexpr uint8_t file_header_endof[] = {
         0xD4, 0xC3, 0xB2, 0x00,
         0x02, 0x00,
@@ -70,7 +62,7 @@ auto parsePcapFileHeader = test::bindHeaderParser<
     net::Endian::Little
 );
 
-HEADER_TEST(PCAP_FILE, ParsesValid, file_header_valid, net::ParseError::None, parsePcapFileHeader)
+RANDOMIZED_TEST(PCAP_FILE, Randomized, 100, [](uint8_t* data) {testgen::makePcapFileHeader(data); }, parsePcapFileHeader)
 HEADER_TEST(PCAP_FILE, UnexpectedEndofBuffer, file_header_endof, net::ParseError::UnexpectedEof, parsePcapFileHeader)
 HEADER_TEST(PCAP_FILE, RejectsUnsupportedVersion, file_header_version, net::ParseError::UnsupportedVersion, parsePcapFileHeader)
 HEADER_TEST(PCAP_FILE, RejectsInvalidFieldValue0, file_header_field_magic, net::ParseError::InvalidFieldValue, parsePcapFileHeader)

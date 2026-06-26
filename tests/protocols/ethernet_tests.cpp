@@ -3,6 +3,7 @@
 #include <net/core/endian.h>
 #include <net/protocols/ethernet.h>
 #include "../common/header_tester.h"
+#include "../testgen/protocol_generator.h"
 
 namespace {    
     inline constexpr uint8_t ethernet_endof[] = {

@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 #include <net/core/parse_error.h>
 #include <net/core/endian.h>
-#include "../testgen/protocol_generator.h"
 
 #include <tuple>
 #include <utility>

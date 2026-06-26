@@ -41,6 +41,7 @@ if(BUILD_TESTING)
     set(TEST_MAIN tests/test_main.cpp)
 
     add_library(test_lib
+        tests/testgen/packet_generator.cpp
         tests/testgen/protocol_generator.cpp
     )
 
@@ -55,6 +56,7 @@ if(BUILD_TESTING)
     )
 
     set(CAPTURE_TESTS
+        packet
         pcap_file_header
         pcap_packet_header
     )
