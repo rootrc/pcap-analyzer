@@ -13,7 +13,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     header.version_tc_fl = toHost32(header.version_tc_fl, endian);
     header.payload_length = toHost16(header.payload_length, endian);
 
-    uint32_t version = header.version_tc_fl >> 28;
+    uint32_t version = header.version();
     if (version != 6) {
         return ParseError::InvalidFieldValue;
     }
@@ -38,9 +38,9 @@ uint64_t computePseudoHeaderSum(const Header& header) {
 
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     os << "IPv6Header {\n"
-        << "  version: " << (h.version_tc_fl >> VERSION_OFFSET) << '\n'
-        << "  traffic_class: " << ((h.version_tc_fl >> TC_OFFSET) & TC_FLAG) << '\n'
-        << "  flow_label: 0x" << std::hex << std::setfill('0') << std::setw(5) << (h.version_tc_fl & FL_FLAG) << std::dec << '\n'
+        << "  version: " << static_cast<int>(h.version()) << '\n'
+        << "  traffic_class: " << static_cast<int>(h.tc()) << '\n'
+        << "  flow_label: 0x" << std::hex << std::setfill('0') << std::setw(5) << h.fl() << std::dec << '\n'
         << "  payload_length: " << h.payload_length << '\n'
         << "  next_header: " << static_cast<int>(h.next_header) << '\n'
         << "  hop_limit: " << static_cast<int>(h.hop_limit) << '\n'

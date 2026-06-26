@@ -19,8 +19,6 @@ constexpr size_t MAX_DATA_OFFSET = 15;
 constexpr size_t MIN_HEADER_LEN = 4 * MIN_DATA_OFFSET;
 constexpr size_t MAX_HEADER_LEN = 4 * MAX_DATA_OFFSET;
 
-constexpr uint8_t DATA_OFFSET_OFFSET = 4;
-
 #pragma pack(push, 1)
 struct Header {
     uint16_t src_port;
@@ -32,6 +30,8 @@ struct Header {
     uint16_t window_size;
     uint16_t checksum;
     uint16_t urgent_pointer;
+
+    constexpr uint8_t data_offset() const noexcept { return data_offset_reserved >> 4; }
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == MIN_HEADER_LEN);

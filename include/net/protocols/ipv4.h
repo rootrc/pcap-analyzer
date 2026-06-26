@@ -17,11 +17,6 @@ constexpr size_t MAX_IHL = 15;
 constexpr size_t MIN_HEADER_LEN = 4 * MIN_IHL;
 constexpr size_t MAX_HEADER_LEN = 4 * MAX_IHL;
 
-constexpr uint8_t VERSION_OFFSET = 4;
-constexpr uint8_t IHL_FLAG = 0x0F;
-constexpr uint8_t FLAG_OFFSET = 13;
-constexpr uint16_t FRAGMENT_FLAG = 0x1FFF;
-
 #pragma pack(push, 1)
 struct Header {
     uint8_t version_ihl;
@@ -34,6 +29,11 @@ struct Header {
     uint16_t checksum;
     uint32_t src_ip;
     uint32_t dst_ip;
+
+    constexpr uint8_t version() const noexcept { return version_ihl >> 4; }
+    constexpr uint8_t ihl() const noexcept { return version_ihl & 0x0F; }
+    constexpr uint8_t flags() const noexcept { return flags_fragment >> 13; }
+    constexpr uint16_t fragment() const noexcept { return flags_fragment & 0x1FFF; }
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == MIN_HEADER_LEN);
