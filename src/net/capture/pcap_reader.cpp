@@ -3,23 +3,27 @@
 namespace net::pcap {
 
 ParseError Reader::next(Capture& out) {
-    if (fread(buffer_, 1, PACKET_HEADER_LEN, f_) != PACKET_HEADER_LEN) {
-        return ParseError::UnexpectedEofF;
-    }
-    std::span<const uint8_t> span{buffer_, PACKET_HEADER_LEN};
-    if (auto err = parse(span, out.packetHeader, endian_); err != ParseError::None) return err;
+    while (true) {
+        if (fread(buffer_, 1, PACKET_HEADER_LEN, f_) != PACKET_HEADER_LEN) {
+            return ParseError::UnexpectedEofF;
+        }
+        std::span<const uint8_t> span{buffer_, PACKET_HEADER_LEN};
+        if (auto err = parse(span, out.packetHeader, endian_); err != ParseError::None) return err;
 
-    out.pkt.raw.resize(out.packetHeader.incl_len);
-    if (out.packetHeader.incl_len > 0) {
+        out.pkt.raw.resize(out.packetHeader.incl_len);
         if (fread(out.pkt.raw.data(), 1, out.packetHeader.incl_len, f_) != out.packetHeader.incl_len) {
             return ParseError::UnexpectedEofF;
         }
         out.pkt.setDatatypeFromLinktype(file_header_.linktype);
-    }
-    span = {out.pkt.raw.data(), out.pkt.raw.size()};
-    if (auto err = decode::decodePacket(span, out.pkt); err != ParseError::None) return err;
 
-    return ParseError::None;
+        span = {out.pkt.raw.data(), out.pkt.raw.size()};
+        if (auto err = decode::decodePacket(span, out.pkt); err != ParseError::None) {
+            ++skipped_;
+            last_skip_err_ = err;
+            continue;
+        }
+        return ParseError::None;
+    }
 }
 
 void Reader::printNetwork(std::ostream& os, const Capture& capture) const {
