@@ -54,37 +54,13 @@ struct Packet {
     [[nodiscard]] const tcp::Header* tcp() const noexcept { return std::get_if<tcp::Header>(&transport); }
     [[nodiscard]] const udp::Header* udp() const noexcept { return std::get_if<udp::Header>(&transport); }
     
-    void setDatatypeFromLinktype(uint32_t linktype) noexcept {
-        switch (linktype) {
-            case pcap::LINKTYPE_ETHERNET: datalink = ethernet::Header{}; return;
-            default: datalink = std::monostate{}; return;
-        }
-    }
-    
-    void setNetworkFromEthertype(uint16_t ethertype) noexcept {
-        switch (ethertype) {
-            case ethernet::ETHERTYPE_IPV4: network = ip::v4::Header{}; return;
-            case ethernet::ETHERTYPE_IPV6: network = ip::v6::Header{}; return;
-            case ethernet::ETHERTYPE_ARP: network = arp::Header{}; return;
-            default: network = std::monostate{}; return;
-        }
-    }
+    void setDatatypeFromLinktype(uint32_t linktype) noexcept;
+    void setNetworkFromEthertype(uint16_t ethertype) noexcept;
+    void setTransportFromProtocol(uint8_t protocol) noexcept;
 
-    void setTransportFromProtocol(uint8_t protocol) noexcept {
-        switch (protocol) {
-            case ip::PROTOCOL_TCP: transport = tcp::Header{}; return;
-            case ip::PROTOCOL_UDP: transport = udp::Header{}; return;
-            default: transport = std::monostate{}; return;
-        }
-    }
-
-    void reset() noexcept {
-        datalink = std::monostate{};
-        vlan_tags.clear();
-        network = std::monostate{};
-        transport = std::monostate{};
-        raw.clear();
-    }
+    void reset() noexcept;
 };
+
+std::ostream& operator<<(std::ostream& os, const Packet& pkt);
 
 }
