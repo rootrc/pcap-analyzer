@@ -14,19 +14,22 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     span = span.subspan(HEADER_LEN);
     return ParseError::None;
 }
+
+std::ostream& printMac(std::ostream& os, const uint8_t mac[6]) {
+    for (int i = 0; i < 6; ++i) {
+        if (i) os << ":";
+        os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(mac[i]) << std::dec;
+    }   
+    return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     os << "EthernetHeader {\n"
         << "  dst_mac: ";
-    for (int i = 0; i < 6; i++) {
-        os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.dst_mac[i]) << std::dec;
-        if (i < 5) os << ":";
-    }
+    printMac(os, h.dst_mac);
     os << '\n'
         << "  src_mac: ";
-    for (int i = 0; i < 6; i++) {
-        os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.src_mac[i]) << std::dec;
-        if (i < 5) os << ":";
-    }
+    printMac(os, h.src_mac);
     os << '\n'
         << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ethertype << std::dec << '\n'
         << "}";

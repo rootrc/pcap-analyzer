@@ -20,6 +20,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     span = span.subspan(HEADER_LEN);
     return ParseError::None;
 }
+
 uint64_t computePseudoHeaderSum(const Header& header) {
     uint64_t sum = 0;
 
@@ -36,6 +37,14 @@ uint64_t computePseudoHeaderSum(const Header& header) {
     return sum;
 }
 
+inline std::ostream& printIp(std::ostream& os, const uint8_t ip[16]) {
+    for (int i = 0; i < 16; i += 2) {
+        if (i) os << ':';
+        os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(ip[i]) << std::setw(2) << static_cast<int>(ip[i+1]);
+    }
+    return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     os << "IPv6Header {\n"
         << "  version: " << static_cast<int>(h.version()) << '\n'
@@ -45,16 +54,10 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  next_header: " << static_cast<int>(h.next_header) << '\n'
         << "  hop_limit: " << static_cast<int>(h.hop_limit) << '\n'
         << "  src_ip: ";
-    for (int i = 0; i < 16; i += 2) {
-        if (i) os << ':';
-        os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.src_ip[i]) << std::setw(2) << static_cast<int>(h.src_ip[i+1]);
-    }
+    printIp(os, h.src_ip);
     os << '\n'
-        << "  dst_ip: ";
-    for (int i = 0; i < 16; i += 2) {
-        if (i) os << ':';
-        os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.dst_ip[i]) << std::setw(2) << static_cast<int>(h.dst_ip[i+1]);
-    }
+       << "  dst_ip: ";
+    printIp(os, h.dst_ip);
     os << '\n'
         << "}";
     return os;

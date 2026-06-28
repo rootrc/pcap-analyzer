@@ -30,6 +30,7 @@ static_assert(sizeof(Header) == HEADER_LEN);
 
 ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
 
+std::ostream& printMac(std::ostream& os, const uint8_t mac[6]);
 std::ostream& operator<<(std::ostream& os, const Header& h);
 
 }

@@ -36,6 +36,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     span = span.subspan(header_len);
     return ParseError::None;
 }
+
 uint64_t computePseudoHeaderSum(const Header& header) {
     uint64_t sum = 0;
     
@@ -46,6 +47,20 @@ uint64_t computePseudoHeaderSum(const Header& header) {
     sum += header.protocol;
     sum += header.total_length - 4 * header.ihl();
     return sum;
+}
+
+std::ostream& printIp(std::ostream& os, const uint32_t ip) {
+    return os << ((ip >> 24) & 0xFF) << '.'
+              << ((ip >> 16) & 0xFF) << '.'
+              << ((ip >> 8) & 0xFF) << '.'
+              << (ip & 0xFF);
+}
+
+std::ostream& printIp(std::ostream& os, const uint8_t ip[4]) {
+    return os << static_cast<int>(ip[0]) << '.'
+              << static_cast<int>(ip[1]) << '.'
+              << static_cast<int>(ip[2]) << '.'
+              << static_cast<int>(ip[3]);
 }
 
 std::ostream& operator<<(std::ostream& os, const Header& h) {
@@ -63,17 +78,13 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  ttl: " << static_cast<int>(h.ttl) << '\n'
         << "  protocol: " << static_cast<int>(h.protocol) << '\n'
         << "  checksum: 0x" << std::hex << h.checksum << std::dec << '\n'
-        << "  src_ip: " 
-        << (h.src_ip >> 24) << "."
-        << ((h.src_ip >> 16) & 0xFF) << "."
-        << ((h.src_ip >> 8) & 0xFF) << "."
-        << (h.src_ip & 0xFF) << '\n'
-        << "  dst_ip: "
-        << (h.dst_ip >> 24) << "."
-        << ((h.dst_ip >> 16) & 0xFF) << "."
-        << ((h.dst_ip >> 8) & 0xFF) << "."
-        << (h.dst_ip & 0xFF) << '\n'
-        << "}";
+        << "  src_ip: " ;
+        printIp(os, h.src_ip);
+        os << '\n'
+           << "  dst_ip: ";
+        printIp(os, h.dst_ip);
+        os << '\n'
+           << "}";
     return os;
 }
 
