@@ -23,7 +23,8 @@ struct Packet {
     using NetworkHeader = std::variant<
         std::monostate,
         ip::v4::Header,
-        ip::v6::Header
+        ip::v6::Header,
+        arp::Header
     >;
     NetworkHeader network{};
 
@@ -41,6 +42,7 @@ struct Packet {
     [[nodiscard]] bool isVlan() const noexcept { return !vlan_tags.empty(); }
     [[nodiscard]] bool isIpv4() const noexcept { return std::holds_alternative<ip::v4::Header>(network); }
     [[nodiscard]] bool isIpv6() const noexcept { return std::holds_alternative<ip::v6::Header>(network); }
+    [[nodiscard]] bool isArp() const noexcept { return std::holds_alternative<arp::Header>(network); }
     [[nodiscard]] bool isTcp() const noexcept { return std::holds_alternative<tcp::Header>(transport); }
     [[nodiscard]] bool isUdp() const noexcept { return std::holds_alternative<udp::Header>(transport); }
 
@@ -48,6 +50,7 @@ struct Packet {
     [[nodiscard]] const std::vector<vlan::Header>& vlan() const noexcept { return vlan_tags; }
     [[nodiscard]] const ip::v4::Header* ipv4() const noexcept { return std::get_if<ip::v4::Header>(&network); }
     [[nodiscard]] const ip::v6::Header* ipv6() const noexcept { return std::get_if<ip::v6::Header>(&network); }
+    [[nodiscard]] const arp::Header* arp() const noexcept { return std::get_if<arp::Header>(&network); }
     [[nodiscard]] const tcp::Header* tcp() const noexcept { return std::get_if<tcp::Header>(&transport); }
     [[nodiscard]] const udp::Header* udp() const noexcept { return std::get_if<udp::Header>(&transport); }
     
@@ -57,11 +60,12 @@ struct Packet {
             default: datalink = std::monostate{}; return;
         }
     }
-
+    
     void setNetworkFromEthertype(uint16_t ethertype) noexcept {
         switch (ethertype) {
             case ethernet::ETHERTYPE_IPV4: network = ip::v4::Header{}; return;
             case ethernet::ETHERTYPE_IPV6: network = ip::v6::Header{}; return;
+            case ethernet::ETHERTYPE_ARP: network = arp::Header{}; return;
             default: network = std::monostate{}; return;
         }
     }

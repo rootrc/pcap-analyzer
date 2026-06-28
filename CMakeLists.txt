@@ -15,6 +15,7 @@ add_library(network_lib
     src/net/protocols/vlan.cpp
     src/net/protocols/ipv4.cpp
     src/net/protocols/ipv6.cpp
+    src/net/protocols/arp.cpp
     src/net/protocols/tcp.cpp
     src/net/protocols/udp.cpp
 )
@@ -88,6 +89,7 @@ if(BUILD_TESTING)
         vlan
         ipv4
         ipv6
+        arp
         tcp
         udp
     )

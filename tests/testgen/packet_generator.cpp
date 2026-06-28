@@ -27,28 +27,19 @@ void makePcapPacketHeader(uint8_t* data, uint32_t captured_len, net::Endian endi
     memcpy(data, &h, net::pcap::PACKET_HEADER_LEN);
 }
 
-inline uint16_t getRandomIPNetwork() {
-    int random = std::rand();
-    if (random % 2 == 0) {
-        return net::ethernet::ETHERTYPE_IPV4;
-    } else if (random % 2 == 1) {
-        return net::ethernet::ETHERTYPE_IPV6;
+inline uint16_t getRandomNetwork(bool vlan = true) {
+    constexpr uint16_t networks[] = {
+        net::ethernet::ETHERTYPE_IPV4,
+        net::ethernet::ETHERTYPE_IPV6,
+        net::ethernet::ETHERTYPE_ARP,
+        net::ethernet::ETHERTYPE_VLAN,
+        net::ethernet::ETHERTYPE_VLAN_QQ,
+    };
+    if (vlan) {
+        return networks[std::rand() % (sizeof(networks) / sizeof(networks[0]))];
+    } else {
+        return networks[std::rand() % (sizeof(networks - 2) / sizeof(networks[0]))];
     }
-    return 0;
-}
-
-inline uint16_t getRandomNetwork() {
-    int random = std::rand();
-    if (random % 4 == 0) {
-        return net::ethernet::ETHERTYPE_IPV4;
-    } else if (random % 4 == 1) {
-        return net::ethernet::ETHERTYPE_IPV6;
-    } else if (random % 4 == 2) {
-        return net::ethernet::ETHERTYPE_VLAN;
-    } else if (random % 4 == 3) {
-        return net::ethernet::ETHERTYPE_VLAN_QQ;
-    }
-    return 0;
 }
 
 inline uint8_t getRandomTransport() {
@@ -79,7 +70,7 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
         data += net::vlan::HEADER_LEN;
     }
     if (network == net::ethernet::ETHERTYPE_VLAN) {
-        network = getRandomIPNetwork();
+        network = getRandomNetwork(false);
         total_length -= net::vlan::HEADER_LEN;
         testgen::makeVlanHeader(data, network);
         data += net::vlan::HEADER_LEN;
@@ -102,6 +93,11 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
         std::span<const uint8_t> span{data, net::ip::v6::HEADER_LEN};
         net::ip::v6::parse(span, ipv6_header, net::Endian::Big);
         data += net::ip::v6::HEADER_LEN;
+    } else if (network == net::ethernet::ETHERTYPE_ARP) {
+        total_length -= net::arp::MIN_HEADER_LEN + 2 * 6 + 2 * 4;
+        testgen::makeArpHeader(data);
+        data += net::arp::MIN_HEADER_LEN + 2 * 6 + 2 * 4;
+        return;
     }
 
     if (transport == net::ip::PROTOCOL_TCP) {

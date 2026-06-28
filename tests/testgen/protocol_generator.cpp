@@ -82,6 +82,20 @@ void makeIPv6Header(uint8_t* data, uint8_t next_header, uint16_t payload_length)
     memcpy(data, &h, net::ip::v6::HEADER_LEN);
 }
 
+void makeArpHeader(uint8_t* data) {
+    net::arp::Header h{};
+
+    h.htype = net::bswap16(net::arp::HTYPE_ETHERNET);
+    h.ptype = net::bswap16(net::ethernet::ETHERTYPE_IPV4);
+    h.hlen = sizeof(net::ethernet::Header::dst_mac);
+    h.plen = sizeof(net::ip::v4::Header::src_ip);
+    h.oper = net::bswap16(randomgen::randRange16(net::arp::OPER_REQUEST, net::arp::OPER_REPLY));
+    for (size_t i = net::arp::MIN_HEADER_LEN; i < net::arp::MIN_HEADER_LEN + 2 * h.hlen + 2 * h.plen; ++i) {
+        data[i] = randomgen::rand8();
+    }
+    memcpy(data, &h, net::arp::MIN_HEADER_LEN);
+}
+
 void makeTcpHeader(uint8_t* data, uint64_t pseudo_sum, uint8_t data_offset, size_t payload_len) {
     net::tcp::Header h{};
 

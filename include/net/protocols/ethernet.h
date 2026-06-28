@@ -16,6 +16,7 @@ constexpr size_t HEADER_LEN = 14;
 
 constexpr uint16_t ETHERTYPE_IPV4 = 0x0800;
 constexpr uint16_t ETHERTYPE_IPV6 = 0x86DD;
+constexpr uint16_t ETHERTYPE_ARP = 0x0806;
 constexpr uint16_t ETHERTYPE_VLAN = 0x8100;
 constexpr uint16_t ETHERTYPE_VLAN_QQ = 0x88A8;
 

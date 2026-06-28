@@ -5,6 +5,9 @@ namespace net::decode {
 ParseError decodePacket(std::span<const uint8_t>& span, Packet& out) {
     if (auto err = decodeLayer2(span, out); err != ParseError::None) return err;
     if (auto err = decodeLayer3(span, out); err != ParseError::None) return err;
+    if (out.isArp()) {
+        return ParseError::None;
+    }
     if (auto err = decodeLayer4(span, out); err != ParseError::None) return err;
     return ParseError::None;
 }
@@ -42,6 +45,10 @@ ParseError decodeLayer3(std::span<const uint8_t>& span, Packet& out) {
             out.setTransportFromProtocol(v6.next_header);
             return ParseError::None;
         },
+        [&](arp::Header& arp) -> ParseError {
+            if (auto err = arp::parse(span, arp, Endian::Big); err != ParseError::None) return err;
+            return ParseError::None;
+        },
         [&](std::monostate) -> ParseError { return ParseError::UnsupportedNetworkType; },
     }, out.network);
 }
@@ -55,6 +62,7 @@ ParseError decodeLayer4(std::span<const uint8_t>& span, Packet& out) {
                 [&](std::monostate)   { return ParseError::UnsupportedTransportType; },
             }, out.transport);
         },
+        [&](const arp::Header& ) -> ParseError { return ParseError::None; },
         [&](std::monostate) -> ParseError { return ParseError::UnsupportedNetworkType; },
     }, out.network);
 }
