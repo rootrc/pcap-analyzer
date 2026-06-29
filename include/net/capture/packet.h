@@ -32,7 +32,9 @@ struct Packet {
     using TransportHeader = std::variant<
         std::monostate,
         tcp::Header,
-        udp::Header
+        udp::Header,
+        icmp::Header,
+        icmpv6::Header
     >;
     TransportHeader transport{};
 
@@ -45,6 +47,8 @@ struct Packet {
     [[nodiscard]] bool isArp() const noexcept { return std::holds_alternative<arp::Header>(network); }
     [[nodiscard]] bool isTcp() const noexcept { return std::holds_alternative<tcp::Header>(transport); }
     [[nodiscard]] bool isUdp() const noexcept { return std::holds_alternative<udp::Header>(transport); }
+    [[nodiscard]] bool isIcmp() const noexcept { return std::holds_alternative<icmp::Header>(transport); }
+    [[nodiscard]] bool isIcmpv6() const noexcept { return std::holds_alternative<icmpv6::Header>(transport); }
 
     [[nodiscard]] const ethernet::Header* ethernet() const noexcept { return std::get_if<ethernet::Header>(&datalink); }
     [[nodiscard]] const std::vector<vlan::Header>& vlan() const noexcept { return vlan_tags; }
@@ -53,6 +57,8 @@ struct Packet {
     [[nodiscard]] const arp::Header* arp() const noexcept { return std::get_if<arp::Header>(&network); }
     [[nodiscard]] const tcp::Header* tcp() const noexcept { return std::get_if<tcp::Header>(&transport); }
     [[nodiscard]] const udp::Header* udp() const noexcept { return std::get_if<udp::Header>(&transport); }
+    [[nodiscard]] const icmp::Header* icmp() const noexcept { return std::get_if<icmp::Header>(&transport); }
+    [[nodiscard]] const icmpv6::Header* icmpv6() const noexcept { return std::get_if<icmpv6::Header>(&transport); }
     
     void setDatatypeFromLinktype(uint32_t linktype) noexcept;
     void setNetworkFromEthertype(uint16_t ethertype) noexcept;

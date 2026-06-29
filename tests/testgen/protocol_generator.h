@@ -17,5 +17,7 @@ void makeTcpHeader(uint8_t* data, const net::ip::v6::Header& ip, uint8_t data_of
 void makeUdpHeader(uint8_t* data, uint64_t pseudo_sum, uint16_t udp_length);
 void makeUdpHeader(uint8_t* data, const net::ip::v4::Header& ip, uint16_t payload_length = 0);
 void makeUdpHeader(uint8_t* data, const net::ip::v6::Header& ip, uint16_t payload_length = 0);
+void makeIcmpHeader(uint8_t* data, size_t payload_len = 0);
+void makeIcmpv6Header(uint8_t* data, const net::ip::v6::Header& ip, size_t payload_len = 0);
 
 }

@@ -55,15 +55,26 @@ ParseError decodeLayer3(std::span<const uint8_t>& span, Packet& out) {
 
 ParseError decodeLayer4(std::span<const uint8_t>& span, Packet& out) {
     return std::visit(overload{
-        [&](const auto& ip) -> ParseError {
+        [&](const ip::v4::Header& ip) -> ParseError {
             return std::visit(overload{
-                [&](tcp::Header& tcp) { return tcp::parse(span, tcp, ip, Endian::Big); },
-                [&](udp::Header& udp) { return udp::parse(span, udp, ip, Endian::Big); },
-                [&](std::monostate)   { return ParseError::UnsupportedTransportType; },
+                [&](tcp::Header& h) { return tcp::parse(span, h, ip, Endian::Big); },
+                [&](udp::Header& h) { return udp::parse(span, h, ip, Endian::Big); },
+                [&](icmp::Header& h) { return icmp::parse(span, h, Endian::Big); },
+                [&](icmpv6::Header&) { return ParseError::UnsupportedTransportType; },
+                [&](std::monostate) { return ParseError::UnsupportedTransportType; },
+            }, out.transport);
+        },
+        [&](const ip::v6::Header& ip) -> ParseError {
+            return std::visit(overload{
+                [&](tcp::Header& h) { return tcp::parse(span, h, ip, Endian::Big); },
+                [&](udp::Header& h) { return udp::parse(span, h, ip, Endian::Big); },
+                [&](icmp::Header&) { return ParseError::UnsupportedTransportType; },
+                [&](icmpv6::Header& h) { return icmpv6::parse(span, h, ip, Endian::Big); },
+                [&](std::monostate) { return ParseError::UnsupportedTransportType; },
             }, out.transport);
         },
         [&](const arp::Header& ) -> ParseError { return ParseError::None; },
-        [&](std::monostate) -> ParseError { return ParseError::UnsupportedNetworkType; },
+        [&](std::monostate) -> ParseError { return ParseError::UnsupportedTransportType; },
     }, out.network);
 }
 

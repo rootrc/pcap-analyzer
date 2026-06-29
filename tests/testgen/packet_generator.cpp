@@ -38,16 +38,22 @@ inline uint16_t getRandomNetwork(bool vlan = true) {
     if (vlan) {
         return networks[std::rand() % (sizeof(networks) / sizeof(networks[0]))];
     } else {
-        return networks[std::rand() % (sizeof(networks - 2) / sizeof(networks[0]))];
+        return networks[std::rand() % ((sizeof(networks)) / sizeof(networks[0]) - 2)];
     }
 }
 
-inline uint8_t getRandomTransport() {
+inline uint8_t getRandomTransport(uint16_t network) {
     int random = std::rand();
-    if (random % 2 == 0) {
+    if (random % 3 == 0) {
         return net::ip::PROTOCOL_UDP;
-    } else if (random % 2 == 1) {
+    } else if (random % 3 == 1) {
         return net::ip::PROTOCOL_TCP;
+    } else if (random % 3 == 2) {
+        if (network == net::ethernet::ETHERTYPE_IPV4) {
+            return net::ip::PROTOCOL_ICMP;
+        } else if (network == net::ethernet::ETHERTYPE_IPV6) {
+            return net::ip::PROTOCOL_ICMPV6;
+        }
     }
     return 0;
 }
@@ -76,7 +82,7 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
         data += net::vlan::HEADER_LEN;
     }
 
-    uint8_t transport = getRandomTransport();
+    uint8_t transport = getRandomTransport(network);
     
     net::ip::v4::Header ipv4_header{};
     net::ip::v6::Header ipv6_header{};
@@ -117,6 +123,14 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
             testgen::makeUdpHeader(data, ipv6_header, total_length);
         }
         data += net::udp::HEADER_LEN;
+    } else if (transport == net::ip::PROTOCOL_ICMP) {
+        total_length -= net::icmp::HEADER_LEN;
+        testgen::makeIcmpHeader(data, total_length);
+        data += net::icmp::HEADER_LEN;
+    } else if (transport == net::ip::PROTOCOL_ICMPV6) {
+        total_length -= net::icmpv6::HEADER_LEN;
+        testgen::makeIcmpv6Header(data, ipv6_header, total_length);
+        data += net::icmpv6::HEADER_LEN;
     }
 }
 

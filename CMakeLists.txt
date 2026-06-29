@@ -19,6 +19,8 @@ add_library(network_lib
     src/net/protocols/arp.cpp
     src/net/protocols/tcp.cpp
     src/net/protocols/udp.cpp
+    src/net/protocols/icmp.cpp
+    src/net/protocols/icmpv6.cpp
 )
 
 target_include_directories(network_lib
@@ -93,6 +95,8 @@ if(BUILD_TESTING)
         arp
         tcp
         udp
+        icmp
+        icmpv6
     )
 
     foreach(test IN LISTS PROTOCOL_TESTS)

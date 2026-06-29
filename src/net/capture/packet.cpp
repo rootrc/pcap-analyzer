@@ -22,6 +22,8 @@ void Packet::setTransportFromProtocol(uint8_t protocol) noexcept {
     switch (protocol) {
         case ip::PROTOCOL_TCP: transport = tcp::Header{}; return;
         case ip::PROTOCOL_UDP: transport = udp::Header{}; return;
+        case ip::PROTOCOL_ICMP: transport = icmp::Header{}; return;
+        case ip::PROTOCOL_ICMPV6: transport = icmpv6::Header{}; return;
         default: transport = std::monostate{}; return;
     }
 }
@@ -44,6 +46,8 @@ std::ostream& operator<<(std::ostream& os, const Packet& pkt) {
     if (pkt.arp()) os << *pkt.arp() << '\n';
     if (pkt.udp()) os << *pkt.udp() << '\n';
     if (pkt.tcp()) os << *pkt.tcp() << '\n';
+    if (pkt.icmp()) os << *pkt.icmp() << '\n';
+    if (pkt.icmpv6()) os << *pkt.icmpv6() << '\n';
     return os;
 }
 

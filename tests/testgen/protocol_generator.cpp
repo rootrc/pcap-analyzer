@@ -156,4 +156,75 @@ void makeUdpHeader(uint8_t* data, const net::ip::v6::Header& ip, uint16_t payloa
     makeUdpHeader(data, net::ip::v6::computePseudoHeaderSum(ip), net::udp::HEADER_LEN + payload_length);
 }
 
+void makeIcmpHeader(uint8_t* data, size_t payload_len) {
+    using namespace net::icmp;
+    net::icmp::Header h{};
+
+    static constexpr uint8_t types[] = {
+        TYPE_ECHO_REPLY, TYPE_UNREACHABLE, TYPE_SOURCE_QUENCH,
+        TYPE_REDIRECT, TYPE_ECHO_REQUEST, TYPE_TTL_EXCEEDED,
+        TYPE_PARAM_PROBLEM, TYPE_TIMESTAMP, TYPE_TIMESTAMP_REPLY,
+        TYPE_INFO_REQUEST, TYPE_INFO_REPLY
+    };
+    h.type = types[std::rand() % (sizeof(types) / sizeof(types[0]))];
+    switch (h.type) {
+        case TYPE_UNREACHABLE: h.code = randomgen::randRange8(CODE_NET_UNREACHABLE, CODE_PORT_UNREACHABLE); break;
+        case TYPE_REDIRECT: h.code = randomgen::randRange8(CODE_REDIRECT_NET, CODE_REDIRECT_TOS_HOST); break;
+        case TYPE_TTL_EXCEEDED: h.code = randomgen::randRange8(CODE_TTL_IN_TRANSIT, CODE_TTL_REASSEMBLY); break;
+        case TYPE_PARAM_PROBLEM: h.code = randomgen::randRange8(CODE_PARAM_BAD_HEADER, CODE_PARAM_MISSING_OPT); break;
+        default: h.code = 0; break;
+    }
+    if (h.type == TYPE_ECHO_REQUEST || h.type == TYPE_ECHO_REPLY) {
+        h.echo.id = randomgen::rand16();
+        h.echo.seq = randomgen::rand16();
+    } else if (h.type == TYPE_REDIRECT) {
+        h.gateway = randomgen::rand32();
+    } else if (h.type == TYPE_PARAM_PROBLEM) {
+        h.param_problem.pointer = randomgen::rand8();
+    }
+    for (size_t i = HEADER_LEN; i < HEADER_LEN + payload_len; ++i) {
+        data[i] = randomgen::rand8();
+    }
+    
+    memcpy(data, &h, HEADER_LEN);
+    h.checksum = checksum(data, HEADER_LEN + payload_len);
+    data[2] = h.checksum >> 8;
+    data[3] = h.checksum & 0xFF;
+}
+
+void makeIcmpv6Header(uint8_t* data, const net::ip::v6::Header& ip, size_t payload_len) {
+    using namespace net::icmpv6;
+    net::icmpv6::Header h{};
+
+    static constexpr uint8_t types[] = {
+        TYPE_UNREACHABLE, TYPE_PACKET_TOO_BIG, TYPE_TTL_EXCEEDED,
+        TYPE_PARAM_PROBLEM, TYPE_ECHO_REQUEST, TYPE_ECHO_REPLY,
+        TYPE_ROUTER_SOLICIT, TYPE_ROUTER_ADVERT,
+        TYPE_NEIGHBOR_SOLICIT, TYPE_NEIGHBOR_ADVERT
+    };
+    h.type = types[std::rand() % (sizeof(types) / sizeof(types[0]))];
+    switch (h.type) {
+        case TYPE_UNREACHABLE: h.code = randomgen::randRange8(CODE_UNREACH_NO_ROUTE, CODE_UNREACH_PORT); break;
+        case TYPE_TTL_EXCEEDED: h.code = randomgen::randRange8(CODE_TTL_IN_TRANSIT, CODE_TTL_REASSEMBLY); break;
+        case TYPE_PARAM_PROBLEM: h.code = randomgen::randRange8(CODE_PARAM_BAD_HEADER, CODE_PARAM_UNKNOWN_OPTION); break;
+        default: h.code = 0; break;
+    }
+    if (h.type == TYPE_ECHO_REQUEST || h.type == TYPE_ECHO_REPLY) {
+        h.echo.id = randomgen::rand16();
+        h.echo.seq = randomgen::rand16();
+    } else if (h.type == TYPE_PACKET_TOO_BIG) {
+        h.mtu = net::bswap32(randomgen::randRange32(net::icmpv6::MIN_MTU, 9000));
+    } else if (h.type == TYPE_PARAM_PROBLEM) {
+        h.pointer = randomgen::rand32();
+    }
+    for (size_t i = HEADER_LEN; i < HEADER_LEN + payload_len; ++i) {
+        data[i] = randomgen::rand8();
+    }
+    
+    memcpy(data, &h, HEADER_LEN);
+    h.checksum = checksum(data, HEADER_LEN + payload_len, net::ip::v6::computePseudoHeaderSum(ip));
+    data[2] = h.checksum >> 8;
+    data[3] = h.checksum & 0xFF;
+}
+
 }

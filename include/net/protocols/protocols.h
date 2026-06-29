@@ -8,3 +8,5 @@
 #include <net/protocols/arp.h>
 #include <net/protocols/tcp.h>
 #include <net/protocols/udp.h>
+#include <net/protocols/icmp.h>
+#include <net/protocols/icmpv6.h>
