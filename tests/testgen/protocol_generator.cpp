@@ -32,7 +32,10 @@ void makeEthernetHeader(uint8_t* data, uint16_t ethertype) {
 
 void makeVlanHeader(uint8_t* data, uint16_t ethertype) {
     net::vlan::Header h{};
-    h.tci = randomgen::rand32();
+    do {
+        h.tci = randomgen::rand32();
+    } while (h.vid() == net::vlan::VID_RESERVED);
+    h.tci = net::bswap16(h.tci);
     h.ethertype = net::bswap16(ethertype);
     memcpy(data, &h, net::vlan::HEADER_LEN);
 }
