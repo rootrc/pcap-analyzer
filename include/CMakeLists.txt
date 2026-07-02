@@ -1,0 +1,21 @@
+add_library(network_lib
+    ../src/net/capture/packet.cpp
+    ../src/net/capture/decoder.cpp
+    ../src/net/capture/pcap.cpp
+    ../src/net/capture/pcap_reader.cpp
+    ../src/net/core/checksum.cpp
+    ../src/net/protocols/ethernet.cpp
+    ../src/net/protocols/vlan.cpp
+    ../src/net/protocols/ipv4.cpp
+    ../src/net/protocols/ipv6.cpp
+    ../src/net/protocols/arp.cpp
+    ../src/net/protocols/tcp.cpp
+    ../src/net/protocols/udp.cpp
+    ../src/net/protocols/icmp.cpp
+    ../src/net/protocols/icmpv6.cpp
+)
+
+target_include_directories(network_lib
+    PUBLIC
+        ${PCAP_ANALYZER_INCLUDE_DIR}
+)
