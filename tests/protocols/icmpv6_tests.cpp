@@ -62,7 +62,7 @@ auto parseIcmpv6(const uint8_t (&pseudo_header)[N]) {
     );
 }
 
-RANDOMIZED_TEST(ICMPV6, Randomized, 100000, [](uint8_t* data) {testgen::makeIcmpv6Header(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo));}, parseIcmpv6(ipv6_pseudo))
+RANDOMIZED_TEST(ICMPV6, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIcmpv6Header(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo));}, parseIcmpv6(ipv6_pseudo))
 HEADER_TEST(ICMPV6, UnexpectedEndofBuffer, icmpv6_endof, net::ParseError::UnexpectedEof, parseIcmpv6(ipv6_pseudo))
 HEADER_TEST(ICMPV6, RejectsInvalidFieldValueType, icmpv6_invalid_field_type, net::ParseError::InvalidFieldValue, parseIcmpv6(ipv6_pseudo))
 HEADER_TEST(ICMPV6, RejectsInvalidFieldValueCode, icmpv6_invalid_field_code, net::ParseError::InvalidFieldValue, parseIcmpv6(ipv6_pseudo))

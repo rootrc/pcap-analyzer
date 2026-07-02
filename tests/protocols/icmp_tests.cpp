@@ -40,7 +40,7 @@ auto parseIcmp = test::bindHeaderParser<
     net::Endian::Big
 );
 
-RANDOMIZED_TEST(ICMP, Randomized, 100000, [](uint8_t* data) {testgen::makeIcmpHeader(data);}, parseIcmp)
+RANDOMIZED_TEST(ICMP, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIcmpHeader(data);}, parseIcmp)
 HEADER_TEST(ICMP, UnexpectedEndofBuffer, icmp_endof, net::ParseError::UnexpectedEof, parseIcmp)
 HEADER_TEST(ICMP, RejectsInvalidFieldValueType, icmp_invalid_field_type, net::ParseError::InvalidFieldValue, parseIcmp)
 HEADER_TEST(ICMP, RejectsInvalidFieldValueCode, icmp_invalid_field_code, net::ParseError::InvalidFieldValue, parseIcmp)

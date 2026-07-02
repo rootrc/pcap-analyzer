@@ -20,5 +20,5 @@ auto parseVlan = test::bindHeaderParser<
     net::Endian::Big
 );
 
-RANDOMIZED_TEST(VLAN, Randomized, 100, [](uint8_t* data) {testgen::makeVlanHeader(data, 0);}, parseVlan)
+RANDOMIZED_TEST(VLAN, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeVlanHeader(data, 0);}, parseVlan)
 HEADER_TEST(VLAN, UnexpectedEndofBuffer, vlan_endof, net::ParseError::UnexpectedEof, parseVlan)

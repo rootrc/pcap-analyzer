@@ -32,6 +32,6 @@ auto parseIpv6 = test::bindHeaderParser<
     net::Endian::Big
 );
 
-RANDOMIZED_TEST(IPV6, Randomized, 100, [](uint8_t* data) {testgen::makeIPv6Header(data, 0);}, parseIpv6)
+RANDOMIZED_TEST(IPV6, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIPv6Header(data, 0);}, parseIpv6)
 HEADER_TEST(IPV6, UnexpectedEndofBuffer, ipv6_endof, net::ParseError::UnexpectedEof, parseIpv6)
 HEADER_TEST(IPV6, RejectsInvalidFieldValue, ipv6_field, net::ParseError::InvalidFieldValue, parseIpv6)

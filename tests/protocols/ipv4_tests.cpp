@@ -77,7 +77,7 @@ auto parseIpv4 = test::bindHeaderParser<
     net::Endian::Big
 );
 
-RANDOMIZED_TEST(IPV4, Randomized, 100, [](uint8_t* data) {testgen::makeIPv4Header(data, 0, randomgen::randRange8(net::ip::v4::MIN_IHL, net::ip::v4::MAX_IHL));}, parseIpv4)
+RANDOMIZED_TEST(IPV4, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIPv4Header(data, 0, randomgen::randRange8(net::ip::v4::MIN_IHL, net::ip::v4::MAX_IHL));}, parseIpv4)
 HEADER_TEST(IPV4, UnexpectedEndofBuffer, ipv4_endof, net::ParseError::UnexpectedEof, parseIpv4)
 HEADER_TEST(IPV4, RejectsMalformedHeader, ipv4_malformed, net::ParseError::MalformedHeader, parseIpv4)
 HEADER_TEST(IPV4, UnexpectedEndofBufferOptions, ipv4_endof_options, net::ParseError::UnexpectedEof, parseIpv4)

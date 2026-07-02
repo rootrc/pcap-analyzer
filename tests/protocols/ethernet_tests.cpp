@@ -21,5 +21,5 @@ auto parseEthernet = test::bindHeaderParser<
     net::Endian::Big
 );
 
-RANDOMIZED_TEST(ETHERNET, Randomized, 100, [](uint8_t* data) {testgen::makeEthernetHeader(data, 0);}, parseEthernet)
+RANDOMIZED_TEST(ETHERNET, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeEthernetHeader(data, 0);}, parseEthernet)
 HEADER_TEST(ETHERNET, UnexpectedEndofBuffer, ethernet_endof, net::ParseError::UnexpectedEof, parseEthernet)

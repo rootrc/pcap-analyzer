@@ -8,7 +8,7 @@
 
 net::ParseError decodePcapPacket(std::span<const uint8_t>& span, net::Packet& out) {
     span = span.subspan(net::pcap::PACKET_HEADER_LEN);
-    out.setDatatypeFromLinktype(1);
+    out.setDatatypeFromLinktype(net::pcap::LINKTYPE_ETHERNET);
     return net::decode::decodePacket(span, out);
 }
 
@@ -19,4 +19,4 @@ auto parsePcapPacket = test::bindHeaderParser<
     decodePcapPacket
 );
 
-RANDOMIZED_TEST(PCAP_PACKET, Randomized, 100, [](uint8_t* data) {testgen::makePcapPacket(data, 1024);}, parsePcapPacket)
+RANDOMIZED_TEST(PCAP_PACKET, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makePcapPacket(data, 1024);}, parsePcapPacket)

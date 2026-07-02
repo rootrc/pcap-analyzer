@@ -18,7 +18,6 @@ namespace {
         0xC0, 0xA8, 0x01, 0x64,
         0xC0, 0xA8, 0x01, 0x01,
     };
-
     inline constexpr uint8_t ipv6_pseudo[] = {
         0x60, 0x00, 0x00, 0x00,
         0x00, 0x08,
@@ -70,8 +69,8 @@ auto parseUdp(const uint8_t (&pseudo_header)[N]) {
     );
 }
 
-RANDOMIZED_TEST(UDP, RandomizedIPv4, 50, [](uint8_t* data) {testgen::makeUdpHeader(data, test::makePseudoHeader<net::ip::v4::Header>(ipv4_pseudo));}, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
-RANDOMIZED_TEST(UDP, RandomizedIPv6, 50, [](uint8_t* data) {testgen::makeUdpHeader(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo));}, parseUdp<net::ip::v6::Header>(ipv6_pseudo))
+RANDOMIZED_TEST(UDP, RandomizedIPv4, g_randomizedIterations / 2, [](uint8_t* data) {testgen::makeUdpHeader(data, test::makePseudoHeader<net::ip::v4::Header>(ipv4_pseudo));}, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
+RANDOMIZED_TEST(UDP, RandomizedIPv6, g_randomizedIterations / 2, [](uint8_t* data) {testgen::makeUdpHeader(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo));}, parseUdp<net::ip::v6::Header>(ipv6_pseudo))
 HEADER_TEST(UDP, UnexpectedEndofBuffer, udp_v4_endof, net::ParseError::UnexpectedEof, parseUdp<net::ip::v4::Header>(ipv4_pseudo))
 HEADER_TEST(UDP, RejectsMalformedHeader, udp_v6_malformed, net::ParseError::MalformedHeader, parseUdp<net::ip::v6::Header>(ipv6_pseudo))
 HEADER_TEST(UDP, RejectsChecksumMismatch, udp_v4_checksum, net::ParseError::ChecksumMismatch, parseUdp<net::ip::v4::Header>(ipv4_pseudo))

@@ -7,6 +7,8 @@
 #include <tuple>
 #include <utility>
 
+extern int g_randomizedIterations;
+
 namespace test {
 
 template <typename ParseFn, size_t N>

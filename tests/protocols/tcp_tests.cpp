@@ -106,8 +106,8 @@ auto parseTcp(const uint8_t (&pseudo_header)[N]) {
     );
 }
 
-RANDOMIZED_TEST(TCP, RandomizedIPv4, 50, [](uint8_t* data) {testgen::makeTcpHeader(data, test::makePseudoHeader<net::ip::v4::Header>(ipv4_pseudo), 5);}, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
-RANDOMIZED_TEST(TCP, RandomizedIPv6, 50, [](uint8_t* data) {testgen::makeTcpHeader(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo), 5);}, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
+RANDOMIZED_TEST(TCP, RandomizedIPv4, g_randomizedIterations / 2, [](uint8_t* data) {testgen::makeTcpHeader(data, test::makePseudoHeader<net::ip::v4::Header>(ipv4_pseudo), 5);}, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
+RANDOMIZED_TEST(TCP, RandomizedIPv6, g_randomizedIterations / 2, [](uint8_t* data) {testgen::makeTcpHeader(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo), 5);}, parseTcp<net::ip::v6::Header>(ipv6_pseudo))
 HEADER_TEST(TCP, ParsesValidOptionsIPv4, tcp_v4_options_valid, net::ParseError::None, parseTcp<net::ip::v4::Header>(ipv4_pseudo_options))
 HEADER_TEST(TCP, UnexpectedEndofBuffer, tcp_v4_endof, net::ParseError::UnexpectedEof, parseTcp<net::ip::v4::Header>(ipv4_pseudo))
 HEADER_TEST(TCP, RejectsMalformedHeader, tcp_v4_malformed, net::ParseError::MalformedHeader, parseTcp<net::ip::v4::Header>(ipv4_pseudo))

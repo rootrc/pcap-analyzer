@@ -60,6 +60,8 @@ if(BUILD_TESTING)
             network_lib
     )
 
+    set(RANDOMIZED_ITERATIONS 100 CACHE STRING "Number of randomized test iterations")
+
     set(CAPTURE_TESTS
         packet
         pcap_file_header
@@ -83,8 +85,11 @@ if(BUILD_TESTING)
             PRIVATE
                 ${CMAKE_CURRENT_SOURCE_DIR}/tests
         )
-
-        gtest_discover_tests(${test}_tests)
+        
+        gtest_discover_tests(
+            ${test}_tests
+            EXTRA_ARGS -n ${RANDOMIZED_ITERATIONS}    
+        )
     endforeach()
 
     set(PROTOCOL_TESTS
@@ -117,6 +122,9 @@ if(BUILD_TESTING)
                 ${CMAKE_CURRENT_SOURCE_DIR}/tests
         )
 
-        gtest_discover_tests(${test}_tests)
+        gtest_discover_tests(
+            ${test}_tests
+            EXTRA_ARGS -n ${RANDOMIZED_ITERATIONS}
+        )
     endforeach()
 endif()

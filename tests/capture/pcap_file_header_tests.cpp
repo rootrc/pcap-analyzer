@@ -62,7 +62,7 @@ auto parsePcapFileHeader = test::bindHeaderParser<
     net::Endian::Little
 );
 
-RANDOMIZED_TEST(PCAP_FILE, Randomized, 100, [](uint8_t* data) {testgen::makePcapFileHeader(data); }, parsePcapFileHeader)
+RANDOMIZED_TEST(PCAP_FILE, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makePcapFileHeader(data); }, parsePcapFileHeader)
 HEADER_TEST(PCAP_FILE, UnexpectedEndofBuffer, file_header_endof, net::ParseError::UnexpectedEof, parsePcapFileHeader)
 HEADER_TEST(PCAP_FILE, RejectsUnsupportedVersion, file_header_version, net::ParseError::UnsupportedVersion, parsePcapFileHeader)
 HEADER_TEST(PCAP_FILE, RejectsInvalidFieldValue0, file_header_field_magic, net::ParseError::InvalidFieldValue, parsePcapFileHeader)
