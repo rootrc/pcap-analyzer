@@ -26,11 +26,13 @@ public:
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
 
+    const Capture& currentCapture() const { return capture_; }
     const FileHeader& fileHeader() const { return file_header_; }
     const FlowTable& flowTable() const { return flowTable_; }
     Endian endian() const { return endian_; }
     
-    ParseError next(Capture& out);
+    void readAllPackets();
+    ParseError readPacket();
 
     uint64_t skipped() const { return skipped_; }
     ParseError lastSkipErr() const { return last_skip_err_; }
@@ -39,6 +41,7 @@ public:
     
 private:
     FILE* f_;
+    Capture capture_{};
     FileHeader file_header_{};
     FlowTable flowTable_{};
     bool is_nsec_;

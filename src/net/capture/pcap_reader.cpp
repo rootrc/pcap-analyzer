@@ -2,7 +2,11 @@
 
 namespace net::pcap {
 
-ParseError Reader::next(Capture& out) {
+void Reader::readAllPackets() {
+    while (readPacket() == ParseError::None);
+}
+
+ParseError Reader::readPacket() {
     while (true) {
         if (fread(buffer_, 1, PACKET_HEADER_LEN, f_) != PACKET_HEADER_LEN) {
             flowTable_.flush();
@@ -10,29 +14,29 @@ ParseError Reader::next(Capture& out) {
         }
 
         std::span<const uint8_t> packet_header_span{buffer_, PACKET_HEADER_LEN};
-        if (auto err = parse(packet_header_span, out.packetHeader, endian_); err != ParseError::None) {
+        if (auto err = parse(packet_header_span, capture_.packetHeader, endian_); err != ParseError::None) {
             return err;
         }
 
-        out.pkt.raw.resize(out.packetHeader.incl_len);
-        if (fread(out.pkt.raw.data(), 1, out.packetHeader.incl_len, f_) != out.packetHeader.incl_len) {
+        capture_.pkt.raw.resize(capture_.packetHeader.incl_len);
+        if (fread(capture_.pkt.raw.data(), 1, capture_.packetHeader.incl_len, f_) != capture_.packetHeader.incl_len) {
             return ParseError::UnexpectedEofF;
         }
-        out.pkt.setDatatypeFromLinktype(file_header_.linktype);
+        capture_.pkt.setDatatypeFromLinktype(file_header_.linktype);
 
         if (is_nsec_) {
-            out.ts_us = (uint64_t)out.packetHeader.ts_sec * 1000000 + out.packetHeader.ts_usec / 1000;
+            capture_.ts_us = (uint64_t)capture_.packetHeader.ts_sec * 1000000 + capture_.packetHeader.ts_usec / 1000;
         } else {
-            out.ts_us = (uint64_t)out.packetHeader.ts_sec * 1000000 + out.packetHeader.ts_usec;
+            capture_.ts_us = (uint64_t)capture_.packetHeader.ts_sec * 1000000 + capture_.packetHeader.ts_usec;
         }
 
-        std::span<const uint8_t> packet_span{out.pkt.raw.data(), out.pkt.raw.size()};
-        if (auto err = decode::decodePacket(packet_span, out.pkt); err != ParseError::None) {
+        std::span<const uint8_t> packet_span{capture_.pkt.raw.data(), capture_.pkt.raw.size()};
+        if (auto err = decode::decodePacket(packet_span, capture_.pkt); err != ParseError::None) {
             ++skipped_;
             last_skip_err_ = err;
             continue;
         }
-        if (auto err = flowTable_.addPacket(out.pkt, out.ts_us); err != ParseError::None) {
+        if (auto err = flowTable_.addPacket(capture_.pkt, capture_.ts_us); err != ParseError::None) {
             ++skipped_;
             last_skip_err_ = err;
             continue;
