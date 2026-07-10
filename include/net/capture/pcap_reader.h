@@ -2,6 +2,7 @@
 
 #include <net/capture/packet.h>
 #include <net/capture/decoder.h>
+#include <net/analysis/flow_tracker.h>
 
 #include <cstdio>
 
@@ -26,6 +27,7 @@ public:
     Reader& operator=(const Reader&) = delete;
 
     const FileHeader& fileHeader() const { return file_header_; }
+    const FlowTable& flowTable() const { return flowTable_; }
     Endian endian() const { return endian_; }
     
     ParseError next(Capture& out);
@@ -38,6 +40,7 @@ public:
 private:
     FILE* f_;
     FileHeader file_header_{};
+    FlowTable flowTable_{};
     bool is_nsec_;
     Endian endian_;
     uint8_t buffer_[FILE_HEADER_LEN];

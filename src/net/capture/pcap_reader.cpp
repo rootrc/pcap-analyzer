@@ -5,6 +5,7 @@ namespace net::pcap {
 ParseError Reader::next(Capture& out) {
     while (true) {
         if (fread(buffer_, 1, PACKET_HEADER_LEN, f_) != PACKET_HEADER_LEN) {
+            flowTable_.flush();
             return ParseError::UnexpectedEofF;
         }
 
@@ -27,6 +28,11 @@ ParseError Reader::next(Capture& out) {
 
         std::span<const uint8_t> packet_span{out.pkt.raw.data(), out.pkt.raw.size()};
         if (auto err = decode::decodePacket(packet_span, out.pkt); err != ParseError::None) {
+            ++skipped_;
+            last_skip_err_ = err;
+            continue;
+        }
+        if (auto err = flowTable_.addPacket(out.pkt, out.ts_us); err != ParseError::None) {
             ++skipped_;
             last_skip_err_ = err;
             continue;

@@ -1,4 +1,5 @@
 add_library(network_lib
+    ../src/net/analysis/flow_tracker.cpp
     ../src/net/capture/packet.cpp
     ../src/net/capture/decoder.cpp
     ../src/net/capture/pcap.cpp
