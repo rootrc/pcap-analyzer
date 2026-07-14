@@ -30,6 +30,8 @@ struct Header {
     constexpr uint8_t version() const noexcept { return version_ihl >> 4; }
     constexpr uint8_t ihl() const noexcept { return version_ihl & 0x0F; }
     constexpr uint8_t flags() const noexcept { return flags_fragment >> 13; }
+    constexpr bool dontFragment() const noexcept { return flags() & 0x2; }
+    constexpr bool moreFragments() const noexcept { return flags() & 0x1; }
     constexpr uint16_t fragment() const noexcept { return flags_fragment & 0x1FFF; }
 };
 #pragma pack(pop)

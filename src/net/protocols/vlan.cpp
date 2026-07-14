@@ -1,4 +1,5 @@
 #include <net/protocols/vlan.h>
+#include <net/protocols/ethernet.h>
 
 #include <cstring>
 #include <iomanip>
@@ -22,7 +23,7 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  pcp: " << static_cast<int>(h.pcp()) << '\n'
         << "  dei: " << static_cast<int>(h.dei()) << '\n'
         << "  vid: " << h.vid() << '\n'
-        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ethertype << std::dec << '\n'
+        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ethertype << " ("  << ethernet::ethertypeName(h.ethertype) << std::dec << ")\n"
         << "}";
     return os;
 }

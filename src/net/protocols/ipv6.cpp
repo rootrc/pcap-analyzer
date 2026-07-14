@@ -1,4 +1,5 @@
 #include <net/protocols/ipv6.h>
+#include <net/protocols/ip.h>
 #include <net/core/checksum.h>
 
 #include <cstring>
@@ -51,7 +52,7 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  traffic_class: " << static_cast<int>(h.tc()) << '\n'
         << "  flow_label: 0x" << std::hex << std::setfill('0') << std::setw(5) << h.fl() << std::dec << '\n'
         << "  payload_length: " << h.payload_length << '\n'
-        << "  next_header: " << static_cast<int>(h.next_header) << '\n'
+        << "  next_header: " << static_cast<int>(h.next_header) << " (" << ip::protocolName(h.next_header) << ")\n"
         << "  hop_limit: " << static_cast<int>(h.hop_limit) << '\n'
         << "  src_ip: ";
     printIp(os, h.src_ip);

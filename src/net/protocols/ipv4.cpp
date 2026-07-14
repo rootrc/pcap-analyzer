@@ -1,4 +1,5 @@
 #include <net/protocols/ipv4.h>
+#include <net/protocols/ip.h>
 #include <net/core/checksum.h>
 
 #include <cstring>
@@ -70,21 +71,24 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  tos: 0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.tos) << std::dec << '\n'
         << "  total_length: " << h.total_length << '\n'
         << "  identification: " << h.identification << '\n'
-        << "  flags: 0b" << ((h.flags() >> 2) & 1)
-                        << ((h.flags() >> 1) & 1)
-                        << (h.flags() & 1)
-                        << '\n'
+        << "  flags: "
+        << ((h.dontFragment()) ? "DF" : "")
+        << ((h.moreFragments()) ? "MF" : "")
+        << ((!h.dontFragment() && !h.moreFragments()) ? "none" : "")
+        << " (0b" << ((h.flags() >> 2) & 1)
+        << ((h.flags() >> 1) & 1)
+        << (h.flags() & 1) << ")\n"
         << "  fragment: " << h.fragment() << '\n'
         << "  ttl: " << static_cast<int>(h.ttl) << '\n'
-        << "  protocol: " << static_cast<int>(h.protocol) << '\n'
+        << "  protocol: " << static_cast<int>(h.protocol) << " (" << ip::protocolName(h.protocol) << ")\n"
         << "  checksum: 0x" << std::hex << h.checksum << std::dec << '\n'
         << "  src_ip: " ;
         printIp(os, h.src_ip);
-        os << '\n'
-           << "  dst_ip: ";
-        printIp(os, h.dst_ip);
-        os << '\n'
-           << "}";
+    os << '\n'
+        << "  dst_ip: ";
+    printIp(os, h.dst_ip);
+    os << '\n'
+        << "}";
     return os;
 }
 

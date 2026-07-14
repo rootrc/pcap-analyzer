@@ -57,7 +57,17 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  seq_number: " << h.seq_number << '\n'
         << "  ack_number: " << h.ack_number << '\n'
         << "  data_offset: 0x" << std::hex << static_cast<int>(h.data_offset()) << std::dec << '\n'
-        << "  flags: 0x" << std::hex << static_cast<int>(h.flags) << std::dec << '\n'
+        << "  flags: "
+        << (h.cwr() ? "CWR " : "")
+        << (h.ece() ? "ECE " : "")
+        << (h.urg() ? "URG " : "")
+        << (h.ack() ? "ACK " : "")
+        << (h.psh() ? "PSH " : "")
+        << (h.rst() ? "RST " : "")
+        << (h.syn() ? "SYN " : "")
+        << (h.fin() ? "FIN " : "")
+        << (h.flags == 0 ? "none " : "")
+        << "(0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(h.flags) << std::dec << ")\n"
         << "  window_size: " << h.window_size << '\n'
         << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.checksum << std::dec << '\n'
         << "  urgent_pointer: " << h.urgent_pointer << '\n'

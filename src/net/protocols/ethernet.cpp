@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const Header& h) {
         << "  src_mac: ";
     printMac(os, h.src_mac);
     os << '\n'
-        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ethertype << std::dec << '\n'
+        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ethertype << " ("  << ethertypeName(h.ethertype) << std::dec << ")\n"
         << "}";
     return os;
 }

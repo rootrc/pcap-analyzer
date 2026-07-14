@@ -29,6 +29,14 @@ struct Header {
     uint16_t urgent_pointer;
 
     constexpr uint8_t data_offset() const noexcept { return data_offset_reserved >> 4; }
+    constexpr bool cwr() const noexcept { return flags & 0x80; }
+    constexpr bool ece() const noexcept { return flags & 0x40; }
+    constexpr bool urg() const noexcept { return flags & 0x20; }
+    constexpr bool ack() const noexcept { return flags & 0x10; }
+    constexpr bool psh() const noexcept { return flags & 0x08; }
+    constexpr bool rst() const noexcept { return flags & 0x04; }
+    constexpr bool syn() const noexcept { return flags & 0x02; }
+    constexpr bool fin() const noexcept { return flags & 0x01; }
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == MIN_HEADER_LEN);
