@@ -18,6 +18,9 @@ constexpr uint32_t PCAP_MAGIC_USEC_LE = 0xa1b2c3d4;
 constexpr uint32_t PCAP_MAGIC_NSEC_BE = 0x4d3cb2a1;
 constexpr uint32_t PCAP_MAGIC_NSEC_LE = 0xa1b23c4d;
 
+constexpr uint16_t SUPPORTED_MAJOR_VERSION = 2;
+constexpr uint16_t SUPPORTED_MINOR_VERSION = 4;
+
 constexpr uint32_t LINKTYPE_ETHERNET = 1;
 
 #pragma pack(push, 1)

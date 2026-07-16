@@ -25,9 +25,9 @@ ParseError Reader::readPacket() {
         capture_.pkt.setDatatypeFromLinktype(file_header_.linktype);
 
         if (is_nsec_) {
-            capture_.ts_us = (uint64_t)capture_.packetHeader.ts_sec * 1000000 + capture_.packetHeader.ts_usec / 1000;
+            capture_.ts_us = static_cast<uint64_t>(capture_.packetHeader.ts_sec) * 1000000 + capture_.packetHeader.ts_usec / 1000;
         } else {
-            capture_.ts_us = (uint64_t)capture_.packetHeader.ts_sec * 1000000 + capture_.packetHeader.ts_usec;
+            capture_.ts_us = static_cast<uint64_t>(capture_.packetHeader.ts_sec) * 1000000 + capture_.packetHeader.ts_usec;
         }
 
         std::span<const uint8_t> packet_span{capture_.pkt.raw.data(), capture_.pkt.raw.size()};

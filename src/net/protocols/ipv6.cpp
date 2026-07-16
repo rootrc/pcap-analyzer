@@ -14,8 +14,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     header.version_tc_fl = toHost32(header.version_tc_fl, endian);
     header.payload_length = toHost16(header.payload_length, endian);
 
-    uint32_t version = header.version();
-    if (version != 6) {
+    if (header.version() != SUPPORTED_VERSION) {
         return ParseError::InvalidFieldValue;
     }
     span = span.subspan(HEADER_LEN);

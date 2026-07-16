@@ -5,14 +5,13 @@
 
 #include <span>
 
-
 // https://wiki.wireshark.org/VLAN
 
 namespace net::vlan {
 
 constexpr size_t HEADER_LEN = 4;
 
-constexpr uint16_t VID_RESERVED = 0xFFF;
+constexpr uint16_t VID_RESERVED = 0x0FFF;
 
 #pragma pack(push, 1)
 struct Header {

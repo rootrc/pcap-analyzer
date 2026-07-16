@@ -11,19 +11,16 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
-    uint8_t version = header.version();
-    uint8_t ihl = header.ihl();
-    size_t header_len = 4 * ihl;
-    if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN) {
+    if (header.header_length() < MIN_HEADER_LEN || header.header_length() > MAX_HEADER_LEN) {
         return ParseError::MalformedHeader;
     }
-    if (span.size() < header_len) {
+    if (span.size() < header.header_length()) {
         return ParseError::UnexpectedEof;
     }
-    if (version != 4) {
+    if (header.version() != SUPPORTED_VERSION) {
         return ParseError::InvalidFieldValue;
     }
-    if (!verifyChecksum(span.data(), header_len)) {
+    if (!verifyChecksum(span.data(), header.header_length())) {
         return ParseError::ChecksumMismatch;
     }
 
@@ -34,7 +31,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     header.src_ip = toHost32(header.src_ip, endian);
     header.dst_ip = toHost32(header.dst_ip, endian);
 
-    span = span.subspan(header_len);
+    span = span.subspan(header.header_length());
     return ParseError::None;
 }
 
@@ -46,7 +43,7 @@ uint64_t computePseudoHeaderSum(const Header& header) {
     sum += header.dst_ip >> 16;
     sum += header.dst_ip & 0xFFFF;
     sum += header.protocol;
-    sum += header.total_length - 4 * header.ihl();
+    sum += header.total_length - sizeof(uint32_t) * header.ihl();
     return sum;
 }
 

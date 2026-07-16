@@ -11,6 +11,8 @@ namespace net::ip::v6 {
 
 constexpr size_t HEADER_LEN = 40;
 
+constexpr uint16_t SUPPORTED_VERSION = 6;
+
 #pragma pack(push, 1)
 struct Header {
     uint32_t version_tc_fl;

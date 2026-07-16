@@ -11,8 +11,10 @@ namespace net::ip::v4 {
 
 constexpr size_t MIN_IHL = 5;
 constexpr size_t MAX_IHL = 15;
-constexpr size_t MIN_HEADER_LEN = 4 * MIN_IHL;
-constexpr size_t MAX_HEADER_LEN = 4 * MAX_IHL;
+constexpr size_t MIN_HEADER_LEN = sizeof(uint32_t) * MIN_IHL;
+constexpr size_t MAX_HEADER_LEN = sizeof(uint32_t) * MAX_IHL;
+
+constexpr uint16_t SUPPORTED_VERSION = 4;
 
 #pragma pack(push, 1)
 struct Header {
@@ -29,6 +31,7 @@ struct Header {
 
     constexpr uint8_t version() const noexcept { return version_ihl >> 4; }
     constexpr uint8_t ihl() const noexcept { return version_ihl & 0x0F; }
+    constexpr uint16_t header_length() const noexcept { return sizeof(uint32_t) * ihl(); }
     constexpr uint8_t flags() const noexcept { return flags_fragment >> 13; }
     constexpr bool dontFragment() const noexcept { return flags() & 0x2; }
     constexpr bool moreFragments() const noexcept { return flags() & 0x1; }

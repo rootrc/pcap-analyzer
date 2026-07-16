@@ -13,8 +13,8 @@ namespace net::tcp {
 
 constexpr size_t MIN_DATA_OFFSET = 5;
 constexpr size_t MAX_DATA_OFFSET = 15;
-constexpr size_t MIN_HEADER_LEN = 4 * MIN_DATA_OFFSET;
-constexpr size_t MAX_HEADER_LEN = 4 * MAX_DATA_OFFSET;
+constexpr size_t MIN_HEADER_LEN = sizeof(uint32_t) * MIN_DATA_OFFSET;
+constexpr size_t MAX_HEADER_LEN = sizeof(uint32_t) * MAX_DATA_OFFSET;
 
 #pragma pack(push, 1)
 struct Header {
@@ -29,6 +29,7 @@ struct Header {
     uint16_t urgent_pointer;
 
     constexpr uint8_t data_offset() const noexcept { return data_offset_reserved >> 4; }
+    constexpr size_t header_length() const noexcept { return sizeof(uint32_t) * data_offset(); }
     constexpr bool cwr() const noexcept { return flags & 0x80; }
     constexpr bool ece() const noexcept { return flags & 0x40; }
     constexpr bool urg() const noexcept { return flags & 0x20; }

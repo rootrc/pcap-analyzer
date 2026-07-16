@@ -29,7 +29,7 @@ ParseError parse(std::span<const uint8_t>& span, FileHeader& header, Endian& end
     header.snaplen = toHost32(header.snaplen, endian);
     header.linktype = toHost32(header.linktype, endian);
     
-    if (header.major_version != 2 || header.minor_version != 4) {
+    if (header.major_version != SUPPORTED_MAJOR_VERSION || header.minor_version != SUPPORTED_MINOR_VERSION) {
         return ParseError::UnsupportedVersion;
     }
     // if (header.reserved1 != 0 || header.reserved2 != 0) {

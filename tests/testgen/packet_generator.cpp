@@ -8,8 +8,8 @@ void makePcapFileHeader(uint8_t* data, net::Endian endian) {
     net::pcap::FileHeader h{};
 
     h.magic_number = (endian == net::Endian::Little) ? net::pcap::PCAP_MAGIC_USEC_LE : net::pcap::PCAP_MAGIC_USEC_BE;
-    h.major_version = net::toHost16(2, endian);
-    h.minor_version = net::toHost16(4, endian);
+    h.major_version = net::toHost16(net::pcap::SUPPORTED_MAJOR_VERSION, endian);
+    h.minor_version = net::toHost16(net::pcap::SUPPORTED_MINOR_VERSION, endian);
     h.reserved1 = 0;
     h.reserved2 = 0;
     h.snaplen = net::toHost32(65535, endian);
@@ -87,12 +87,12 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
     net::ip::v4::Header ipv4_header{};
     net::ip::v6::Header ipv6_header{};
     if (network == net::ethernet::ETHERTYPE_IPV4) {
-        uint16_t ihl = randomgen::randRange8(net::ip::v4::MIN_IHL, net::ip::v4::MAX_IHL);
-        total_length -= 4 * ihl;
-        testgen::makeIPv4Header(data, transport, ihl, total_length);
-        std::span<const uint8_t> span{data, static_cast<size_t>(4 * ihl)};
+        size_t header_length = sizeof(uint32_t) * randomgen::randRange8(net::ip::v4::MIN_IHL, net::ip::v4::MAX_IHL);
+        total_length -= header_length;
+        testgen::makeIPv4Header(data, transport, header_length / sizeof(uint32_t), total_length);
+        std::span<const uint8_t> span{data, static_cast<size_t>(header_length)};
         net::ip::v4::parse(span, ipv4_header, net::Endian::Big);
-        data += 4 * ihl;
+        data += header_length;
     } else if (network == net::ethernet::ETHERTYPE_IPV6) {
         total_length -= net::ip::v6::HEADER_LEN;
         testgen::makeIPv6Header(data, transport, total_length);
@@ -100,21 +100,22 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
         net::ip::v6::parse(span, ipv6_header, net::Endian::Big);
         data += net::ip::v6::HEADER_LEN;
     } else if (network == net::ethernet::ETHERTYPE_ARP) {
-        total_length -= net::arp::MIN_HEADER_LEN + 2 * 6 + 2 * 4;
+        total_length -= net::arp::MIN_HEADER_LEN + 2 * sizeof(net::ethernet::Header::src_mac) + 2 * sizeof(net::ip::v4::Header::src_ip);
         testgen::makeArpHeader(data);
-        data += net::arp::MIN_HEADER_LEN + 2 * 6 + 2 * 4;
+        data += net::arp::MIN_HEADER_LEN + 2 * sizeof(net::ethernet::Header::src_mac) + 2 * sizeof(net::ip::v4::Header::src_ip);
         return;
     }
 
     if (transport == net::ip::PROTOCOL_TCP) {
         uint16_t data_offset = randomgen::randRange8(net::tcp::MIN_DATA_OFFSET, net::tcp::MAX_DATA_OFFSET);
-        total_length -= 4 * data_offset;
+        size_t header_length = sizeof(uint32_t) * data_offset;
+        total_length -= header_length;
         if (network == net::ethernet::ETHERTYPE_IPV4) {
             testgen::makeTcpHeader(data, ipv4_header, data_offset, total_length);
         } else if (network == net::ethernet::ETHERTYPE_IPV6) {
             testgen::makeTcpHeader(data, ipv6_header, data_offset, total_length);
         }
-        data += 4 * data_offset;
+        data += header_length;
     } else if (transport == net::ip::PROTOCOL_UDP) {
         total_length -= net::udp::HEADER_LEN;
         if (network == net::ethernet::ETHERTYPE_IPV4) {

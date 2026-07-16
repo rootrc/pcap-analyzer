@@ -46,12 +46,10 @@ void makeIPv4Header(uint8_t* data, uint8_t protocol, uint8_t ihl, uint16_t paylo
     if (ihl < net::ip::v4::MIN_IHL || ihl > net::ip::v4::MAX_IHL) {
         throw std::out_of_range("ihl out of range [5, 15]");
     }
-    uint8_t version = 4;
-    size_t header_len = 4 * ihl;
 
-    h.version_ihl = (version << 4) | ihl;
+    h.version_ihl = (net::ip::v4::SUPPORTED_VERSION << 4) | ihl;
     h.tos = 0;
-    h.total_length = net::bswap16(header_len + payload_len);
+    h.total_length = net::bswap16(h.header_length()  + payload_len);
     h.identification = randomgen::rand16();
     h.flags_fragment = net::bswap16(0x4000);
     h.ttl = randomgen::randRange8(32, 128);
@@ -59,12 +57,12 @@ void makeIPv4Header(uint8_t* data, uint8_t protocol, uint8_t ihl, uint16_t paylo
     h.checksum = 0;
     h.src_ip = randomgen::rand32();
     h.dst_ip = randomgen::rand32();
-    for (size_t i = net::ip::v4::MIN_HEADER_LEN; i < header_len; ++i) {
+    for (size_t i = net::ip::v4::MIN_HEADER_LEN; i < h.header_length(); ++i) {
         data[i] = randomgen::rand8();
     }
 
     memcpy(data, &h, net::ip::v4::MIN_HEADER_LEN);
-    h.checksum = checksum(data, header_len);
+    h.checksum = checksum(data, h.header_length());
     data[10] = h.checksum >> 8;
     data[11] = h.checksum & 0xFF;
 }
@@ -74,7 +72,7 @@ void makeIPv6Header(uint8_t* data, uint8_t next_header, uint16_t payload_length)
 
     uint32_t tc = randomgen::rand8();
     uint32_t flow = randomgen::rand32() & 0xFFFFF;
-    h.version_tc_fl = net::bswap32((6u << 28) | (tc << 20) | flow);
+    h.version_tc_fl = net::bswap32((net::ip::v6::SUPPORTED_VERSION << 28) | (tc << 20) | flow);
     h.payload_length = net::bswap16(payload_length);
     h.next_header = next_header;
     h.hop_limit = randomgen::randRange8(32, 128);
@@ -105,7 +103,6 @@ void makeTcpHeader(uint8_t* data, uint64_t pseudo_sum, uint8_t data_offset, size
     if (data_offset < net::tcp::MIN_DATA_OFFSET || data_offset > net::tcp::MAX_DATA_OFFSET) {
         throw std::out_of_range("data_offset out of range [5, 15]");
     }
-    size_t header_len = 4 * data_offset;
 
     h.src_port = randomgen::rand16();
     h.dst_port = randomgen::rand16();
@@ -116,12 +113,12 @@ void makeTcpHeader(uint8_t* data, uint64_t pseudo_sum, uint8_t data_offset, size
     h.window_size = net::bswap16(randomgen::randRange16(1024, 65535));
     h.checksum = 0;
     h.urgent_pointer = 0;
-    for (size_t i = net::tcp::MIN_HEADER_LEN; i < header_len + payload_len; ++i) {
+    for (size_t i = net::tcp::MIN_HEADER_LEN; i < h.header_length() + payload_len; ++i) {
         data[i] = randomgen::rand8();
     }
 
     memcpy(data, &h, net::tcp::MIN_HEADER_LEN);
-    h.checksum = checksum(data, header_len + payload_len, pseudo_sum);
+    h.checksum = checksum(data, h.header_length() + payload_len, pseudo_sum);
     data[16] = h.checksum >> 8;
     data[17] = h.checksum & 0xFF;
 }

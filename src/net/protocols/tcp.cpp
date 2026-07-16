@@ -9,8 +9,7 @@ namespace net::tcp {
 ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
 
 ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
-    size_t ip_header_len = 4 * (ip_header.version_ihl & 0x0F);
-    size_t length = ip_header.total_length - ip_header_len;
+    size_t length = ip_header.total_length - ip_header.header_length();
     return parse(span, header, length, ip::v4::computePseudoHeaderSum(ip_header), endian);
 }
 
@@ -22,15 +21,12 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, 
     if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
-    uint8_t data_offset = header.data_offset();
     // uint8_t reserved = (header.data_offset_reserved >> 1) & 0x07;
 
-    size_t header_len = 4 * data_offset;
-
-    if (header_len < MIN_HEADER_LEN || header_len > MAX_HEADER_LEN || length < header_len || span.size() < length) {
+    if (header.header_length() < MIN_HEADER_LEN || header.header_length() > MAX_HEADER_LEN || length < header.header_length() || span.size() < length) {
         return ParseError::MalformedHeader;
     }
-    if (span.size() < header_len) {
+    if (span.size() < header.header_length()) {
         return ParseError::UnexpectedEof;
     }
     // if (reserved != 0) {
@@ -46,7 +42,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, 
     header.ack_number = toHost32(header.ack_number, endian);
     header.window_size = toHost16(header.window_size, endian);
     header.urgent_pointer = toHost16(header.urgent_pointer, endian);
-    span = span.subspan(header_len);
+    span = span.subspan(header.header_length());
     return ParseError::None;
 }
 

@@ -22,13 +22,13 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
         return ParseError::InvalidFieldValue;
     }
 
-    size_t header_len = MIN_HEADER_LEN + 2 * (size_t)header.hlen + 2 * (size_t)header.plen;
+    size_t header_len = MIN_HEADER_LEN + 2 * static_cast<size_t>(header.hlen) + 2 * static_cast<size_t>(header.plen);
     if (span.size() < header_len) return ParseError::UnexpectedEof;
 
     header.sha = span.data() + MIN_HEADER_LEN;
-    header.spa = span.data() + MIN_HEADER_LEN + header.hlen;
-    header.tha = span.data() + MIN_HEADER_LEN + header.hlen + header.plen;
-    header.tpa = span.data() + MIN_HEADER_LEN + 2 * header.hlen + header.plen;;
+    header.spa = span.data() + MIN_HEADER_LEN + static_cast<size_t>(header.hlen);
+    header.tha = span.data() + MIN_HEADER_LEN + static_cast<size_t>(header.hlen + header.plen);
+    header.tpa = span.data() + MIN_HEADER_LEN + static_cast<size_t>(2 * header.hlen + header.plen);
 
     span = span.subspan(header_len);
     return ParseError::None;

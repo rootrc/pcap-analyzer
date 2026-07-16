@@ -142,7 +142,7 @@ void FlowTable::printFlow(std::ostream& os, const FlowKey& key, const Flow& flow
         } else if (bps >= 1e3) {
             os << std::fixed << std::setprecision(2) << (bps / 1e3) << "Kbps";
         } else {
-            os << (uint64_t)bps << "bps";
+            os << std::fixed << std::setprecision(2) << bps << "bps";
         }
     }
     os << '\n';
