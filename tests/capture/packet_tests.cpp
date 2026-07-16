@@ -1,6 +1,4 @@
 #include <gtest/gtest.h>
-#include <net/core/parse_error.h>
-#include <net/core/endian.h>
 #include <net/capture/pcap.h>
 #include <net/capture/decoder.h>
 #include "../common/header_tester.h"

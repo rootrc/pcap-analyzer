@@ -3,9 +3,6 @@
 #include <net/core/endian.h>
 #include <net/core/parse_error.h>
 
-#include <cstdint>
-#include <cstddef>
-#include <ostream>
 #include <span>
 
 // https://www.ieee802.org/3/

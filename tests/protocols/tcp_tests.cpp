@@ -1,6 +1,4 @@
 #include <gtest/gtest.h>
-#include <net/core/parse_error.h>
-#include <net/core/endian.h>
 #include <net/protocols/tcp.h>
 #include "../common/header_tester.h"
 #include "../testgen/protocol_generator.h"

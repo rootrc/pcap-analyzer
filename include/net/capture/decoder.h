@@ -1,14 +1,8 @@
 #pragma once
 
-#include "packet.h"
+#include <net/capture/packet.h>
 
 #include <span>
-
-template<typename... Ts>
-struct overload : Ts... { using Ts::operator()...; };
-
-template<typename... Ts>
-overload(Ts...) -> overload<Ts...>;
 
 namespace net::decode {
 

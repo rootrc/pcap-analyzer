@@ -4,9 +4,6 @@
 #include <net/core/parse_error.h>
 #include <net/protocols/ipv6.h>
 
-#include <cstdint>
-#include <cstddef>
-#include <ostream>
 #include <span>
 
 // https://datatracker.ietf.org/doc/html/rfc4443

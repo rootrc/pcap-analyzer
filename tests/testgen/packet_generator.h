@@ -1,6 +1,6 @@
 #pragma once
 
-#include <net/capture/pcap.h>
+#include <net/core/endian.h>
 #include "protocol_generator.h"
 
 namespace testgen {

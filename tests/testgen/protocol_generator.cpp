@@ -1,6 +1,7 @@
 #include "protocol_generator.h"
 
 #include <cstring>
+#include <stdexcept>
 
 namespace testgen {
 

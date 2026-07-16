@@ -6,9 +6,6 @@
 template<typename... Ts>
 struct overload : Ts... { using Ts::operator()...; };
 
-template<typename... Ts>
-overload(Ts...) -> overload<Ts...>;
-
 namespace net {
 
 ParseError FlowTable::addPacket(const Packet& pkt, uint64_t ts_us) {

@@ -1,5 +1,7 @@
 #include "packet_generator.h"
 
+#include <net/capture/pcap.h>
+
 #include <cstring>
 
 namespace testgen {

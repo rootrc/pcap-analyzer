@@ -1,5 +1,8 @@
 #include <net/capture/decoder.h>
 
+template<typename... Ts>
+struct overload : Ts... { using Ts::operator()...; };
+
 namespace net::decode {
 
 ParseError decodePacket(std::span<const uint8_t>& span, Packet& out) {
