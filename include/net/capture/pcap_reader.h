@@ -1,7 +1,8 @@
 #pragma once
 
-#include <net/capture/packet.h>
+#include <net/capture/capture.h>
 #include <net/capture/decoder.h>
+#include <net/capture/packet.h>
 #include <net/analysis/flow_tracker.h>
 
 #include <cstdio>
@@ -9,22 +10,16 @@
 #include <variant>
 #include <span>
 
+#include <filesystem>
+
 namespace net::pcap {
 
 class Reader {
 public:
-    struct Capture {
-        uint64_t ts_us;
-        pcap::PacketHeader packetHeader;
-        Packet pkt;
-    };
-    explicit Reader(FILE* f) : f_(f) {
-        if (!f_) throw std::invalid_argument("pcap::Reader: null FILE*");
-        readFileHeader();
-    }
-
+    explicit Reader(const std::filesystem::path& path);
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
+    ~Reader();
 
     const Capture& currentCapture() const { return capture_; }
     const FileHeader& fileHeader() const { return file_header_; }
@@ -40,13 +35,18 @@ public:
     void print(std::ostream& os, const Capture& out) const;
     
 private:
-    FILE* f_;
+#ifdef _WIN32
+    HANDLE file_ = INVALID_HANDLE_VALUE;
+    HANDLE mapping_ = nullptr;
+#else
+    int fd_ = -1;
+#endif
+    std::span<const uint8_t> span_;
     Capture capture_{};
     FileHeader file_header_{};
     FlowTable flowTable_{};
     bool is_nsec_;
     Endian endian_;
-    uint8_t buffer_[FILE_HEADER_LEN];
     uint64_t skipped_ = 0;
     ParseError last_skip_err_ = ParseError::None;
     

@@ -8,32 +8,33 @@ struct overload : Ts... { using Ts::operator()...; };
 
 namespace net {
 
-ParseError FlowTable::addPacket(const Packet& pkt, uint64_t ts_us) {
-    if (pkt.isArp()) {
+ParseError FlowTable::addPacket(const net::pcap::Capture& capture) {
+
+    if (capture.pkt.isArp()) {
         return ParseError::None;
     }
     FlowKey key{};
     bool is_reverse = false;
-    if (auto err = keyFromPacket(pkt, key, is_reverse); err != ParseError::None) return err;
+    if (auto err = keyFromPacket(capture.pkt, key, is_reverse); err != ParseError::None) return err;
 
-    total_bytes_ += pkt.raw.size();
+    total_bytes_ += capture.packetHeader.incl_len;
 
     std::unordered_map<net::FlowKey, net::Flow, net::FlowKeyHash>::iterator it = flows_.find(key);
-    if (it != flows_.end() && isExpired(it->second, ts_us)) {
+    if (it != flows_.end() && isExpired(it->second, capture.ts_us)) {
         completed_.emplace_back(key, std::move(it->second));
         flows_.erase(it);
         it = flows_.end();
     }
     if (it == flows_.end()) {
         it = flows_.try_emplace(key).first;
-        it->second.first_seen = ts_us;
+        it->second.first_seen = capture.ts_us;
     }
 
     Flow& flow = it->second;
-    flow.last_seen = ts_us;
+    flow.last_seen = capture.ts_us;
     FlowStats& stats = is_reverse ? flow.rev : flow.fwd;
     ++stats.packets;
-    stats.bytes += pkt.raw.size();
+    stats.bytes += capture.packetHeader.incl_len;
 
     return ParseError::None;
 }

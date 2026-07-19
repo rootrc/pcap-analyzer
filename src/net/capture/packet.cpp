@@ -33,7 +33,6 @@ void Packet::reset() noexcept {
     vlan_tags.clear();
     network = std::monostate{};
     transport = std::monostate{};
-    raw.clear();
 }
 
 std::ostream& operator<<(std::ostream& os, const Packet& pkt) {

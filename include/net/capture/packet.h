@@ -38,8 +38,6 @@ struct Packet {
     >;
     TransportHeader transport{};
 
-    std::vector<uint8_t> raw;
-
     [[nodiscard]] bool isEthernet() const noexcept { return std::holds_alternative<ethernet::Header>(datalink); }
     [[nodiscard]] bool isVlan() const noexcept { return !vlan_tags.empty(); }
     [[nodiscard]] bool isIpv4() const noexcept { return std::holds_alternative<ip::v4::Header>(network); }

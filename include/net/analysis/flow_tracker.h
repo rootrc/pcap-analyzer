@@ -1,5 +1,6 @@
 #pragma once
 
+#include <net/capture/capture.h>
 #include <net/capture/packet.h>
 
 #include <cstring>
@@ -77,7 +78,7 @@ namespace net {
     public:
         FlowTable() = default;
 
-        ParseError addPacket(const Packet& pkt, uint64_t ts_us);
+        ParseError addPacket(const net::pcap::Capture& capture);
         void flush();
 
         const std::unordered_map<FlowKey, Flow, FlowKeyHash>& flows() const { return flows_; }
