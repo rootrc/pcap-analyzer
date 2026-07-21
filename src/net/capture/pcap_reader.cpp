@@ -53,7 +53,7 @@ Reader::Reader(const std::filesystem::path& path) {
     size_t size = static_cast<size_t>(st.st_size);
 
     void* m = ::mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd_, 0);
-    ::madvise(const_cast<uint8_t*>(view_), file_size_, MADV_SEQUENTIAL);
+    ::madvise(const_cast<uint8_t*>(span_.data()), span_.size(), MADV_SEQUENTIAL);
     if (m == MAP_FAILED) {
         ::close(fd_);
         throw std::runtime_error("Reader: failed to mmap file");
