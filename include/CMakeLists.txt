@@ -14,6 +14,7 @@ add_library(network_lib
     ../src/net/protocols/udp.cpp
     ../src/net/protocols/icmp.cpp
     ../src/net/protocols/icmpv6.cpp
+    ../src/net/protocols/dns.cpp
 )
 
 target_include_directories(network_lib

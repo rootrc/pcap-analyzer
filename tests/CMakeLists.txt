@@ -59,6 +59,7 @@ set(PROTOCOL_TESTS
     udp
     icmp
     icmpv6
+    dns
 )
 
 foreach(test IN LISTS PROTOCOL_TESTS)

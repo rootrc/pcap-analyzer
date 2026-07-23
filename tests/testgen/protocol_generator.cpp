@@ -225,4 +225,147 @@ void makeIcmpv6Header(uint8_t* data, const net::ip::v6::Header& ip, size_t paylo
     data[3] = h.checksum & 0xFF;
 }
 
+void makeDnsHeader(uint8_t* data) {
+    static constexpr const char* names[] = {
+        "example.com", "foo.bar.com", "mail.example.org",
+        "test.local", "api.service.net", "cdn.example.io",
+    };
+    static constexpr const char* tlds[] = { "com", "net", "org", "io", "dev" };
+    static constexpr const char* words[] = {
+        "mail", "api", "cdn", "www", "auth", "shop", "blog", "app",
+    };
+    static constexpr const char* txts[] = {
+        "v=spf1 include:example.com ~all",
+        "google-site-verification=abc123",
+        "MS=ms12345678",
+    };
+
+    auto writeName = [](uint8_t* data, size_t pos, const char* name) {
+        const char* p = name;
+        while (*p) {
+            const char* dot = p;
+            while (*dot && *dot != '.') dot++;
+            uint8_t len = static_cast<uint8_t>(dot - p);
+            data[pos++] = len;
+            std::memcpy(data + pos, p, len);
+            pos += len;
+            p = (*dot == '.') ? dot + sizeof(uint8_t) : dot;
+        }
+        data[pos++] = 0;
+        return pos;
+    };
+    auto writeRRHeader = [&](size_t pos, uint16_t type, uint32_t ttl, uint16_t rdlength) {
+        net::dns::WireResourceHeader wrr{};
+        wrr.type = net::bswap16(type);
+        wrr.rclass = net::bswap16(net::dns::CLASS_IN);
+        wrr.ttl = net::bswap32(ttl);
+        wrr.rdlength = net::bswap16(rdlength);
+        std::memcpy(data + pos, &wrr, sizeof(wrr));
+        return pos + sizeof(wrr);
+    };
+    auto writeNamePtr = [&](size_t pos) {
+        data[pos++] = net::dns::DnsCompressionPointerMask;
+        data[pos++] = net::dns::HEADER_LEN;
+        return pos;
+    };
+
+    const char* name = names[std::rand() % (sizeof(names) / sizeof(names[0]))];
+    uint32_t ttl = randomgen::randRange16(30, 3600);
+
+    enum Case { QUERY, NXDOMAIN, A, MULTI_A, AAAA, CNAME, PTR, TXT, MX, CASE_COUNT };
+    int rtype = std::rand() % CASE_COUNT;
+
+    uint16_t qtype = net::dns::TYPE_A;
+    uint16_t ancount = 0;
+    uint16_t flags = 0x8180;
+
+    if (rtype == QUERY) {
+        static constexpr uint16_t qtypes[] = {
+            net::dns::TYPE_A, net::dns::TYPE_AAAA, net::dns::TYPE_MX,
+            net::dns::TYPE_TXT, net::dns::TYPE_CNAME, net::dns::TYPE_PTR,
+        };
+        qtype = qtypes[std::rand() % (sizeof(qtypes) / sizeof(qtypes[0]))];
+        flags = 0x0100;
+    } else if (rtype == NXDOMAIN) {
+        flags = 0x8183;
+    } else if (rtype == A) { qtype = net::dns::TYPE_A; ancount = 1; }
+    else if (rtype == MULTI_A) { qtype = net::dns::TYPE_A; ancount = randomgen::randRange8(2, 4); }
+    else if (rtype == AAAA) { qtype = net::dns::TYPE_AAAA; ancount = 1; }
+    else if (rtype == CNAME) { qtype = net::dns::TYPE_CNAME; ancount = 1; }
+    else if (rtype == PTR) { qtype = net::dns::TYPE_PTR; ancount = 1; }
+    else if (rtype == TXT) { qtype = net::dns::TYPE_TXT; ancount = 1; }
+    else if (rtype == MX) { qtype = net::dns::TYPE_MX; ancount = 1; }
+
+    net::dns::WireHeader h{};
+    h.id = randomgen::rand16();
+    h.flags = net::bswap16(flags);
+    h.qdcount = net::bswap16(1);
+    h.ancount = net::bswap16(ancount);
+    std::memcpy(data, &h, net::dns::HEADER_LEN);
+
+    size_t pos = net::dns::HEADER_LEN;
+    pos = writeName(data, pos, name);
+
+    net::dns::WireQuestion wq{};
+    wq.qtype = net::bswap16(qtype);
+    wq.qclass = net::bswap16(net::dns::CLASS_IN);
+    std::memcpy(data + pos, &wq, sizeof(wq));
+    pos += sizeof(wq);
+
+    if (rtype == QUERY || rtype == NXDOMAIN) return;
+
+    if (rtype == A || rtype == MULTI_A) {
+        for (uint16_t i = 0; i < ancount; ++i) {
+            pos = writeNamePtr(pos);
+            pos = writeRRHeader(pos, net::dns::TYPE_A, ttl, sizeof(net::ip::v4::Header::src_ip));
+            uint32_t ip = randomgen::rand32();
+            std::memcpy(data + pos, &ip, sizeof(net::ip::v4::Header::src_ip));
+            pos += sizeof(net::ip::v4::Header::src_ip);
+        }
+    } else if (rtype == AAAA) {
+        pos = writeNamePtr(pos);
+        pos = writeRRHeader(pos, net::dns::TYPE_AAAA, ttl, sizeof(net::ip::v6::Header::src_ip));
+        for (int i = 0; i < sizeof(net::ip::v6::Header::src_ip); ++i) data[pos++] = randomgen::rand8();
+    } else if (rtype == CNAME) {
+        char cname[64];
+        std::snprintf(cname, sizeof(cname), "%s.%s",
+            words[std::rand() % (sizeof(words) / sizeof(words[0]))],
+            tlds[std::rand() % (sizeof(tlds) / sizeof(tlds[0]))]);
+        pos = writeNamePtr(pos);
+        size_t rdata_start = pos + sizeof(net::dns::WireResourceHeader);
+        size_t rdata_end = writeName(data, rdata_start, cname);
+        pos = writeRRHeader(pos, net::dns::TYPE_CNAME, ttl, static_cast<uint16_t>(rdata_end - rdata_start));
+        pos = rdata_end;
+    } else if (rtype == PTR) {
+        char ptr[64];
+        std::snprintf(ptr, sizeof(ptr), "%s.%s",
+            words[std::rand() % (sizeof(words) / sizeof(words[0]))],
+            tlds[std::rand() % (sizeof(tlds) / sizeof(tlds[0]))]);
+        pos = writeNamePtr(pos);
+        size_t rdata_start = pos + sizeof(net::dns::WireResourceHeader);
+        size_t rdata_end = writeName(data, rdata_start, ptr);
+        pos = writeRRHeader(pos, net::dns::TYPE_PTR, ttl, static_cast<uint16_t>(rdata_end - rdata_start));
+        pos = rdata_end;
+    } else if (rtype == TXT) {
+        const char* txt = txts[std::rand() % (sizeof(txts) / sizeof(txts[0]))];
+        uint8_t len = static_cast<uint8_t>(std::strlen(txt));
+        pos = writeNamePtr(pos);
+        pos = writeRRHeader(pos, net::dns::TYPE_TXT, ttl, len + 1);
+        data[pos++] = len;
+        std::memcpy(data + pos, txt, len);
+        pos += len;
+    } else if (rtype == MX) {
+        char mx[64];
+        std::snprintf(mx, sizeof(mx), "mail.%s",
+            tlds[std::rand() % (sizeof(tlds) / sizeof(tlds[0]))]);
+        uint16_t priority = randomgen::randRange16(10, 50);
+        pos = writeNamePtr(pos);
+        size_t rdata_start = pos + sizeof(net::dns::WireResourceHeader);
+        std::memcpy(data + rdata_start, &priority, sizeof(uint16_t));
+        size_t rdata_end = writeName(data, rdata_start + sizeof(uint16_t), mx);
+        pos = writeRRHeader(pos, net::dns::TYPE_MX, ttl, static_cast<uint16_t>(rdata_end - rdata_start));
+        pos = rdata_end;
+    }
+}
+
 }

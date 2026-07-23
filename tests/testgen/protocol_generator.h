@@ -19,5 +19,6 @@ void makeUdpHeader(uint8_t* data, const net::ip::v4::Header& ip, uint16_t payloa
 void makeUdpHeader(uint8_t* data, const net::ip::v6::Header& ip, uint16_t payload_length = 0);
 void makeIcmpHeader(uint8_t* data, size_t payload_len = 0);
 void makeIcmpv6Header(uint8_t* data, const net::ip::v6::Header& ip, size_t payload_len = 0);
+void makeDnsHeader(uint8_t* data);
 
 }
