@@ -12,6 +12,7 @@ ParseError decodePacket(std::span<const uint8_t>& span, Packet& out) {
         return ParseError::None;
     }
     if (auto err = decodeLayer4(span, out); err != ParseError::None) return err;
+    out.payload = span;
     return ParseError::None;
 }
 

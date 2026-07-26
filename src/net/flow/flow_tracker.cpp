@@ -1,4 +1,4 @@
-#include <net/analysis/flow_tracker.h>
+#include <net/flow/flow_tracker.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -9,7 +9,6 @@ struct overload : Ts... { using Ts::operator()...; };
 namespace net {
 
 ParseError FlowTable::addPacket(const net::pcap::Capture& capture) {
-
     if (capture.pkt.isArp()) {
         return ParseError::None;
     }
@@ -32,9 +31,13 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture) {
 
     Flow& flow = it->second;
     flow.last_seen = capture.ts_us;
-    FlowStats& stats = is_reverse ? flow.rev : flow.fwd;
+    FlowStats& stats = is_reverse ? flow.rev_stats : flow.fwd_stats;
     ++stats.packets;
     stats.bytes += capture.packetHeader.incl_len;
+
+    if (capture.pkt.isTcp()) {
+        (is_reverse ? flow.rev_tcp : flow.fwd_tcp).push(*capture.pkt.tcp(), capture.pkt.payload);
+    }
 
     return ParseError::None;
 }
@@ -128,8 +131,8 @@ void FlowTable::printFlow(std::ostream& os, const FlowKey& key, const Flow& flow
             os << " avg=" << (s.bytes / s.packets) << "B";
         }
     };
-    printStats("fwd", flow.fwd);
-    printStats("rev", flow.rev);
+    printStats("fwd", flow.fwd_stats);
+    printStats("rev", flow.rev_stats);
     if (flow.durationUs() && flow.totalPackets() > 1) {
         os << "  rate=";
         double bps = (double)flow.totalBytes() * 8.0 * 1e6 / (double)flow.durationUs();
@@ -188,23 +191,6 @@ std::ostream& operator<<(std::ostream& os, const FlowTable& table) {
     }
     os << "}\n";
     os.flags(flags);
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const FlowKey& key) {
-    if (key.isIpv4) {
-        ip::v4::printIp(os, key.src_ip);
-    } else {
-        ip::v6::printIp(os, key.src_ip);
-    }
-    os << ':' << std::left << std::setw(5) << key.src_port << " -> ";
-    if (key.isIpv4) {
-        ip::v4::printIp(os, key.dst_ip);
-    } else {
-        ip::v6::printIp(os, key.dst_ip);
-    }
-    os << ':' << std::left << std::setw(5) << key.dst_port
-       << " (" << ip::protocolName(key.protocol) << ')';
     return os;
 }
 

@@ -3,7 +3,7 @@
 #include <net/capture/capture.h>
 #include <net/capture/decoder.h>
 #include <net/capture/packet.h>
-#include <net/analysis/flow_tracker.h>
+#include <net/flow/flow_tracker.h>
 
 #include <cstdio>
 

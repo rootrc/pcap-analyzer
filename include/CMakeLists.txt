@@ -1,10 +1,12 @@
 add_library(network_lib
-    ../src/net/analysis/flow_tracker.cpp
     ../src/net/capture/packet.cpp
     ../src/net/capture/decoder.cpp
     ../src/net/capture/pcap.cpp
     ../src/net/capture/pcap_reader.cpp
     ../src/net/core/checksum.cpp
+    ../src/net/flow/flow_key.cpp
+    ../src/net/flow/flow_tracker.cpp
+    ../src/net/flow/tcp_reassembler.cpp
     ../src/net/protocols/ethernet.cpp
     ../src/net/protocols/vlan.cpp
     ../src/net/protocols/ipv4.cpp
