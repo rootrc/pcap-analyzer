@@ -4,91 +4,184 @@
 
 namespace net {
 
-void TcpReassembler::push( const tcp::Header& tcp, const std::span<const uint8_t>& span) {
-    if (closed) {
-        return;
-    }
-    if (tcp.rst()) {
-        closed = true;
-        return;
-    }
-    if (tcp.syn()) {
-        next_seq = tcp.seq_number + 1;
-        started = true;
-    }
-    if (!started) {
-        return;
-    }
-    if (tcp.fin()) {
-        fin_seen = true;
-        fin_seq = tcp.seq_number + static_cast<uint32_t>(span.size());
-    }
-    if (!span.empty()) {
-        if (tcp.seq_number == next_seq) {
-            assembled.insert(assembled.end(), span.begin(), span.end());
-            next_seq += static_cast<uint32_t>(span.size());
-            drain();
-        } else if (static_cast<int32_t>(next_seq - tcp.seq_number) < 0) {
-            queue_out_of_order(tcp.seq_number, span);
-        } else {
-            uint32_t overlap = next_seq - tcp.seq_number;
-            if (overlap < span.size()) {
-                assembled.insert(assembled.end(), span.begin() + overlap, span.end());
-                next_seq += static_cast<uint32_t>(span.size() - overlap);
-                drain();
-            }
-        }
-    }
-    drain();
-    if (fin_seen && next_seq == fin_seq) {
-        next_seq++;
-        closed = true;
+std::ostream& operator<<(std::ostream& os, TcpState state) {
+    switch (state) {
+        case TcpState::Unknown: return os << "Unknown";
+        case TcpState::Closed: return os << "Closed";
+        case TcpState::Listen: return os << "Listen";
+        case TcpState::SynSent: return os << "SynSent";
+        case TcpState::SynReceived: return os << "SynReceived";
+        case TcpState::Established: return os << "Established";
+        case TcpState::FinWait1: return os << "FinWait1";
+        case TcpState::FinWait2: return os << "FinWait2";
+        case TcpState::CloseWait: return os << "CloseWait";
+        case TcpState::Closing: return os << "Closing";
+        case TcpState::LastAck: return os << "LastAck";
+        case TcpState::TimeWait: return os << "TimeWait";
+        default: return os << "Invalid";
     }
 }
 
-void TcpReassembler::queue_out_of_order(uint32_t seq, std::span<const uint8_t> span) {
-    std::vector<uint8_t> data(span.begin(), span.end());
-    auto prev = out_of_order.upper_bound(seq);
-    if (prev != out_of_order.begin()) {
-        --prev;
-        uint32_t prev_end = prev->first + static_cast<uint32_t>(prev->second.size());
-        if (prev_end > seq) {
-            uint32_t overlap = prev_end - seq;
-            if (overlap >= data.size()) {
-                return;
+void TcpReassembler::onSent(const tcp::Header& header, const std::span<const uint8_t> span) {
+    if (header.rst()) {
+        state = TcpState::Closed;
+        return;
+    }
+    if (!seeded) {
+        if (header.syn()) {
+            next_seq = header.seq_number + 1;
+            state = header.ack() ? TcpState::SynReceived : TcpState::SynSent;
+            seeded = true;
+            ingest(header.seq_number + 1, span);
+        } else if (header.ack()) {
+            next_seq = header.seq_number;
+            seeded = true;
+            if (state != TcpState::CloseWait) {
+                state = TcpState::Established;
             }
-            seq += overlap;
-            data.erase(data.begin(), data.begin() + overlap);
+            onData(header, span);
         }
-    }
-    auto it = out_of_order.lower_bound(seq);
-    while (it != out_of_order.end()) {
-        uint32_t end = seq + static_cast<uint32_t>(data.size());
-        if (it->first >= end) {
-            break;
-        }
-        uint32_t it_end = it->first + static_cast<uint32_t>(it->second.size());
-        if (it_end <= end) {
-            ooo_bytes -= it->second.size();
-            it = out_of_order.erase(it);
-        } else {
-            uint32_t overlap = end - it->first;
-            std::vector<uint8_t> tail(it->second.begin() + overlap, it->second.end());
-            ooo_bytes -= it->second.size();
-            it = out_of_order.erase(it);
-            ooo_bytes += tail.size();
-            out_of_order.emplace(end, std::move(tail));
-            break;
-        }
-    }
-    if (data.empty()) {
         return;
     }
-    if (ooo_bytes + data.size() > MAX_OOO_BYTES) {
+    switch (state) {
+        case TcpState::Unknown:
+        case TcpState::Closed:
+        case TcpState::Listen:
+            return;
+        case TcpState::SynSent:
+            if (header.ack() && !header.syn()) {
+                state = TcpState::Established;
+            }
+            if (state == TcpState::Established) {
+                onData(header, span);
+            }
+            return;
+        case TcpState::SynReceived:
+            return;
+        case TcpState::Established:
+        case TcpState::CloseWait:
+            onData(header, span);
+            return;
+        case TcpState::FinWait1:
+        case TcpState::FinWait2:
+        case TcpState::Closing:
+        case TcpState::LastAck:
+        case TcpState::TimeWait:
+            return;
+    }
+}
+
+void TcpReassembler::onReceived(const tcp::Header& header) {
+    if (header.rst()) {
+        state = TcpState::Closed;
         return;
     }
-    ooo_bytes += data.size();
-    out_of_order.emplace(seq, std::move(data));
+    switch (state) {
+        case TcpState::Unknown:
+        case TcpState::Closed:
+        case TcpState::Listen:
+            if (header.syn() && !header.ack()) {
+                state = TcpState::Listen;
+            } else if (header.ack() && !header.syn()) {
+                state = header.fin() ? TcpState::CloseWait : TcpState::Established;
+            }
+            break;
+        case TcpState::SynSent:
+            if (header.syn() && !header.ack()) {
+                state = TcpState::SynReceived;
+            }
+            break;
+        case TcpState::SynReceived:
+            if (header.ack() && !header.syn()) {
+                state = header.fin() ? TcpState::CloseWait : TcpState::Established;
+            }
+            break;
+        case TcpState::Established:
+            if (header.fin()) {
+                state = TcpState::CloseWait;
+            }
+            break;
+        case TcpState::FinWait1:
+            if (header.fin() && header.ack() && static_cast<int32_t>(header.ack_number - next_seq) >= 0) {
+                state = TcpState::TimeWait;
+            } else if (header.fin()) {
+                state = TcpState::Closing;
+            } else if (header.ack() && static_cast<int32_t>(header.ack_number - next_seq) >= 0) {
+                state = TcpState::FinWait2;
+            }
+            break;
+        case TcpState::FinWait2:
+            if (header.fin()) {
+                state = TcpState::TimeWait;
+            }
+            break;
+        case TcpState::Closing:
+            if (header.ack() && static_cast<int32_t>(header.ack_number - next_seq) >= 0) {
+                state = TcpState::TimeWait;
+            }
+            break;
+        case TcpState::LastAck:
+            if (header.ack() && static_cast<int32_t>(header.ack_number - next_seq) >= 0) {
+                state = TcpState::Closed;
+            }
+            break;
+        case TcpState::TimeWait:
+        case TcpState::CloseWait:
+            break;
+    }
+}
+
+void TcpReassembler::onData(const tcp::Header& header, const std::span<const uint8_t> span) {
+    ingest(header.seq_number, span);
+    if (header.fin()) {
+        fin_seen = true;
+        fin_seq = header.seq_number + static_cast<uint32_t>(span.size());
+    }
+    if (fin_seen && static_cast<int32_t>(next_seq - fin_seq) >= 0) {
+        next_seq++;
+        fin_seen = false;
+        state = (state == TcpState::CloseWait) ? TcpState::LastAck : TcpState::FinWait1;
+    }
+}
+
+void TcpReassembler::ingest(uint32_t seq, const std::span<const uint8_t> span) {
+    if (seq == next_seq) {
+        assembled.insert(assembled.end(), span.data(), span.data() + span.size());
+        next_seq += static_cast<uint32_t>(span.size());
+        drain();
+    } else if (static_cast<int32_t>(seq - next_seq) > 0) {
+        auto [it, inserted] = out_of_order.try_emplace(seq);
+        if (inserted) {
+            if (ooo_bytes + span.size() <= MAX_OOO_BYTES) {
+                it->second.assign(span.data(), span.data() + span.size());
+                ooo_bytes += span.size();
+            } else {
+                out_of_order.erase(it);
+            }
+        } else if (span.size() > it->second.size()) {
+            size_t delta = span.size() - it->second.size();
+            if (ooo_bytes + delta <= MAX_OOO_BYTES) {
+                ooo_bytes += delta;
+                it->second.assign(span.data(), span.data() + span.size());
+            }
+        }
+    } else {
+        uint32_t overlap = next_seq - seq;
+        if (overlap < static_cast<uint32_t>(span.size())) {
+            assembled.insert(assembled.end(), span.data() + overlap, span.data() + span.size());
+            next_seq += static_cast<uint32_t>(span.size()) - overlap;
+            drain();
+        }
+    }
+}
+
+void TcpReassembler::drain() {
+    for (auto it = out_of_order.find(next_seq); it != out_of_order.end(); it = out_of_order.find(next_seq)) {
+        assembled.insert(assembled.end(), it->second.begin(), it->second.end());
+        next_seq += static_cast<uint32_t>(it->second.size());
+        ooo_bytes -= it->second.size();
+        out_of_order.erase(it);
+    }
 }
 
 size_t TcpReassembler::available() const noexcept {
@@ -105,15 +198,6 @@ void TcpReassembler::consume(size_t n) {
     if (read_pos > MIN_COMPACT_BYTES && read_pos > assembled.size() / 2) {
         assembled.erase(assembled.begin(), assembled.begin() + read_pos);
         read_pos = 0;
-    }
-}
-
-void TcpReassembler::drain() {
-    for (auto it = out_of_order.find(next_seq); it != out_of_order.end(); it = out_of_order.find(next_seq)) {
-        assembled.insert(assembled.end(), it->second.begin(), it->second.end());
-        next_seq += static_cast<uint32_t>(it->second.size());
-        ooo_bytes -= it->second.size();
-        out_of_order.erase(it);
     }
 }
 
