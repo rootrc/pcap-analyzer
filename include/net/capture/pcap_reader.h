@@ -4,6 +4,7 @@
 #include <net/capture/decoder.h>
 #include <net/capture/packet.h>
 #include <net/flow/flow_tracker.h>
+#include <net/capture/app_decoder.h>
 
 #include <cstdio>
 
@@ -45,6 +46,7 @@ private:
     Capture capture_{};
     FileHeader file_header_{};
     FlowTable flowTable_{};
+    AppDecoder appDecoder_{};
     bool is_nsec_;
     Endian endian_;
     uint64_t skipped_ = 0;

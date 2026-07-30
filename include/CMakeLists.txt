@@ -1,4 +1,5 @@
 add_library(network_lib
+    ../src/net/capture/app_decoder.cpp
     ../src/net/capture/packet.cpp
     ../src/net/capture/decoder.cpp
     ../src/net/capture/pcap.cpp

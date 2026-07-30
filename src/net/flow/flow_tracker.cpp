@@ -8,13 +8,15 @@ struct overload : Ts... { using Ts::operator()...; };
 
 namespace net {
 
-ParseError FlowTable::addPacket(const net::pcap::Capture& capture) {
+ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_key, bool* out_is_new) {
     if (capture.pkt.isArp()) {
         return ParseError::None;
     }
     FlowKey key{};
     bool is_reverse = false;
     if (auto err = keyFromPacket(capture.pkt, key, is_reverse); err != ParseError::None) return err;
+    if (out_key) *out_key = key;
+    if (out_is_new) *out_is_new = false;
 
     total_bytes_ += capture.packetHeader.incl_len;
 
@@ -27,17 +29,19 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture) {
     if (it == flows_.end()) {
         it = flows_.try_emplace(key).first;
         it->second.first_seen = capture.ts_us;
+        if (out_is_new) *out_is_new = true;
     }
 
     Flow& flow = it->second;
     flow.last_seen = capture.ts_us;
-    FlowStats& stats = is_reverse ? flow.rev_stats : flow.fwd_stats;
+    flow.is_reverse = is_reverse;
+    FlowStats& stats = flow.is_reverse ? flow.rev_stats : flow.fwd_stats;
     ++stats.packets;
     stats.bytes += capture.packetHeader.incl_len;
 
     if (capture.pkt.isTcp()) {
-        TcpReassembler& self = is_reverse ? flow.rev_tcp : flow.fwd_tcp;
-        TcpReassembler& other = is_reverse ? flow.fwd_tcp : flow.rev_tcp;
+        TcpReassembler& self = flow.is_reverse ? flow.rev_tcp : flow.fwd_tcp;
+        TcpReassembler& other = flow.is_reverse ? flow.fwd_tcp : flow.rev_tcp;
         self.onSent(*capture.pkt.tcp(), capture.pkt.payload);
         other.onReceived(*capture.pkt.tcp());
     }

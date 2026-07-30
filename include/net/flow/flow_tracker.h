@@ -22,6 +22,7 @@ struct Flow {
     FlowStats rev_stats;
     TcpReassembler fwd_tcp;
     TcpReassembler rev_tcp;
+    bool is_reverse = false;
 
     constexpr uint64_t totalPackets() const noexcept { return fwd_stats.packets + rev_stats.packets; }
     constexpr uint64_t totalBytes() const noexcept { return fwd_stats.bytes + rev_stats.bytes; }
@@ -37,9 +38,10 @@ class FlowTable {
 public:
     FlowTable() = default;
 
-    ParseError addPacket(const net::pcap::Capture& capture);
+    ParseError addPacket(const net::pcap::Capture& capture, FlowKey* out_key = nullptr, bool* out_is_new = nullptr);
     void flush();
 
+    std::unordered_map<FlowKey, Flow, FlowKeyHash>& flows() { return flows_; }
     const std::unordered_map<FlowKey, Flow, FlowKeyHash>& flows() const { return flows_; }
     const std::vector<std::pair<FlowKey, Flow>>& completed() const { return completed_; }
     uint64_t total_bytes() const { return total_bytes_; }
