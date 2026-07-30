@@ -1,6 +1,6 @@
 #pragma once
 
-#include <net/core/endian.h>
+#include <net/util/endian.h>
 #include "protocol_generator.h"
 
 namespace testgen {

@@ -1,5 +1,5 @@
 #include <net/protocols/udp.h>
-#include <net/core/checksum.h>
+#include <net/util/checksum.h>
 
 #include <cstring>
 #include <iomanip>

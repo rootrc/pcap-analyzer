@@ -1,4 +1,4 @@
-#include <net/core/checksum.h>
+#include <net/util/checksum.h>
 
 bool net::verifyChecksum(const uint8_t* data, size_t len, uint64_t pseudo_header_sum ) {
     uint64_t sum = pseudo_header_sum;

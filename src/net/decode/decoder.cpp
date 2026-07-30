@@ -1,4 +1,4 @@
-#include <net/capture/decoder.h>
+#include <net/decode/decoder.h>
 
 template<typename... Ts>
 struct overload : Ts... { using Ts::operator()...; };

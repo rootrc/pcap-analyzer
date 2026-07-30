@@ -1,6 +1,6 @@
 #include <net/protocols/icmp.h>
 #include <net/protocols/ipv4.h>
-#include <net/core/checksum.h>
+#include <net/util/checksum.h>
 
 #include <cstring>
 #include <iomanip>

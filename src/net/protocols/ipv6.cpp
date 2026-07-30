@@ -1,6 +1,6 @@
 #include <net/protocols/ipv6.h>
 #include <net/protocols/ip.h>
-#include <net/core/checksum.h>
+#include <net/util/checksum.h>
 
 #include <cstring>
 #include <iomanip>

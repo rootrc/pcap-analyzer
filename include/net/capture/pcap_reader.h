@@ -1,10 +1,10 @@
 #pragma once
 
 #include <net/capture/capture.h>
-#include <net/capture/decoder.h>
+#include <net/decode/decoder.h>
 #include <net/capture/packet.h>
 #include <net/flow/flow_tracker.h>
-#include <net/capture/app_decoder.h>
+#include <net/decode/app_decoder.h>
 
 #include <cstdio>
 

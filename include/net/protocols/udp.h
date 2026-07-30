@@ -1,7 +1,7 @@
 #pragma once
 
-#include <net/core/endian.h>
-#include <net/core/parse_error.h>
+#include <net/util/endian.h>
+#include <net/util/parse_error.h>
 #include <net/protocols/ipv4.h>
 #include <net/protocols/ipv6.h>
 
