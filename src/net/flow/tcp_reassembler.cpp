@@ -188,9 +188,8 @@ size_t TcpReassembler::available() const noexcept {
     return assembled.size() - read_pos;
 }
 
-const std::span<const uint8_t> TcpReassembler::peek(size_t n) const {
-    n = std::min(n, available());
-    return std::span<const uint8_t>{assembled.data() + read_pos, n};
+const std::span<const uint8_t> TcpReassembler::peek() const {
+    return std::span<const uint8_t>{assembled.data() + read_pos, available()};
 }
 
 void TcpReassembler::consume(size_t n) {
@@ -199,6 +198,10 @@ void TcpReassembler::consume(size_t n) {
         assembled.erase(assembled.begin(), assembled.begin() + read_pos);
         read_pos = 0;
     }
+}
+
+bool TcpReassembler::hasReadableData() const {
+    return state == TcpState::Established || state == TcpState::FinWait1 || state == TcpState::FinWait2;
 }
 
 }

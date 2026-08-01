@@ -9,6 +9,7 @@ namespace net {
 
 struct Applications {
     bool decode_failed = false;
+    std::vector<dns::Header> dns_messages;
 };
 
 class AppDecoder {
@@ -17,6 +18,7 @@ public:
     ParseError pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload);
     void reset(const FlowKey& key);
     void prune(const FlowTable& table);
+    const Applications* getApplications(const FlowKey& key, bool is_reverse) const;
 private:
     struct FlowApplications {
         Applications fwd;

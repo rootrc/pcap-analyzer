@@ -41,8 +41,10 @@ struct TcpReassembler {
     void onReceived(const tcp::Header& header);
 
     size_t available() const noexcept;
-    const std::span<const uint8_t> peek(size_t n) const;
+    const std::span<const uint8_t> peek() const;
     void consume(size_t n);
+
+    bool hasReadableData() const;
 private:
     size_t read_pos = 0;
     void ingest(uint32_t seq, const std::span<const uint8_t> span);
