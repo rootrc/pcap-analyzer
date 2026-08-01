@@ -4,13 +4,19 @@
 └────────────────────┬─────────────────────┘
                      | per packet
                      ▼
-            ┌────────────────┐
-            │  decoder.cpp   │
-            │  decodePacket  │
-            │  L2 → L3 → L4  │
-            │  fills Packet  │
-            │  sets payload  │
-            └────────┬───────┘
+              ┌─────────────┐
+              │  decoder.h  │
+              │   decode    │
+              └──────┬──────┘
+                     │
+                     ▼
+           ┌───────────────────┐
+           │  pkt_decoder.cpp  │
+           │    decodePacket   │
+           │    L2 → L3 → L4   │
+           │    fills Packet   │
+           │    sets payload   │
+           └─────────┬─────────┘
                      │
                      ▼
         ┌────────────────────────┐

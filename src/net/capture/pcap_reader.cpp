@@ -81,8 +81,7 @@ void Reader::readAllPackets() {
 ParseError Reader::readPacket() {
     while (true) {
         if (span_.size() < PACKET_HEADER_LEN) {
-            flowTable_.flush();
-            appDecoder_.prune(flowTable_);
+            decoder_.finish();
             return ParseError::UnexpectedEofF;
         }
 
@@ -105,28 +104,10 @@ ParseError Reader::readPacket() {
         std::span<const uint8_t> packet_span{span_.data(), capture_.packetHeader.incl_len};
         span_ = span_.subspan(capture_.packetHeader.incl_len);
 
-        if (auto err = decode::decodePacket(packet_span, capture_.pkt); err != ParseError::None) {
+        if (auto err = decoder_.decode(packet_span, capture_); err != ParseError::None) {
             ++skipped_;
             last_skip_err_ = err;
             continue;
-        }
-        FlowKey flow_key{};
-        bool flow_is_new = false;
-        if (auto err = flowTable_.addPacket(capture_, &flow_key, &flow_is_new); err != ParseError::None) {
-            ++skipped_;
-            last_skip_err_ = err;
-            continue;
-        }
-        if (flow_is_new) {
-            appDecoder_.reset(flow_key);
-        }
-
-        if (auto it = flowTable_.flows().find(flow_key); it != flowTable_.flows().end()) {
-            if (capture_.pkt.isTcp()) {
-                appDecoder_.pollFlow(flow_key, it->second);
-            } else if (capture_.pkt.isUdp()) {
-                appDecoder_.pollDatagram(flow_key, it->second.is_reverse, capture_.pkt.payload);
-            }
         }
 
         return ParseError::None;

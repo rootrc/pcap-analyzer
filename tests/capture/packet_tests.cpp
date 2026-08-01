@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <net/capture/pcap.h>
-#include <net/decode/decoder.h>
+#include <net/decode/pkt_decoder.h>
 #include "../common/header_tester.h"
 #include "../testgen/packet_generator.h"
 

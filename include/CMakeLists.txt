@@ -1,9 +1,10 @@
 add_library(network_lib
-    ../src/net/decode/app_decoder.cpp
     ../src/net/capture/packet.cpp
-    ../src/net/decode/decoder.cpp
     ../src/net/capture/pcap.cpp
     ../src/net/capture/pcap_reader.cpp
+    ../src/net/decode/app_decoder.cpp
+    ../src/net/decode/decoder.cpp
+    ../src/net/decode/pkt_decoder.cpp
     ../src/net/util/checksum.cpp
     ../src/net/flow/flow_key.cpp
     ../src/net/flow/flow_tracker.cpp

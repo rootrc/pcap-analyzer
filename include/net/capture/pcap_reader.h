@@ -1,10 +1,8 @@
 #pragma once
 
 #include <net/capture/capture.h>
-#include <net/decode/decoder.h>
 #include <net/capture/packet.h>
-#include <net/flow/flow_tracker.h>
-#include <net/decode/app_decoder.h>
+#include <net/decode/decoder.h>
 
 #include <cstdio>
 
@@ -24,7 +22,8 @@ public:
 
     const Capture& currentCapture() const { return capture_; }
     const FileHeader& fileHeader() const { return file_header_; }
-    const FlowTable& flowTable() const { return flowTable_; }
+    const FlowTable& flowTable() const { return decoder_.flowTable(); }
+    const AppDecoder& appDecoder() const { return decoder_.appDecoder(); }
     Endian endian() const { return endian_; }
     
     void readAllPackets();
@@ -45,8 +44,7 @@ private:
     std::span<const uint8_t> span_;
     Capture capture_{};
     FileHeader file_header_{};
-    FlowTable flowTable_{};
-    AppDecoder appDecoder_{};
+    Decoder decoder_{};
     bool is_nsec_;
     Endian endian_;
     uint64_t skipped_ = 0;
