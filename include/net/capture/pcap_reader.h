@@ -24,6 +24,7 @@ public:
     const FileHeader& fileHeader() const { return file_header_; }
     const FlowTable& flowTable() const { return decoder_.flowTable(); }
     const AppDecoder& appDecoder() const { return decoder_.appDecoder(); }
+    const DnsTable& dnsTable() const { return decoder_.dnsTable(); }
     Endian endian() const { return endian_; }
     
     void readAllPackets();

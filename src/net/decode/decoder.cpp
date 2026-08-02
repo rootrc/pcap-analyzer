@@ -2,6 +2,8 @@
 
 namespace net {
 
+Decoder::Decoder() : dnsTable_(), appDecoder_(dnsTable_) {}
+
 ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& capture) {
     if (auto err = decode::decodePacket(span, capture.pkt); err != ParseError::None) {
         return err;

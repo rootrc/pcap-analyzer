@@ -2,6 +2,8 @@
 
 namespace net {
 
+AppDecoder::AppDecoder(DnsTable& dnsTable) : dnsTable_(dnsTable) {}
+
 ParseError AppDecoder::pollFlow(const FlowKey& key, Flow& flow) {
     FlowApplications flowApplications = flows_[key];
     pollStream(key, flow.fwd_tcp, flowApplications.fwd);
@@ -24,7 +26,7 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
                 applications.decode_failed = true;
                 break;
             }
-
+            dnsTable_.record(header);
             applications.dns_messages.push_back(std::move(header));
             stream.consume(2 + msg_len);
         }
@@ -46,6 +48,7 @@ ParseError AppDecoder::pollDatagram(const FlowKey& key, bool is_reverse, std::sp
             applications.decode_failed = true;
             return ParseError::None;
         }
+        dnsTable_.record(header);
         applications.dns_messages.push_back(std::move(header));
     }
     return ParseError::None;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <net/analysis/dns_table.h>
 #include <net/flow/flow_tracker.h>
 
 #include <unordered_map>
@@ -14,6 +15,7 @@ struct Applications {
 
 class AppDecoder {
 public:
+    explicit AppDecoder(DnsTable& dnsTable);
     ParseError pollFlow(const FlowKey& key, Flow& flow);
     ParseError pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload);
     void reset(const FlowKey& key);
@@ -26,6 +28,7 @@ private:
     };
 
     std::unordered_map<FlowKey, FlowApplications, FlowKeyHash> flows_;
+    DnsTable& dnsTable_;
 
     ParseError pollStream(const FlowKey& key, TcpReassembler& stream, Applications& decoder_state);
 };

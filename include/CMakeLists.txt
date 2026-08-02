@@ -1,4 +1,5 @@
 add_library(network_lib
+    ../src/net/analysis/dns_table.cpp
     ../src/net/capture/packet.cpp
     ../src/net/capture/pcap.cpp
     ../src/net/capture/pcap_reader.cpp
