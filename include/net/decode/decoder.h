@@ -1,6 +1,7 @@
 #pragma once
 
 #include <net/analysis/dns_table.h>
+#include <net/analysis/stats_engine.h>
 #include <net/capture/capture.h>
 #include <net/capture/packet.h>
 #include <net/decode/app_decoder.h>
@@ -19,10 +20,12 @@ public:
     const FlowTable& flowTable() const { return flowTable_; }
     const AppDecoder& appDecoder() const { return appDecoder_; }
     const DnsTable& dnsTable() const { return dnsTable_; }
+    const StatsEngine& statsEngine() const { return statsEngine_; }
 private:
     FlowTable flowTable_;
     DnsTable dnsTable_;
     AppDecoder appDecoder_;
+    StatsEngine statsEngine_;
 };
 
 }
