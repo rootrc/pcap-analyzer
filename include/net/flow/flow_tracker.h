@@ -10,32 +10,32 @@
 
 namespace net {
 
-struct FlowStats {
-    uint64_t packets = 0;
-    uint64_t bytes = 0;
-};
-
-struct Flow {
-    uint64_t first_seen = 0;
-    uint64_t last_seen = 0;
-    FlowStats fwd_stats;
-    FlowStats rev_stats;
-    TcpReassembler fwd_tcp;
-    TcpReassembler rev_tcp;
-    bool is_reverse = false;
-
-    constexpr uint64_t totalPackets() const noexcept { return fwd_stats.packets + rev_stats.packets; }
-    constexpr uint64_t totalBytes() const noexcept { return fwd_stats.bytes + rev_stats.bytes; }
-    constexpr uint64_t durationUs() const noexcept { return last_seen - first_seen; }
-
-    double payloadPercent(uint64_t total_bytes_all) const {
-        if (total_bytes_all == 0) return 0.0;
-        return 100.0 * static_cast<double>(totalBytes()) / static_cast<double>(total_bytes_all);
-    }
-};
-
 class FlowTable {
 public:
+    struct FlowStats {
+        uint64_t packets = 0;
+        uint64_t bytes = 0;
+    };
+
+    struct Flow {
+        uint64_t first_seen = 0;
+        uint64_t last_seen = 0;
+        FlowStats fwd_stats;
+        FlowStats rev_stats;
+        TcpReassembler fwd_tcp;
+        TcpReassembler rev_tcp;
+        bool is_reverse = false;
+
+        constexpr uint64_t totalPackets() const noexcept { return fwd_stats.packets + rev_stats.packets; }
+        constexpr uint64_t totalBytes() const noexcept { return fwd_stats.bytes + rev_stats.bytes; }
+        constexpr uint64_t durationUs() const noexcept { return last_seen - first_seen; }
+
+        double payloadPercent(uint64_t total_bytes_all) const {
+            if (total_bytes_all == 0) return 0.0;
+            return 100.0 * static_cast<double>(totalBytes()) / static_cast<double>(total_bytes_all);
+        }
+    };
+
     FlowTable() = default;
 
     ParseError addPacket(const net::pcap::Capture& capture, FlowKey* out_key = nullptr, bool* out_is_new = nullptr);
@@ -58,14 +58,7 @@ private:
     bool setPorts(const net::Packet::TransportHeader transport, FlowKey& out);
     bool setNetwork(const net::Packet::NetworkHeader network, FlowKey& out);
     
-    bool isExpired(const Flow& flow, uint64_t ts_us) const;
-    
-    void printFlow(std::ostream& os, const FlowKey& key, const Flow& flow) const;
-    std::vector<std::pair<const FlowKey*, const Flow*>> sortedFlowsByBytes() const;
-    std::vector<std::pair<uint8_t, uint64_t>> sortedProtocolsByBytes(std::vector<std::pair<const FlowKey*, const Flow*>> sortedFlow) const;
-    friend std::ostream& operator<<(std::ostream& os, const FlowTable& table);
+    bool isExpired(const FlowTable::Flow& flow, uint64_t ts_us) const;
 };
-
-std::ostream& operator<<(std::ostream& os, const FlowTable& table);
 
 }

@@ -4,7 +4,7 @@ namespace net {
 
 AppDecoder::AppDecoder(DnsTable& dnsTable) : dnsTable_(dnsTable) {}
 
-ParseError AppDecoder::pollFlow(const FlowKey& key, Flow& flow) {
+ParseError AppDecoder::pollFlow(const FlowKey& key, FlowTable::Flow& flow) {
     FlowApplications flowApplications = flows_[key];
     pollStream(key, flow.fwd_tcp, flowApplications.fwd);
     pollStream(key, flow.rev_tcp, flowApplications.rev);

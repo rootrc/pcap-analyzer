@@ -44,13 +44,13 @@ std::ostream& operator<<(std::ostream& os, const FlowKey& key) {
     } else {
         ip::v6::printIp(os, key.src_ip);
     }
-    os << ':' << std::left << std::setw(5) << key.src_port << " -> ";
+    os << ':' << key.src_port << " -> ";
     if (key.isIpv4) {
         ip::v4::printIp(os, key.dst_ip);
     } else {
         ip::v6::printIp(os, key.dst_ip);
     }
-    os << ':' << std::left << std::setw(5) << key.dst_port
+    os << ':' << key.dst_port
        << " (" << ip::protocolName(key.protocol) << ')';
     return os;
 }

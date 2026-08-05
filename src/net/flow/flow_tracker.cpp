@@ -20,7 +20,7 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
 
     total_bytes_ += capture.packetHeader.incl_len;
 
-    std::unordered_map<net::FlowKey, net::Flow, net::FlowKeyHash>::iterator it = flows_.find(key);
+    std::unordered_map<net::FlowKey, net::FlowTable::Flow, net::FlowKeyHash>::iterator it = flows_.find(key);
     if (it != flows_.end() && isExpired(it->second, capture.ts_us)) {
         completed_.emplace_back(key, std::move(it->second));
         flows_.erase(it);
@@ -118,88 +118,6 @@ void FlowTable::flush() {
         completed_.emplace_back(key, std::move(flow));
     }
     flows_.clear();
-}
-
-void FlowTable::printFlow(std::ostream& os, const FlowKey& key, const Flow& flow) const {
-    double percent = flow.payloadPercent(total_bytes());
-    os << "(";
-    (percent > 0.0 && percent < 0.01) ? (os << "<0.01") : (os << percent);
-    os << "%)  " << key;
-    auto printStats = [&](const char* label, const FlowStats& s) {
-        if (!s.bytes) return;
-        os << "  " << label << '=' << s.packets << "pkts/";
-        if (s.bytes > 10 * (1 << 20)) {
-            os << (s.bytes >> 20) << "MB";
-        } else if (s.bytes > 10 * (1 << 10)) {
-            os << (s.bytes >> 10) << "KB";
-        } else {
-            os << s.bytes << "B";
-        }
-        if (s.packets > 1) {
-            os << " avg=" << (s.bytes / s.packets) << "B";
-        }
-    };
-    printStats("fwd", flow.fwd_stats);
-    printStats("rev", flow.rev_stats);
-    if (flow.durationUs() && flow.totalPackets() > 1) {
-        os << "  rate=";
-        double bps = (double)flow.totalBytes() * 8.0 * 1e6 / (double)flow.durationUs();
-        if (bps >= 1e9) {
-            os << std::fixed << std::setprecision(2) << (bps / 1e9) << "Gbps";
-        } else if (bps >= 1e6) {
-            os << std::fixed << std::setprecision(2) << (bps / 1e6) << "Mbps";
-        } else if (bps >= 1e3) {
-            os << std::fixed << std::setprecision(2) << (bps / 1e3) << "Kbps";
-        } else {
-            os << std::fixed << std::setprecision(2) << bps << "bps";
-        }
-    }
-    os << '\n';
-}
-
-
-std::vector<std::pair<const FlowKey*, const Flow*>> FlowTable::sortedFlowsByBytes() const {
-    std::vector<std::pair<const FlowKey*, const Flow*>> sortedFlow;
-    sortedFlow.reserve(completed().size() + flows().size());
-    for (const auto& [k, f] : completed()) {
-        sortedFlow.emplace_back(&k, &f);
-    }
-    for (const auto& [k, f] : flows()) {
-        sortedFlow.emplace_back(&k, &f);
-    }
-    std::sort(sortedFlow.begin(), sortedFlow.end(), [](const auto& a, const auto& b) { return a.second->totalBytes() > b.second->totalBytes(); });
-    return sortedFlow;
-}
-
-std::vector<std::pair<uint8_t, uint64_t>> FlowTable::sortedProtocolsByBytes(std::vector<std::pair<const FlowKey*, const Flow*>> sortedFlow) const {
-    std::unordered_map<uint8_t, uint64_t> protocolBytes;
-    for (const auto& [kp, fp] : sortedFlow) {
-        protocolBytes[kp->protocol] += fp->totalBytes();
-    }
-    std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols(protocolBytes.begin(), protocolBytes.end());
-    std::sort(sortedProtocols.begin(), sortedProtocols.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
-    return sortedProtocols;
-}
-
-std::ostream& operator<<(std::ostream& os, const FlowTable& table) {
-    std::vector<std::pair<const FlowKey*, const Flow*>> sortedFlow = table.sortedFlowsByBytes();
-    std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols = table.sortedProtocolsByBytes(sortedFlow);
-    auto flags = os.flags();
-    os << std::fixed << std::setprecision(2);
-    os << "FlowTable (" << table.completed().size() + table.flows().size() << " flows)  [";
-    for (size_t i = 0; i < sortedProtocols.size(); ++i) {
-        if (i) os << "  ";
-        double pct = table.total_bytes() ? 100.0 * sortedProtocols[i].second / table.total_bytes() : 0.0;
-        os << ip::protocolName(sortedProtocols[i].first) << ": " << pct << '%';
-    }
-    os << "]\n";
-    for (const auto& [key, flow] : sortedFlow) {
-        os << "  ";
-        table.printFlow(os, *key, *flow);
-    }
-    os << "}\n";
-    os.flags(flags);
-    return os;
 }
 
 }
