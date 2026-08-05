@@ -38,7 +38,30 @@ uint64_t computePseudoHeaderSum(const Header& header) {
 }
 
 inline std::ostream& printIp(std::ostream& os, const uint8_t ip[16]) {
+    int bestStart = -1;
+    int bestLen = 0;
     for (int i = 0; i < 16; i += 2) {
+        if (ip[i] << 8 != 0 || ip[i + 1] != 0) continue;
+
+        int start = i;
+        while (i < 16 && ip[i + 2] << 8 == 0 && ip[i + 3] == 0) {
+            i += 2;
+        }
+
+        int len = i - start;
+        if (len > bestLen && len > 0) {
+            bestStart = start;
+            bestLen = len;
+        }
+    }
+    if (bestLen < 2) bestStart = -1;
+
+    for (int i = 0; i < 16; i += 2) {
+        if (i == bestStart) {
+            os << ":";
+            i += bestLen;
+            continue;
+        }
         if (i) os << ':';
         os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(ip[i]) << std::setw(2) << static_cast<int>(ip[i+1]);
     }

@@ -69,6 +69,7 @@ bool FlowTable::setNetwork(const net::Packet::NetworkHeader network, FlowKey& ou
         [&](const ip::v6::Header& v6) {
             memcpy(out.src_ip, v6.src_ip, 16);
             memcpy(out.dst_ip, v6.dst_ip, 16);
+            out.isIpv4 = false;
             return true;
         },
         [&](const arp::Header&) { return false; },
