@@ -4,8 +4,9 @@ include(GoogleTest)
 set(TEST_MAIN test_main.cpp)
 
 add_library(test_lib
-    testgen/packet_generator.cpp
     testgen/protocol_generator.cpp
+    testgen/packet_generator.cpp
+    testgen/pcap_generator.cpp
 )
 
 target_include_directories(test_lib
@@ -21,9 +22,10 @@ target_link_libraries(test_lib
 set(RANDOMIZED_ITERATIONS 100 CACHE STRING "Number of randomized test iterations")
 
 set(CAPTURE_TESTS
-    packet
     pcap_file_header
     pcap_packet_header
+    packet
+    pcap_reader
 )
 
 foreach(test IN LISTS CAPTURE_TESTS)
