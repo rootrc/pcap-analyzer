@@ -39,6 +39,7 @@ size_t FlowKeyHash::operator()(const FlowKey& k) const noexcept {
 }
 
 std::ostream& operator<<(std::ostream& os, const FlowKey& key) {
+    auto flags = os.flags();
     if (key.isIpv4) {
         ip::v4::printIp(os, key.src_ip);
     } else {
@@ -52,6 +53,7 @@ std::ostream& operator<<(std::ostream& os, const FlowKey& key) {
     }
     os << ':' << key.dst_port
        << " (" << ip::protocolName(key.protocol) << ')';
+    os.flags(flags);
     return os;
 }
 
