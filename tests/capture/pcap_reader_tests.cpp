@@ -14,7 +14,7 @@ net::ParseError parsePcapFile(std::span<const uint8_t>&) {
     return reader.lastSkipErr();
 }
 
-void makePcapFile() {
+void makePcapFile(uint8_t*) {
     FILE* file = std::fopen("pcap_reader_test.pcap", "wb");
     if (!file) {
         throw std::runtime_error("pcap_reader_tests: failed to open temp file");
@@ -23,4 +23,4 @@ void makePcapFile() {
     std::fclose(file);
 }
 
-RANDOMIZED_TEST(PCAP_READER, Randomized, 10, [](uint8_t*) {makePcapFile();}, parsePcapFile)
+RANDOMIZED_TEST(PCAP_READER, Randomized, 10, makePcapFile, parsePcapFile)

@@ -6,8 +6,6 @@
 
 namespace testgen {
 
-constexpr size_t PACKET_LEN = 1024;
-
 void makePcapFile(FILE* f, size_t num_packets);
 
 }

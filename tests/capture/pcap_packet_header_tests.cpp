@@ -33,7 +33,7 @@ auto parsePcapPacketHeader = test::bindHeaderParser<
     net::Endian::Little
 );
 
-RANDOMIZED_TEST(PCAP_PACKET, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makePcapPacketHeader(data, 1 << 16); }, parsePcapPacketHeader)
+RANDOMIZED_TEST(PCAP_PACKET, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makePcapPacketHeader(data);}, parsePcapPacketHeader)
 HEADER_TEST(PCAP_PACKET, UnexpectedEndofBuffer, packet_header_endof, net::ParseError::UnexpectedEof, parsePcapPacketHeader)
 HEADER_TEST(PCAP_PACKET, RejectsInvalidFieldValue, packet_header_field, net::ParseError::InvalidFieldValue, parsePcapPacketHeader)
 HEADER_TEST(PCAP_PACKET, RejectsMalformedHeader, packet_header_malformed, net::ParseError::MalformedHeader, parsePcapPacketHeader)

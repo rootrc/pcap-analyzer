@@ -81,7 +81,7 @@ auto parseDns = test::bindHeaderParser<
     net::Endian::Big
 );
 
-RANDOMIZED_TEST(DNS, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeDnsHeader(data);}, parseDns)
+RANDOMIZED_TEST(DNS, Randomized, g_randomizedIterations, testgen::makeDnsHeader, parseDns)
 HEADER_TEST(DNS, UnexpectedEndofBuffer, dns_endof, net::ParseError::UnexpectedEof, parseDns)
 HEADER_TEST(DNS, UnexpectedEndofBufferQuestion, dns_question_endof, net::ParseError::UnexpectedEof, parseDns)
 HEADER_TEST(DNS, UnexpectedEndofBufferName, dns_name_endof, net::ParseError::UnexpectedEof, parseDns)

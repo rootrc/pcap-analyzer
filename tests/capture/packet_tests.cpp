@@ -17,4 +17,4 @@ auto parsePcapPacket = test::bindHeaderParser<
     decodePcapPacket
 );
 
-RANDOMIZED_TEST(PCAP_PACKET, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makePcapPacket(data, 1024);}, parsePcapPacket)
+RANDOMIZED_TEST(PCAP_PACKET, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makePcapPacket(data);}, parsePcapPacket)

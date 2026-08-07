@@ -54,7 +54,7 @@ auto parseArp = test::bindHeaderParser<
     net::Endian::Big
 );
 
-RANDOMIZED_TEST(ARP, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeArpHeader(data);}, parseArp)
+RANDOMIZED_TEST(ARP, Randomized, g_randomizedIterations, testgen::makeArpHeader, parseArp)
 HEADER_TEST(ARP, UnexpectedEndofBuffer, arp_endof, net::ParseError::UnexpectedEof, parseArp)
 HEADER_TEST(ARP, UnexpectedEndofBufferAddress, arp_endof_address, net::ParseError::UnexpectedEof, parseArp)
 HEADER_TEST(ARP, RejectsInvalidFieldValueHlen, arp_endof_field_hlen, net::ParseError::InvalidFieldValue, parseArp)
