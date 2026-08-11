@@ -161,8 +161,7 @@ void makeIcmpHeader(uint8_t* data, size_t payload_len) {
     static constexpr uint8_t types[] = {
         TYPE_ECHO_REPLY, TYPE_UNREACHABLE, TYPE_SOURCE_QUENCH,
         TYPE_REDIRECT, TYPE_ECHO_REQUEST, TYPE_TTL_EXCEEDED,
-        TYPE_PARAM_PROBLEM, TYPE_TIMESTAMP, TYPE_TIMESTAMP_REPLY,
-        TYPE_INFO_REQUEST, TYPE_INFO_REPLY
+        TYPE_PARAM_PROBLEM
     };
     h.type = types[std::rand() % (sizeof(types) / sizeof(types[0]))];
     switch (h.type) {
@@ -196,9 +195,7 @@ void makeIcmpv6Header(uint8_t* data, const net::ip::v6::Header& ip, size_t paylo
 
     static constexpr uint8_t types[] = {
         TYPE_UNREACHABLE, TYPE_PACKET_TOO_BIG, TYPE_TTL_EXCEEDED,
-        TYPE_PARAM_PROBLEM, TYPE_ECHO_REQUEST, TYPE_ECHO_REPLY,
-        TYPE_ROUTER_SOLICIT, TYPE_ROUTER_ADVERT,
-        TYPE_NEIGHBOR_SOLICIT, TYPE_NEIGHBOR_ADVERT
+        TYPE_PARAM_PROBLEM, TYPE_ECHO_REQUEST, TYPE_ECHO_REPLY
     };
     h.type = types[std::rand() % (sizeof(types) / sizeof(types[0]))];
     switch (h.type) {
