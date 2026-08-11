@@ -29,7 +29,6 @@ void Packet::setTransportFromProtocol(uint8_t protocol) noexcept {
 }
 
 void Packet::reset() noexcept {
-    datalink = std::monostate{};
     vlan_tags.clear();
     network = std::monostate{};
     transport = std::monostate{};
