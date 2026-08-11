@@ -4,6 +4,7 @@
 #include <net/util/parse_error.h>
 
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/html/rfc826
 
@@ -28,6 +29,8 @@ struct Header {
     const uint8_t* spa;
     const uint8_t* tha;
     const uint8_t* tpa;
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_STRUCT_LEN);

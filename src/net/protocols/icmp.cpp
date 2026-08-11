@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::icmp {
     
@@ -51,79 +52,84 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     return ParseError::None;
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "ICMPHeader {\n"
-        << "  type: " << static_cast<int>(h.type) << " (";
-    switch (h.type) {
-        case TYPE_ECHO_REPLY: os << "echo reply"; break;
-        case TYPE_UNREACHABLE: os << "unreachable"; break;
-        case TYPE_SOURCE_QUENCH: os << "source quench"; break;
-        case TYPE_REDIRECT: os << "redirect"; break;
-        case TYPE_ECHO_REQUEST: os << "echo request"; break;
-        case TYPE_TTL_EXCEEDED: os << "TTL exceeded"; break;
-        case TYPE_PARAM_PROBLEM: os << "param problem"; break;
-        case TYPE_TIMESTAMP: os << "timestamp"; break;
-        case TYPE_TIMESTAMP_REPLY: os << "timestamp reply"; break;
-        case TYPE_INFO_REQUEST: os << "info request"; break;
-        case TYPE_INFO_REPLY: os << "info reply"; break;
-        default: os << "unknown"; break;
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "ICMPHeader {\n"
+        << "  type: " << static_cast<int>(type) << " (";
+    switch (type) {
+        case TYPE_ECHO_REPLY: oss << "echo reply"; break;
+        case TYPE_UNREACHABLE: oss << "unreachable"; break;
+        case TYPE_SOURCE_QUENCH: oss << "source quench"; break;
+        case TYPE_REDIRECT: oss << "redirect"; break;
+        case TYPE_ECHO_REQUEST: oss << "echo request"; break;
+        case TYPE_TTL_EXCEEDED: oss << "TTL exceeded"; break;
+        case TYPE_PARAM_PROBLEM: oss << "param problem"; break;
+        case TYPE_TIMESTAMP: oss << "timestamp"; break;
+        case TYPE_TIMESTAMP_REPLY: oss << "timestamp reply"; break;
+        case TYPE_INFO_REQUEST: oss << "info request"; break;
+        case TYPE_INFO_REPLY: oss << "info reply"; break;
+        default: oss << "unknown"; break;
     }
-    os << ")\n";
-    switch (h.type) {
+    oss << ")\n";
+    switch (type) {
         case TYPE_UNREACHABLE:
-            os << "  code: " << static_cast<int>(h.code);
-            switch (h.code) {
-                case CODE_NET_UNREACHABLE: os << " (net unreachable)"; break;
-                case CODE_HOST_UNREACHABLE: os << " (host unreachable)"; break;
-                case CODE_PORT_UNREACHABLE: os << " (port unreachable)"; break;
+            oss << "  code: " << static_cast<int>(code);
+            switch (code) {
+                case CODE_NET_UNREACHABLE: oss << " (net unreachable)"; break;
+                case CODE_HOST_UNREACHABLE: oss << " (host unreachable)"; break;
+                case CODE_PORT_UNREACHABLE: oss << " (port unreachable)"; break;
                 default: break;
             }
-            os << '\n';
+            oss << '\n';
             break;
         case TYPE_REDIRECT:
-            os << "  code: " << static_cast<int>(h.code);
-            switch (h.code) {
-                case CODE_REDIRECT_NET: os << " (redirect for network)"; break;
-                case CODE_REDIRECT_HOST: os << " (redirect for host)"; break;
-                case CODE_REDIRECT_TOS_NET: os << " (redirect for TOS and network)"; break;
-                case CODE_REDIRECT_TOS_HOST: os << " (redirect for TOS and host)"; break;
+            oss << "  code: " << static_cast<int>(code);
+            switch (code) {
+                case CODE_REDIRECT_NET: oss << " (redirect for network)"; break;
+                case CODE_REDIRECT_HOST: oss << " (redirect for host)"; break;
+                case CODE_REDIRECT_TOS_NET: oss << " (redirect for TOS and network)"; break;
+                case CODE_REDIRECT_TOS_HOST: oss << " (redirect for TOS and host)"; break;
                 default: break;
             }
-            os << '\n';
-            os << "  gateway: ";
-            ip::v4::printIp(os, h.gateway);
-            os << '\n';
+            oss << '\n'
+                << "  gateway: ";
+            ip::v4::printIp(oss, gateway);
+            oss << '\n';
             break;
         case TYPE_TTL_EXCEEDED:
-            os << "  code: " << static_cast<int>(h.code);
-            switch (h.code) {
-                case CODE_TTL_IN_TRANSIT: os << " (TTL exceeded in transit)"; break;
-                case CODE_TTL_REASSEMBLY: os << " (fragment reassembly exceeded)"; break;
+            oss << "  code: " << static_cast<int>(code);
+            switch (code) {
+                case CODE_TTL_IN_TRANSIT: oss << " (TTL exceeded in transit)"; break;
+                case CODE_TTL_REASSEMBLY: oss << " (fragment reassembly exceeded)"; break;
                 default: break;
             }
-            os << '\n';
+            oss << '\n';
             break;
         case TYPE_PARAM_PROBLEM:
-            os << "  code: " << static_cast<int>(h.code);
-            switch (h.code) {
-                case CODE_PARAM_BAD_HEADER: os << " (bad header)"; break;
-                case CODE_PARAM_MISSING_OPT: os << " (missing option)"; break;
+            oss << "  code: " << static_cast<int>(code);
+            switch (code) {
+                case CODE_PARAM_BAD_HEADER: oss << " (bad header)"; break;
+                case CODE_PARAM_MISSING_OPT: oss << " (missing option)"; break;
                 default: break;
             }
-            os << '\n';
-            os << "  pointer: " << static_cast<int>(h.param_problem.pointer) << '\n';
+            oss << '\n'
+                << "  pointer: " << static_cast<int>(param_problem.pointer) << '\n';
             break;
         case TYPE_ECHO_REQUEST:
         case TYPE_ECHO_REPLY:
-            os << "  id: " << h.echo.id << '\n'
-                << "  seq: " << h.echo.seq << '\n';
+            oss << "  id: " << echo.id << '\n'
+                << "  seq: " << echo.seq << '\n';
             break;
         default:
             break;
     }
-    os << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.checksum << std::dec << '\n';
-    os << "}";
-    return os;
+    oss << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << std::dec << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

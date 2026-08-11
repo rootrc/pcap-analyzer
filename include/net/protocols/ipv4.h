@@ -4,6 +4,7 @@
 #include <net/util/parse_error.h>
 
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/html/rfc791
 
@@ -36,6 +37,8 @@ struct Header {
     constexpr bool dontFragment() const noexcept { return flags() & 0x2; }
     constexpr bool moreFragments() const noexcept { return flags() & 0x1; }
     constexpr uint16_t fragment() const noexcept { return flags_fragment & 0x1FFF; }
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == MIN_HEADER_LEN);

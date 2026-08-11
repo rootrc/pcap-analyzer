@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::icmpv6 {
 
@@ -55,66 +56,71 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::H
     return ParseError::None;
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "ICMPv6Header {\n"
-        << "  type: " << static_cast<int>(h.type) << " (";
-    switch (h.type) {
-        case TYPE_UNREACHABLE: os << "unreachable"; break;
-        case TYPE_PACKET_TOO_BIG: os << "packet too big"; break;
-        case TYPE_TTL_EXCEEDED: os << "TTL exceeded"; break;
-        case TYPE_PARAM_PROBLEM: os << "param problem"; break;
-        case TYPE_ECHO_REQUEST: os << "echo request"; break;
-        case TYPE_ECHO_REPLY: os << "echo reply"; break;
-        default: os << "unknown"; break;
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "ICMPv6Header {\n"
+        << "  type: " << static_cast<int>(type) << " (";
+    switch (type) {
+        case TYPE_UNREACHABLE: oss << "unreachable"; break;
+        case TYPE_PACKET_TOO_BIG: oss << "packet too big"; break;
+        case TYPE_TTL_EXCEEDED: oss << "TTL exceeded"; break;
+        case TYPE_PARAM_PROBLEM: oss << "param problem"; break;
+        case TYPE_ECHO_REQUEST: oss << "echo request"; break;
+        case TYPE_ECHO_REPLY: oss << "echo reply"; break;
+        default: oss << "unknown"; break;
     }
-    os << ")\n";
-    switch (h.type) {
+    oss << ")\n";
+    switch (type) {
         case TYPE_UNREACHABLE:
-            os << "  code: " << static_cast<int>(h.code);
-            switch (h.code) {
-                case CODE_UNREACH_NO_ROUTE: os << " (no route to destination)"; break;
-                case CODE_UNREACH_ADMIN: os << " (admin prohibited)"; break;
-                case CODE_UNREACH_BEYOND_SCOPE: os << " (beyond scope of source address)"; break;
-                case CODE_UNREACH_ADDR: os << " (address unreachable)"; break;
-                case CODE_UNREACH_PORT: os << " (port unreachable)"; break;
+            oss << "  code: " << static_cast<int>(code);
+            switch (code) {
+                case CODE_UNREACH_NO_ROUTE: oss << " (no route to destination)"; break;
+                case CODE_UNREACH_ADMIN: oss << " (admin prohibited)"; break;
+                case CODE_UNREACH_BEYOND_SCOPE: oss << " (beyond scope of source address)"; break;
+                case CODE_UNREACH_ADDR: oss << " (address unreachable)"; break;
+                case CODE_UNREACH_PORT: oss << " (port unreachable)"; break;
                 default: break;
             }
-            os << '\n';
+            oss << '\n';
             break;
         case TYPE_TTL_EXCEEDED:
-            os << "  code: " << static_cast<int>(h.code);
-            switch (h.code) {
-                case CODE_TTL_IN_TRANSIT: os << " (hop limit exceeded in transit)"; break;
-                case CODE_TTL_REASSEMBLY: os << " (fragment reassembly time exceeded)"; break;
+            oss << "  code: " << static_cast<int>(code);
+            switch (code) {
+                case CODE_TTL_IN_TRANSIT: oss << " (hop limit exceeded in transit)"; break;
+                case CODE_TTL_REASSEMBLY: oss << " (fragment reassembly time exceeded)"; break;
                 default: break;
             }
-            os << '\n';
+            oss << '\n';
             break;
         case TYPE_PARAM_PROBLEM:
-            os << "  code: " << static_cast<int>(h.code);
-            switch (h.code) {
-                case CODE_PARAM_BAD_HEADER: os << " (erroneous header field)"; break;
-                case CODE_PARAM_UNKNOWN_NEXT: os << " (unrecognized next header)"; break;
-                case CODE_PARAM_UNKNOWN_OPTION: os << " (unrecognized option)"; break;
+            oss << "  code: " << static_cast<int>(code);
+            switch (code) {
+                case CODE_PARAM_BAD_HEADER: oss << " (erroneous header field)"; break;
+                case CODE_PARAM_UNKNOWN_NEXT: oss << " (unrecognized next header)"; break;
+                case CODE_PARAM_UNKNOWN_OPTION: oss << " (unrecognized option)"; break;
                 default: break;
             }
-            os << '\n';
-            os << "  pointer: " << h.pointer << '\n';
+            oss << '\n'
+                << "  pointer: " << pointer << '\n';
             break;
         case TYPE_PACKET_TOO_BIG:
-            os << "  mtu: " << h.mtu << '\n';
+            oss << "  mtu: " << mtu << '\n';
             break;
         case TYPE_ECHO_REQUEST:
         case TYPE_ECHO_REPLY:
-            os << "  id: " << h.echo.id << '\n'
-               << "  seq: " << h.echo.seq << '\n';
+            oss << "  id: " << echo.id << '\n'
+                << "  seq: " << echo.seq << '\n';
             break;
         default:
             break;
     }
-    os << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.checksum << std::dec << '\n';
-    os << "}";
-    return os;
+    oss << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << std::dec << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

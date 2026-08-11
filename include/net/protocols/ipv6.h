@@ -4,6 +4,7 @@
 #include <net/util/parse_error.h>
 
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/html/rfc8200
 
@@ -25,6 +26,8 @@ struct Header {
     constexpr uint8_t version() const noexcept { return version_tc_fl >> 28; }
     constexpr uint8_t tc() const noexcept { return (version_tc_fl >> 20) & 0xFF; }
     constexpr uint32_t fl() const noexcept { return version_tc_fl & 0x000FFFFF; }
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);

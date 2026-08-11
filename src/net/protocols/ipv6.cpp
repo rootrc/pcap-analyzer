@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::ip::v6 {
 
@@ -68,22 +69,27 @@ inline std::ostream& printIp(std::ostream& os, const uint8_t ip[16]) {
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "IPv6Header {\n"
-        << "  version: " << static_cast<int>(h.version()) << '\n'
-        << "  traffic_class: " << static_cast<int>(h.tc()) << '\n'
-        << "  flow_label: 0x" << std::hex << std::setfill('0') << std::setw(5) << h.fl() << std::dec << '\n'
-        << "  payload_length: " << h.payload_length << '\n'
-        << "  next_header: " << static_cast<int>(h.next_header) << " (" << ip::protocolName(h.next_header) << ")\n"
-        << "  hop_limit: " << static_cast<int>(h.hop_limit) << '\n'
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "IPv6Header {\n"
+        << "  version: " << static_cast<int>(version()) << '\n'
+        << "  traffic_class: " << static_cast<int>(tc()) << '\n'
+        << "  flow_label: 0x" << std::hex << std::setfill('0') << std::setw(5) << fl() << std::dec << '\n'
+        << "  payload_length: " << payload_length << '\n'
+        << "  next_header: " << static_cast<int>(next_header) << " (" << ip::protocolName(next_header) << ")\n"
+        << "  hop_limit: " << static_cast<int>(hop_limit) << '\n'
         << "  src_ip: ";
-    printIp(os, h.src_ip);
-    os << '\n'
-       << "  dst_ip: ";
-    printIp(os, h.dst_ip);
-    os << '\n'
+    printIp(oss, src_ip);
+    oss << '\n'
+        << "  dst_ip: ";
+    printIp(oss, dst_ip);
+    oss << '\n'
         << "}";
-    return os;
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

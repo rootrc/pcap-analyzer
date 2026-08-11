@@ -4,6 +4,7 @@
 #include <net/util/parse_error.h>
 
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/html/rfc792
 
@@ -48,6 +49,8 @@ struct Header {
         uint32_t gateway; // type 5
         struct { uint16_t id; uint16_t seq; } echo; // type 0/8
     }; // 13/14/15/16 unsupported
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);

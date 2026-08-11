@@ -6,6 +6,7 @@
 #include <net/protocols/ipv6.h>
 
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/html/rfc768
 
@@ -19,6 +20,8 @@ struct Header {
     uint16_t dst_port;
     uint16_t length;
     uint16_t checksum;
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);

@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::ip::v4 {
 
@@ -61,32 +62,37 @@ std::ostream& printIp(std::ostream& os, const uint8_t ip[4]) {
               << static_cast<int>(ip[3]);
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "IPv4Header {\n"
-        << "  version: " << static_cast<int>(h.version()) << '\n'
-        << "  ihl: " << static_cast<int>(h.ihl()) << '\n'
-        << "  tos: 0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(h.tos) << std::dec << '\n'
-        << "  total_length: " << h.total_length << '\n'
-        << "  identification: " << h.identification << '\n'
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "IPv4Header {\n"
+        << "  version: " << static_cast<int>(version()) << '\n'
+        << "  ihl: " << static_cast<int>(ihl()) << '\n'
+        << "  tos: 0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(tos) << std::dec << '\n'
+        << "  total_length: " << total_length << '\n'
+        << "  identification: " << identification << '\n'
         << "  flags: "
-        << ((h.dontFragment()) ? "DF" : "")
-        << ((h.moreFragments()) ? "MF" : "")
-        << ((!h.dontFragment() && !h.moreFragments()) ? "none" : "")
-        << " (0b" << ((h.flags() >> 2) & 1)
-        << ((h.flags() >> 1) & 1)
-        << (h.flags() & 1) << ")\n"
-        << "  fragment: " << h.fragment() << '\n'
-        << "  ttl: " << static_cast<int>(h.ttl) << '\n'
-        << "  protocol: " << static_cast<int>(h.protocol) << " (" << ip::protocolName(h.protocol) << ")\n"
-        << "  checksum: 0x" << std::hex << h.checksum << std::dec << '\n'
+        << ((dontFragment()) ? "DF" : "")
+        << ((moreFragments()) ? "MF" : "")
+        << ((!dontFragment() && !moreFragments()) ? "none" : "")
+        << " (0b" << ((flags() >> 2) & 1)
+        << ((flags() >> 1) & 1)
+        << (flags() & 1) << ")\n"
+        << "  fragment: " << fragment() << '\n'
+        << "  ttl: " << static_cast<int>(ttl) << '\n'
+        << "  protocol: " << static_cast<int>(protocol) << " (" << ip::protocolName(protocol) << ")\n"
+        << "  checksum: 0x" << std::hex << checksum << std::dec << '\n'
         << "  src_ip: " ;
-        printIp(os, h.src_ip);
-    os << '\n'
+    printIp(oss, src_ip);
+    oss << '\n'
         << "  dst_ip: ";
-    printIp(os, h.dst_ip);
-    os << '\n'
+    printIp(oss, dst_ip);
+    oss << '\n'
         << "}";
-    return os;
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

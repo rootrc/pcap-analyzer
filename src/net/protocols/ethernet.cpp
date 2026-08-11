@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::ethernet {
 
@@ -23,17 +24,22 @@ std::ostream& printMac(std::ostream& os, const uint8_t mac[6]) {
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "EthernetHeader {\n"
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "EthernetHeader {\n"
         << "  dst_mac: ";
-    printMac(os, h.dst_mac);
-    os << '\n'
+    printMac(oss, dst_mac);
+    oss << '\n'
         << "  src_mac: ";
-    printMac(os, h.src_mac);
-    os << '\n'
-        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ethertype << " ("  << ethertypeName(h.ethertype) << std::dec << ")\n"
+    printMac(oss, src_mac);
+    oss << '\n'
+        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << ethertype << " ("  << ethertypeName(ethertype) << std::dec << ")\n"
         << "}";
-    return os;
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

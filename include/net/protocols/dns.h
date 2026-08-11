@@ -96,6 +96,8 @@ struct Header {
     bool isRD() const noexcept { return flags & 0x0100; }
     bool isRA() const noexcept { return flags & 0x0080; }
     uint8_t rcode() const noexcept { return flags & 0x000F; }
+
+    std::string toString() const noexcept;
 };
 
 ParseError parseName(std::span<const uint8_t>& span, const uint8_t* dns_base, std::string& name, Endian endian);

@@ -2,6 +2,7 @@
 #include <net/util/checksum.h>
 
 #include <cstring>
+#include <sstream>
 #include <iomanip>
 
 namespace net::udp {
@@ -33,15 +34,20 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo
     span = span.subspan(HEADER_LEN);
     return ParseError::None;
 }
+
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "UDPHeader {\n"
+        << "  src_port: " << src_port << '\n'
+        << "  dst_port: " << dst_port << '\n'
+        << "  length: " << length << '\n'
+        << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << '\n'
+        << "}";
+    return oss.str();
+}
     
 std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "UDPHeader {\n"
-        << "  src_port: " << h.src_port << '\n'
-        << "  dst_port: " << h.dst_port << '\n'
-        << "  length: " << h.length << '\n'
-        << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.checksum << '\n'
-        << "}";
-    return os;
+    return os << h.toString();
 }
 
 }

@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::vlan {
 
@@ -18,14 +19,19 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     return ParseError::None;
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "VLANHeader {\n"
-        << "  pcp: " << static_cast<int>(h.pcp()) << '\n'
-        << "  dei: " << static_cast<int>(h.dei()) << '\n'
-        << "  vid: " << h.vid() << '\n'
-        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ethertype << " ("  << ethernet::ethertypeName(h.ethertype) << std::dec << ")\n"
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "VLANHeader {\n"
+        << "  pcp: " << static_cast<int>(pcp()) << '\n'
+        << "  dei: " << static_cast<int>(dei()) << '\n'
+        << "  vid: " << vid() << '\n'
+        << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << ethertype << " ("  << ethernet::ethertypeName(ethertype) << std::dec << ")\n"
         << "}";
-    return os;
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

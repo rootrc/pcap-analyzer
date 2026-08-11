@@ -5,6 +5,7 @@
 #include <net/protocols/ipv6.h>
 
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/html/rfc4443
 
@@ -48,6 +49,8 @@ struct Header {
         uint32_t mtu; // type 2
         uint32_t pointer; // type 4
     }; // 133/134/135/136 unsupported
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);

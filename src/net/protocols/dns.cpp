@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::dns {
 
@@ -111,40 +112,45 @@ const char* typeName(uint16_t type) {
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "DNSHeader {\n"
-       << "  id: " << h.id << '\n'
-       << "  flags: " << (h.isResponse() ? "response" : "query");
-    if (h.isAA()) os << " AA";
-    if (h.isTC()) os << " TC";
-    if (h.isRD()) os << " RD";
-    if (h.isRA()) os << " RA";
-    os << "  rcode=" << static_cast<int>(h.rcode()) << '\n';
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "DNSHeader {\n"
+        << "  id: " << id << '\n'
+        << "  flags: " << (isResponse() ? "response" : "query");
+    if (isAA()) oss << " AA";
+    if (isTC()) oss << " TC";
+    if (isRD()) oss << " RD";
+    if (isRA()) oss << " RA";
+    oss << "  rcode=" << static_cast<int>(rcode()) << '\n';
 
-    for (const net::dns::Question& q : h.questions) {
-        os << "  ? " << q.name << " " << typeName(q.qtype) << '\n';
+    for (const net::dns::Question& q : questions) {
+        oss << "  ? " << q.name << " " << typeName(q.qtype) << '\n';
     }
-    for (const auto& rr : h.answers) {
-        os << "  " << typeName(rr.type) << " " << rr.name << " ttl=" << rr.ttl << " ";
+    for (const auto& rr : answers) {
+        oss << "  " << typeName(rr.type) << " " << rr.name << " ttl=" << rr.ttl << " ";
         if (rr.type == TYPE_A && rr.rdata.size() == 4) {
-            ip::v4::printIp(os, rr.rdata.data());
+            ip::v4::printIp(oss, rr.rdata.data());
         } else if (rr.type == TYPE_AAAA && rr.rdata.size() == 16) {
-            ip::v6::printIp(os, rr.rdata.data());
+            ip::v6::printIp(oss, rr.rdata.data());
         } else if (rr.type == TYPE_TXT && !rr.rdata.empty()) {
             uint8_t len = rr.rdata[0];
-            os << '"';
-            os.write(reinterpret_cast<const char*>(rr.rdata.data() + 1), std::min((size_t)len, rr.rdata.size() - 1));
-            os << '"';
+            oss << '"';
+            oss.write(reinterpret_cast<const char*>(rr.rdata.data() + 1), std::min((size_t)len, rr.rdata.size() - 1));
+            oss << '"';
         } else {
-            auto f = os.flags();
-            os << std::hex << std::setfill('0');
-            for (uint8_t b : rr.rdata) os << std::setw(2) << static_cast<int>(b);
-            os.flags(f);
+            auto f = oss.flags();
+            oss << std::hex << std::setfill('0');
+            for (uint8_t b : rr.rdata) oss << std::setw(2) << static_cast<int>(b);
+            oss.flags(f);
         }
-        os << '\n';
+        oss << '\n';
     }
-    os << "}";
-    return os;
+    oss << "}";
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

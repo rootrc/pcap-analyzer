@@ -1,9 +1,10 @@
+#include <net/protocols/arp.h>
 #include <net/protocols/ethernet.h>
 #include <net/protocols/ipv4.h>
-#include <net/protocols/arp.h>
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::arp {
 
@@ -34,40 +35,45 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     return ParseError::None;
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
     auto printHex = [&](const uint8_t* p, uint8_t len) {
         for (uint8_t i = 0; i < len; ++i) {
-            if (i) os << '-';
-            os << std::hex << std::setfill('0') << std::setw(2) << (int)p[i];
+            if (i) oss << '-';
+            oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(p[i]);
         }
-        os << std::dec;
+        oss << std::dec;
     };
     auto printHw = [&](const uint8_t* p) {
-        if (h.htype == HTYPE_ETHERNET) ethernet::printMac(os, p);
-        else printHex(p, h.hlen);
+        if (htype == HTYPE_ETHERNET) ethernet::printMac(oss, p);
+        else printHex(p, hlen);
     };
     auto printProto = [&](const uint8_t* p) {
-        if (h.ptype == ethernet::ETHERTYPE_IPV4) ip::v4::printIp(os, p);
-        else printHex(p, h.plen);
+        if (ptype == ethernet::ETHERTYPE_IPV4) ip::v4::printIp(oss, p);
+        else printHex(p, plen);
     };
 
-    os << "ArpHeader {\n"
-       << "  htype: " << h.htype;
-    if (h.htype == HTYPE_ETHERNET) os << " (Ethernet)";
-    os << '\n'
-       << "  ptype: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.ptype << std::dec;
-    if (h.ptype == ethernet::ETHERTYPE_IPV4) os << " (IPv4)";
-    os << '\n'
-       << "  oper: " << h.oper;
-    if (h.oper == OPER_REQUEST) os << " (request)";
-    else if (h.oper == OPER_REPLY) os << " (reply)";
-    os << '\n'
-       << "  sha: "; printHw(h.sha); os << '\n'
-       << "  spa: "; printProto(h.spa); os << '\n'
-       << "  tha: "; printHw(h.tha); os << '\n'
-       << "  tpa: "; printProto(h.tpa); os << '\n'
-       << "}";
-    return os;
+    oss << "ArpHeader {\n"
+        << "  htype: " << htype;
+    if (htype == HTYPE_ETHERNET) oss << " (Ethernet)";
+    oss << '\n'
+        << "  ptype: 0x" << std::hex << std::setfill('0') << std::setw(4) << ptype << std::dec;
+    if (ptype == ethernet::ETHERTYPE_IPV4) oss << " (IPv4)";
+    oss << '\n'
+        << "  oper: " << oper;
+    if (oper == OPER_REQUEST) oss << " (request)";
+    else if (oper == OPER_REPLY) oss << " (reply)";
+    oss << '\n'
+        << "  sha: "; printHw(sha); oss << '\n'
+        << "  spa: "; printProto(spa); oss << '\n'
+        << "  tha: "; printHw(tha); oss << '\n'
+        << "  tpa: "; printProto(tpa); oss << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

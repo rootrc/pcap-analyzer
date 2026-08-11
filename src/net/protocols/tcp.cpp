@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 
 namespace net::tcp {
 
@@ -46,29 +47,34 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, 
     return ParseError::None;
 }
 
-std::ostream& operator<<(std::ostream& os, const Header& h) {
-    os << "TCPHeader {\n"
-        << "  src_port: " << h.src_port << '\n'
-        << "  dst_port: " << h.dst_port << '\n'
-        << "  seq_number: " << h.seq_number << '\n'
-        << "  ack_number: " << h.ack_number << '\n'
-        << "  data_offset: 0x" << std::hex << static_cast<int>(h.data_offset()) << std::dec << '\n'
+std::string Header::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "TCPHeader {\n"
+        << "  src_port: " << src_port << '\n'
+        << "  dst_port: " << dst_port << '\n'
+        << "  seq_number: " << seq_number << '\n'
+        << "  ack_number: " << ack_number << '\n'
+        << "  data_offset: 0x" << std::hex << static_cast<int>(data_offset()) << std::dec << '\n'
         << "  flags: "
-        << (h.cwr() ? "CWR " : "")
-        << (h.ece() ? "ECE " : "")
-        << (h.urg() ? "URG " : "")
-        << (h.ack() ? "ACK " : "")
-        << (h.psh() ? "PSH " : "")
-        << (h.rst() ? "RST " : "")
-        << (h.syn() ? "SYN " : "")
-        << (h.fin() ? "FIN " : "")
-        << (h.flags == 0 ? "none " : "")
-        << "(0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(h.flags) << std::dec << ")\n"
-        << "  window_size: " << h.window_size << '\n'
-        << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << h.checksum << std::dec << '\n'
-        << "  urgent_pointer: " << h.urgent_pointer << '\n'
+        << (cwr() ? "CWR " : "")
+        << (ece() ? "ECE " : "")
+        << (urg() ? "URG " : "")
+        << (ack() ? "ACK " : "")
+        << (psh() ? "PSH " : "")
+        << (rst() ? "RST " : "")
+        << (syn() ? "SYN " : "")
+        << (fin() ? "FIN " : "")
+        << (flags == 0 ? "none " : "")
+        << "(0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(flags) << std::dec << ")\n"
+        << "  window_size: " << window_size << '\n'
+        << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << std::dec << '\n'
+        << "  urgent_pointer: " << urgent_pointer << '\n'
         << "}";
-    return os;
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Header& h) {
+    return os << h.toString();
 }
 
 }

@@ -6,6 +6,7 @@
 #include <net/protocols/ipv6.h>
 
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/html/rfc768
 
@@ -38,6 +39,8 @@ struct Header {
     constexpr bool rst() const noexcept { return flags & 0x04; }
     constexpr bool syn() const noexcept { return flags & 0x02; }
     constexpr bool fin() const noexcept { return flags & 0x01; }
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == MIN_HEADER_LEN);

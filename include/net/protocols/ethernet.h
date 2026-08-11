@@ -4,6 +4,7 @@
 #include <net/util/parse_error.h>
 
 #include <span>
+#include <string>
 
 // https://www.ieee802.org/3/
 
@@ -22,6 +23,8 @@ struct Header {
     uint8_t dst_mac[6];
     uint8_t src_mac[6];
     uint16_t ethertype;
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);
