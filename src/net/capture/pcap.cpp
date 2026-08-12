@@ -1,6 +1,7 @@
 #include <net/capture/pcap.h>
 
 #include <cstring>
+#include <sstream>
 
 namespace net::pcap {
 
@@ -64,24 +65,34 @@ ParseError parse(std::span<const uint8_t>& span, PacketHeader& header, Endian en
     return ParseError::None;
 }
 
-std::ostream& operator<<(std::ostream& os, const FileHeader& h) {
-    os << "FileHeader {\n"
-        << "  magic: 0x" << std::hex << h.magic_number << std::dec << '\n'
-        << "  version: " << h.major_version << "." << h.minor_version << '\n'
-        << "  snaplen: " << h.snaplen << '\n'
-        << "  linktype: " << h.linktype << '\n'
+std::string FileHeader::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "FileHeader {\n"
+        << "  magic: 0x" << std::hex << magic_number << std::dec << '\n'
+        << "  version: " << major_version << "." << minor_version << '\n'
+        << "  snaplen: " << snaplen << '\n'
+        << "  linktype: " << linktype << '\n'
         << "}";
-    return os;
+    return oss.str();
+}
+
+std::string PacketHeader::toString() const noexcept {
+    std::ostringstream oss;
+    oss << "PacketHeader {\n"
+        << "  ts_sec: " << ts_sec << '\n'
+        << "  ts_usec: " << ts_usec << '\n'
+        << "  incl_len: " << incl_len << '\n'
+        << "  orig_len: " << orig_len << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const FileHeader& h) {
+    return os << h.toString();
 }
 
 std::ostream& operator<<(std::ostream& os, const PacketHeader& h) {
-    os << "PacketHeader {\n"
-        << "  ts_sec: " << h.ts_sec << '\n'
-        << "  ts_usec: " << h.ts_usec << '\n'
-        << "  incl_len: " << h.incl_len << '\n'
-        << "  orig_len: " << h.orig_len << '\n'
-        << "}";
-    return os;
+    return os << h.toString();
 }
 
 }

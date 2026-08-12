@@ -1,5 +1,7 @@
 #include <net/capture/packet.h>
 
+#include <sstream>
+
 namespace net {
 
 void Packet::setDatatypeFromLinktype(uint32_t linktype) noexcept {
@@ -34,19 +36,24 @@ void Packet::reset() noexcept {
     transport = std::monostate{};
 }
 
-std::ostream& operator<<(std::ostream& os, const Packet& pkt) {
-    if (pkt.ethernet()) os << *pkt.ethernet() << '\n';
-    for (const net::vlan::Header& vlan: pkt.vlan_tags) {
-        os << vlan << "\n";
+std::string Packet::toString() const noexcept {
+    std::ostringstream oss;
+    if (ethernet()) oss << *ethernet() << '\n';
+    for (const net::vlan::Header& vlan: vlan_tags) {
+        oss << vlan << "\n";
     }
-    if (pkt.ipv4()) os << *pkt.ipv4() << '\n';
-    if (pkt.ipv6()) os << *pkt.ipv6() << '\n';
-    if (pkt.arp()) os << *pkt.arp() << '\n';
-    if (pkt.udp()) os << *pkt.udp() << '\n';
-    if (pkt.tcp()) os << *pkt.tcp() << '\n';
-    if (pkt.icmp()) os << *pkt.icmp() << '\n';
-    if (pkt.icmpv6()) os << *pkt.icmpv6() << '\n';
-    return os;
+    if (ipv4()) oss << *ipv4() << '\n';
+    if (ipv6()) oss << *ipv6() << '\n';
+    if (arp()) oss << *arp() << '\n';
+    if (udp()) oss << *udp() << '\n';
+    if (tcp()) oss << *tcp() << '\n';
+    if (icmp()) oss << *icmp() << '\n';
+    if (icmpv6()) oss << *icmpv6() << '\n';
+    return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Packet& pkt) {
+    return os << pkt.toString();
 }
 
 }

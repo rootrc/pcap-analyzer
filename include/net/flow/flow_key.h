@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <ostream>
+#include <string>
 
 namespace net {
 
@@ -17,6 +18,8 @@ struct FlowKey {
 
     bool operator==(const FlowKey& o) const noexcept;
     bool normalize() noexcept;
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 

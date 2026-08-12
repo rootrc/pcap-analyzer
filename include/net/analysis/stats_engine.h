@@ -5,6 +5,7 @@
 #include <net/flow/flow_tracker.h>
 
 #include <ostream>
+#include <string>
 
 namespace net {
 
@@ -12,7 +13,7 @@ class StatsEngine {
 public:
     StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable);
 
-    std::ostream& print(std::ostream& os) const;
+    std::string toString() const noexcept;
 private:
     const FlowTable& flowTable_;
     const AppDecoder& appDecoder_;

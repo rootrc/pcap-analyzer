@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 
@@ -103,29 +104,31 @@ std::vector<std::pair<uint8_t, uint64_t>> StatsEngine::sortedProtocolsByBytes(st
     return sortedProtocols;
 }
 
-std::ostream& StatsEngine::print(std::ostream& os) const {
+std::string StatsEngine::toString() const noexcept {
     std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = sortedFlowsByBytes();
     std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols = sortedProtocolsByBytes(sortedFlow);
-    auto flags = os.flags();
-    os << std::fixed << std::setprecision(2);
-    os << "FlowTable (" << sortedFlow.size() << " flows)  [";
+
+    std::ostringstream oss;
+    auto flags = oss.flags();
+    oss << std::fixed << std::setprecision(2)
+        << "FlowTable (" << sortedFlow.size() << " flows)  [";
     for (size_t i = 0; i < sortedProtocols.size(); ++i) {
-        if (i) os << "  ";
+        if (i) oss << "  ";
         double pct = flowTable_.total_bytes() ? 100.0 * sortedProtocols[i].second / flowTable_.total_bytes() : 0.0;
-        os << ip::protocolName(sortedProtocols[i].first) << ": " << pct << '%';
+        oss << ip::protocolName(sortedProtocols[i].first) << ": " << pct << '%';
     }
-    os << "]\n";
+    oss << "]\n";
     for (const auto& [key, flow] : sortedFlow) {
-        os << "  ";
-        printFlow(os, *key, *flow);
+        oss << "  ";
+        printFlow(oss, *key, *flow);
     }
-    os << "}\n";
-    os.flags(flags);
-    return os;
+    oss << "}\n";
+    oss.flags(flags);
+    return oss.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const StatsEngine& engine) {
-    return engine.print(os);
+    return os << engine.toString();
 }
 
 }

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <vector>
+#include <string>
 
 namespace net {
 
@@ -19,6 +20,8 @@ enum class TcpState {
     LastAck,
     TimeWait
 };
+
+constexpr std::string_view toString(TcpState state) noexcept;
 
 std::ostream& operator<<(std::ostream& os, TcpState state);
 

@@ -17,7 +17,7 @@ enum class ParseError {
     ChecksumMismatch,
 };
 
-constexpr std::string_view toString(ParseError e) {
+constexpr std::string_view toString(ParseError e) noexcept {
     switch (e) {
         case ParseError::None: return "no error";
         case ParseError::UnexpectedEofF: return "unexpected end of file";

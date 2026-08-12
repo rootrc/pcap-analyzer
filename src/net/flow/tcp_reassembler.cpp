@@ -4,22 +4,26 @@
 
 namespace net {
 
-std::ostream& operator<<(std::ostream& os, TcpState state) {
+constexpr std::string_view toString(TcpState state) noexcept {
     switch (state) {
-        case TcpState::Unknown: return os << "Unknown";
-        case TcpState::Closed: return os << "Closed";
-        case TcpState::Listen: return os << "Listen";
-        case TcpState::SynSent: return os << "SynSent";
-        case TcpState::SynReceived: return os << "SynReceived";
-        case TcpState::Established: return os << "Established";
-        case TcpState::FinWait1: return os << "FinWait1";
-        case TcpState::FinWait2: return os << "FinWait2";
-        case TcpState::CloseWait: return os << "CloseWait";
-        case TcpState::Closing: return os << "Closing";
-        case TcpState::LastAck: return os << "LastAck";
-        case TcpState::TimeWait: return os << "TimeWait";
-        default: return os << "Invalid";
+        case TcpState::Unknown: return "Unknown";
+        case TcpState::Closed: return "Closed";
+        case TcpState::Listen: return "Listen";
+        case TcpState::SynSent: return "SynSent";
+        case TcpState::SynReceived: return "SynReceived";
+        case TcpState::Established: return "Established";
+        case TcpState::FinWait1: return "FinWait1";
+        case TcpState::FinWait2: return "FinWait2";
+        case TcpState::CloseWait: return "CloseWait";
+        case TcpState::Closing: return "Closing";
+        case TcpState::LastAck: return "LastAck";
+        case TcpState::TimeWait: return "TimeWait";
+        default: return "Invalid";
     }
+}
+
+std::ostream& operator<<(std::ostream& os, TcpState state) {
+    return os << toString(state);
 }
 
 void TcpReassembler::onSent(const tcp::Header& header, const std::span<const uint8_t> span) {

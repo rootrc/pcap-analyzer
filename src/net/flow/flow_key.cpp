@@ -4,6 +4,7 @@
 #include <net/protocols/ipv6.h>
 
 #include <iomanip>
+#include <sstream>
 
 namespace net {
 
@@ -38,23 +39,28 @@ size_t FlowKeyHash::operator()(const FlowKey& k) const noexcept {
     return h;
 }
 
+std::string FlowKey::toString() const noexcept {
+    std::ostringstream oss;
+    auto flags = oss.flags();
+    if (isIpv4) {
+        ip::v4::printIp(oss, src_ip);
+    } else {
+        ip::v6::printIp(oss, src_ip);
+    }
+    oss << ':' << src_port << " -> ";
+    if (isIpv4) {
+        ip::v4::printIp(oss, dst_ip);
+    } else {
+        ip::v6::printIp(oss, dst_ip);
+    }
+    oss << ':' << dst_port
+        << " (" << ip::protocolName(protocol) << ')';
+    oss.flags(flags);
+    return oss.str();
+}
+
 std::ostream& operator<<(std::ostream& os, const FlowKey& key) {
-    auto flags = os.flags();
-    if (key.isIpv4) {
-        ip::v4::printIp(os, key.src_ip);
-    } else {
-        ip::v6::printIp(os, key.src_ip);
-    }
-    os << ':' << key.src_port << " -> ";
-    if (key.isIpv4) {
-        ip::v4::printIp(os, key.dst_ip);
-    } else {
-        ip::v6::printIp(os, key.dst_ip);
-    }
-    os << ':' << key.dst_port
-       << " (" << ip::protocolName(key.protocol) << ')';
-    os.flags(flags);
-    return os;
+    return os << key.toString();
 }
 
 }

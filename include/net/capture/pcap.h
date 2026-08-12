@@ -5,6 +5,7 @@
 
 #include <ostream>
 #include <span>
+#include <string>
 
 // https://datatracker.ietf.org/doc/id/draft-gharris-opsawg-pcap-00.html
 
@@ -32,12 +33,16 @@ struct FileHeader {
     uint32_t reserved2;
     uint32_t snaplen;
     uint32_t linktype;
+
+    std::string toString() const noexcept;
 };
 struct PacketHeader {
     uint32_t ts_sec;
     uint32_t ts_usec;
     uint32_t incl_len;
     uint32_t orig_len;
+
+    std::string toString() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(FileHeader) == FILE_HEADER_LEN);

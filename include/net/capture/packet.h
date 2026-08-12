@@ -3,6 +3,7 @@
 #include <net/capture/pcap.h>
 #include <net/protocols/protocols.h>
 
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -63,8 +64,9 @@ struct Packet {
     void setDatatypeFromLinktype(uint32_t linktype) noexcept;
     void setNetworkFromEthertype(uint16_t ethertype) noexcept;
     void setTransportFromProtocol(uint8_t protocol) noexcept;
-
     void reset() noexcept;
+
+    std::string toString() const noexcept;
 };
 
 std::ostream& operator<<(std::ostream& os, const Packet& pkt);
