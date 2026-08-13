@@ -31,6 +31,7 @@ struct Header {
     const uint8_t* tpa;
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_STRUCT_LEN);

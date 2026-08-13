@@ -73,6 +73,22 @@ std::string Header::toString() const noexcept {
     return oss.str();
 }
 
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"tcp\": {\n"
+        << "  \"src_port\": " << src_port << ",\n"
+        << "  \"dst_port\": " << dst_port << ",\n"
+        << "  \"seq_number\": " << seq_number << ",\n"
+        << "  \"ack_number\": " << ack_number << ",\n"
+        << "  \"data_offset\": " << static_cast<int>(data_offset()) << ",\n"
+        << "  \"flags\": \"0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(flags) << std::dec << "\",\n"
+        << "  \"window_size\": " << window_size << ",\n"
+        << "  \"checksum\": \"0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << std::dec << "\",\n"
+        << "  \"urgent_pointer\": " << urgent_pointer << "\n"
+        << "}";
+    return oss.str();
+}
+
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     return os << h.toString();
 }

@@ -45,7 +45,18 @@ std::string Header::toString() const noexcept {
         << "}";
     return oss.str();
 }
-    
+
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"udp\": {\n"
+        << "  \"src_port\": " << src_port << ",\n"
+        << "  \"dst_port\": " << dst_port << ",\n"
+        << "  \"length\": " << length << ",\n"
+        << "  \"checksum\": \"0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << "\"\n"
+        << "}";
+    return oss.str();
+}
+
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     return os << h.toString();
 }

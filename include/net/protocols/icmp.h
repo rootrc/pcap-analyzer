@@ -51,6 +51,7 @@ struct Header {
     }; // 13/14/15/16 unsupported
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);

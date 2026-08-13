@@ -78,12 +78,23 @@ std::string Header::toString() const noexcept {
         << "  payload_length: " << payload_length << '\n'
         << "  next_header: " << static_cast<int>(next_header) << " (" << ip::protocolName(next_header) << ")\n"
         << "  hop_limit: " << static_cast<int>(hop_limit) << '\n'
-        << "  src_ip: ";
-    printIp(oss, src_ip);
-    oss << '\n'
-        << "  dst_ip: ";
-    printIp(oss, dst_ip);
-    oss << '\n'
+        << "  src_ip: "; printIp(oss, src_ip); oss << '\n'
+        << "  dst_ip: "; printIp(oss, dst_ip); oss << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"ipv6\": {\n"
+        << "  \"version\": " << static_cast<int>(version()) << ",\n"
+        << "  \"traffic_class\": " << static_cast<int>(tc()) << ",\n"
+        << "  \"flow_label\": \"0x" << std::hex << std::setfill('0') << std::setw(5) << fl() << std::dec << "\",\n"
+        << "  \"payload_length\": " << payload_length << ",\n"
+        << "  \"next_header\": " << static_cast<int>(next_header) << ",\n"
+        << "  \"hop_limit\": " << static_cast<int>(hop_limit) << ",\n"
+        << "  \"src_ip\": \""; printIp(oss, src_ip); oss << "\",\n"
+        << "  \"dst_ip\": \""; printIp(oss, dst_ip); oss << "\"\n"
         << "}";
     return oss.str();
 }

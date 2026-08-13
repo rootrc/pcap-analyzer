@@ -77,16 +77,35 @@ std::string Header::toString() const noexcept {
         << " (0b" << ((flags() >> 2) & 1)
         << ((flags() >> 1) & 1)
         << (flags() & 1) << ")\n"
-        << "  fragment: " << fragment() << '\n'
+        << "  fragment: " << std::hex << std::setfill('0') << std::setw(4) <<  static_cast<int>(fragment()) << std::dec << '\n'
         << "  ttl: " << static_cast<int>(ttl) << '\n'
         << "  protocol: " << static_cast<int>(protocol) << " (" << ip::protocolName(protocol) << ")\n"
         << "  checksum: 0x" << std::hex << checksum << std::dec << '\n'
-        << "  src_ip: " ;
-    printIp(oss, src_ip);
-    oss << '\n'
-        << "  dst_ip: ";
-    printIp(oss, dst_ip);
-    oss << '\n'
+        << "  src_ip: " ; printIp(oss, src_ip); oss << '\n'
+        << "  dst_ip: "; printIp(oss, dst_ip); oss << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"ipv4\": {\n"
+        << "  \"version\": " << static_cast<int>(version()) << ",\n"
+        << "  \"ihl\": " << static_cast<int>(ihl()) << ",\n"
+        << "  \"tos\": \"0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(tos) << std::dec << "\",\n"
+        << "  \"total_length\": " << total_length << ",\n"
+        << "  \"identification\": " << identification << ",\n"
+        << "  \"flags\": [";
+    bool firstFlag = true;
+    if (dontFragment()) { if(!firstFlag) oss << ", "; oss << "\"DF\""; firstFlag=false; }
+    if (moreFragments()) { if(!firstFlag) oss << ", "; oss << "\"MF\""; firstFlag=false; }
+    oss << "],\n"
+        << "  \"fragment\": \"0x" << std::hex << std::setfill('0') << std::setw(4) << static_cast<int>(fragment()) << std::dec << "\",\n"
+        << "  \"ttl\": " << static_cast<int>(ttl) << ",\n"
+        << "  \"protocol\": " << static_cast<int>(protocol) << ",\n"
+        << "  \"checksum\": \"0x" << std::hex << checksum << std::dec << "\",\n"
+        << "  \"src_ip\": \""; printIp(oss, src_ip); oss << "\",\n"
+        << "  \"dst_ip\": \""; printIp(oss, dst_ip); oss << "\"\n"
         << "}";
     return oss.str();
 }

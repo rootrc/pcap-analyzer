@@ -149,6 +149,62 @@ std::string Header::toString() const noexcept {
     return oss.str();
 }
 
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"dns\": {\n"
+        << "  \"id\": " << id << ",\n"
+        << "  \"flags\": ["
+        << '"' << (isResponse() ? "response" : "query") << '"';
+    if (isAA()) { oss << ", "; oss << "\"AA\""; }
+    if (isTC()) { oss << ", "; oss << "\"TC\""; }
+    if (isRD()) { oss << ", "; oss << "\"RD\""; }
+    if (isRA()) { oss << ", "; oss << "\"RA\""; }
+    oss << "],\n"
+        << "  \"rcode\": " << static_cast<int>(rcode()) << ",\n";
+
+    if (questions.empty()) {
+        oss << "  \"questions\": [],\n";
+    } else {
+        oss << "  \"questions\": [\n";
+        for (size_t i = 0; i < questions.size(); ++i) {
+            if (i) oss << ",\n";
+            oss << "    {\n"
+                << "      \"name\": \"" << questions[i].name << "\",\n"
+                << "      \"type\": \"" << typeName(questions[i].qtype) << "\"\n"
+                << "    }";
+        }
+        oss << "\n  ],\n";
+    }
+    if (answers.empty()) {
+        oss << "  \"answers\": []\n";
+    } else {
+        oss << "  \"answers\": [\n";
+        for (size_t i = 0; i < answers.size(); ++i) {
+            if (i) oss << ",\n";
+            const ResourceRecord& rr = answers[i];
+            oss << "    {\n"
+                << "      \"type\": \"" << typeName(rr.type) << "\",\n"
+                << "      \"name\": \"" << rr.name << "\",\n"
+                << "      \"ttl\": " << rr.ttl << ",\n"
+                << "      \"rdata\": \"";
+            if (rr.type == TYPE_A && rr.rdata.size() == 4) {
+                ip::v4::printIp(oss, rr.rdata.data());
+            } else if (rr.type == TYPE_AAAA && rr.rdata.size() == 16) {
+                ip::v6::printIp(oss, rr.rdata.data());
+            } else {
+                auto f = oss.flags();
+                oss << std::hex << std::setfill('0');
+                for (uint8_t b : rr.rdata) oss << std::setw(2) << static_cast<int>(b);
+                oss.flags(f);
+            }
+            oss << "\"\n    }";
+        }
+        oss << "\n  ]\n";
+    }
+    oss << "}";
+    return oss.str();
+}
+
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     return os << h.toString();
 }

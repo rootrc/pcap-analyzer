@@ -30,6 +30,18 @@ std::string Header::toString() const noexcept {
     return oss.str();
 }
 
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"vlan\": {\n"
+        << "  \"pcp\": " << static_cast<int>(pcp()) << ",\n"
+        << "  \"dei\": " << static_cast<int>(dei()) << ",\n"
+        << "  \"vid\": " << vid() << ",\n"
+        << "  \"ethertype\": \"0x" << std::hex << std::setfill('0') << std::setw(4) << ethertype << std::dec << "\"\n"
+        << "}";
+    return oss.str();
+}
+
+
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     return os << h.toString();
 }

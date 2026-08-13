@@ -98,6 +98,7 @@ struct Header {
     uint8_t rcode() const noexcept { return flags & 0x000F; }
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 
 ParseError parseName(std::span<const uint8_t>& span, const uint8_t* dns_base, std::string& name, Endian endian);

@@ -41,6 +41,7 @@ struct Header {
     constexpr bool fin() const noexcept { return flags & 0x01; }
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == MIN_HEADER_LEN);

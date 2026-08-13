@@ -22,6 +22,7 @@ struct Header {
     uint16_t checksum;
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);

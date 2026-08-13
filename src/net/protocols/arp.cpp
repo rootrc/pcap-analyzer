@@ -72,6 +72,36 @@ std::string Header::toString() const noexcept {
     return oss.str();
 }
 
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    auto printHex = [&](const uint8_t* p, uint8_t len) {
+        for (uint8_t i = 0; i < len; ++i) {
+            if (i) oss << '-';
+            oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(p[i]);
+        }
+        oss << std::dec;
+    };
+    auto printHw = [&](const uint8_t* p) {
+        if (htype == HTYPE_ETHERNET) ethernet::printMac(oss, p);
+        else printHex(p, hlen);
+    };
+    auto printProto = [&](const uint8_t* p) {
+        if (ptype == ethernet::ETHERTYPE_IPV4) ip::v4::printIp(oss, p);
+        else printHex(p, plen);
+    };
+
+    oss << "\"arp\": {\n"
+        << "  \"htype\": " << htype << ",\n"
+        << "  \"ptype\": \"0x" << std::hex << std::setfill('0') << std::setw(4) << ptype << std::dec << "\",\n"
+        << "  \"oper\": " << oper << ",\n"
+        << "  \"sha\": \""; printHw(sha); oss << "\",\n"
+        << "  \"spa\": \""; printProto(spa); oss << "\",\n"
+        << "  \"tha\": \""; printHw(tha); oss << "\",\n"
+        << "  \"tpa\": \""; printProto(tpa); oss << "\"\n"
+        << "}";
+    return oss.str();
+}
+
 std::ostream& operator<<(std::ostream& os, const Header& h) {
     return os << h.toString();
 }

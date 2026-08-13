@@ -27,13 +27,19 @@ std::ostream& printMac(std::ostream& os, const uint8_t mac[6]) {
 std::string Header::toString() const noexcept {
     std::ostringstream oss;
     oss << "EthernetHeader {\n"
-        << "  dst_mac: ";
-    printMac(oss, dst_mac);
-    oss << '\n'
-        << "  src_mac: ";
-    printMac(oss, src_mac);
-    oss << '\n'
+        << "  dst_mac: "; printMac(oss, dst_mac); oss << '\n'
+        << "  src_mac: "; printMac(oss, src_mac); oss << '\n'
         << "  ethertype: 0x" << std::hex << std::setfill('0') << std::setw(4) << ethertype << " ("  << ethertypeName(ethertype) << std::dec << ")\n"
+        << "}";
+    return oss.str();
+}
+
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"ethernet\": {\n"
+        << "  \"dst_mac\": \""; printMac(oss, dst_mac); oss << "\",\n"
+        << "  \"src_mac\": \""; printMac(oss, src_mac); oss << "\",\n"
+        << "  \"ethertype\": \"0x" << std::hex << std::setfill('0') << std::setw(4) << ethertype << std::dec << "\"\n"
         << "}";
     return oss.str();
 }

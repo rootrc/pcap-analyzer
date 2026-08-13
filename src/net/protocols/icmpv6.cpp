@@ -83,6 +83,9 @@ std::string Header::toString() const noexcept {
             }
             oss << '\n';
             break;
+        case TYPE_PACKET_TOO_BIG:
+            oss << "  mtu: " << mtu << '\n';
+            break;
         case TYPE_TTL_EXCEEDED:
             oss << "  code: " << static_cast<int>(code);
             switch (code) {
@@ -103,9 +106,6 @@ std::string Header::toString() const noexcept {
             oss << '\n'
                 << "  pointer: " << pointer << '\n';
             break;
-        case TYPE_PACKET_TOO_BIG:
-            oss << "  mtu: " << mtu << '\n';
-            break;
         case TYPE_ECHO_REQUEST:
         case TYPE_ECHO_REPLY:
             oss << "  id: " << echo.id << '\n'
@@ -115,6 +115,31 @@ std::string Header::toString() const noexcept {
             break;
     }
     oss << "  checksum: 0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << std::dec << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::string Header::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"icmpv6\": {\n"
+        << "  \"type\": " << static_cast<int>(type) << ",\n"
+        << "  \"code\": " << static_cast<int>(code) << ",\n";
+    switch (type) {
+        case TYPE_PACKET_TOO_BIG:
+            oss << "  \"mtu\": " << mtu << ",\n";
+            break;
+        case TYPE_PARAM_PROBLEM:
+            oss << "  \"pointer\": " << pointer << ",\n";
+            break;
+        case TYPE_ECHO_REQUEST:
+        case TYPE_ECHO_REPLY:
+            oss << "  \"id\": " << echo.id << ",\n"
+                << "  \"seq\": " << echo.seq << ",\n";
+            break;
+        default:
+            break;
+    }
+    oss << "  \"checksum\": \"0x" << std::hex << std::setfill('0') << std::setw(4) << checksum << std::dec << "\"\n"
         << "}";
     return oss.str();
 }

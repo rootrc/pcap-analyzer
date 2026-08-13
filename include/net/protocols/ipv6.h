@@ -28,6 +28,7 @@ struct Header {
     constexpr uint32_t fl() const noexcept { return version_tc_fl & 0x000FFFFF; }
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);
