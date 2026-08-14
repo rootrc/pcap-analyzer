@@ -12,18 +12,15 @@ ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& captur
 
     FlowKey flow_key{};
     bool flow_is_new = false;
-    if (auto err = flowTable_.addPacket(capture, &flow_key, &flow_is_new); err != ParseError::None) {
+    FlowTable::Flow* flow = nullptr;
+    if (auto err = flowTable_.addPacket(capture, &flow_key, &flow_is_new, &flow); err != ParseError::None) {
         return err;
     }
-    if (flow_is_new) {
-        appDecoder_.reset(flow_key);
-    }
-
-    if (auto it = flowTable_.flows().find(flow_key); it != flowTable_.flows().end()) {
+    if (flow) {
         if (capture.pkt.isTcp()) {
-            appDecoder_.pollFlow(flow_key, it->second);
+            appDecoder_.pollFlow(flow_key, *flow, flow_is_new);
         } else if (capture.pkt.isUdp()) {
-            appDecoder_.pollDatagram(flow_key, it->second.is_reverse, capture.pkt.payload);
+            appDecoder_.pollDatagram(flow_key, flow->is_reverse, capture.pkt.payload, flow_is_new);
         }
     }
 

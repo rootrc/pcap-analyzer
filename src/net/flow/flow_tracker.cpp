@@ -8,7 +8,8 @@ struct overload : Ts... { using Ts::operator()...; };
 
 namespace net {
 
-ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_key, bool* out_is_new) {
+ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_key, bool* out_is_new, Flow** out_flow) {
+    if (out_flow) *out_flow = nullptr;
     if (capture.pkt.isArp()) {
         return ParseError::None;
     }
@@ -33,6 +34,7 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
     }
 
     Flow& flow = it->second;
+    if (out_flow) *out_flow = &flow;
     flow.last_seen = capture.ts_us;
     flow.is_reverse = is_reverse;
     FlowStats& stats = flow.is_reverse ? flow.rev_stats : flow.fwd_stats;

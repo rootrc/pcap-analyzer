@@ -4,10 +4,14 @@ namespace net {
 
 AppDecoder::AppDecoder(DnsTable& dnsTable) : dnsTable_(dnsTable) {}
 
-ParseError AppDecoder::pollFlow(const FlowKey& key, FlowTable::Flow& flow) {
-    FlowApplications flowApplications = flows_[key];
-    pollStream(key, flow.fwd_tcp, flowApplications.fwd);
-    pollStream(key, flow.rev_tcp, flowApplications.rev);
+ParseError AppDecoder::pollFlow(const FlowKey& key, FlowTable::Flow& flow, bool flow_is_new) {
+    FlowApplications& flowApplications = flows_[key];
+    if (flow_is_new) flowApplications = FlowApplications{};
+    if (flow.is_reverse) {
+        pollStream(key, flow.rev_tcp, flowApplications.rev);
+    } else {
+        pollStream(key, flow.fwd_tcp, flowApplications.fwd);
+    }
     return ParseError::None;
 }
 
@@ -34,10 +38,11 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
     return ParseError::None;
 }
 
-ParseError AppDecoder::pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload) {
+ParseError AppDecoder::pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload, bool flow_is_new) {
     if (payload.size() == 0) return ParseError::None;
 
     FlowApplications& flowApplications = flows_[key];
+    if (flow_is_new) flowApplications = FlowApplications{};
     Applications& applications = is_reverse ? flowApplications.rev : flowApplications.fwd;
 
     if (applications.decode_failed) return ParseError::None;

@@ -16,8 +16,8 @@ struct Applications {
 class AppDecoder {
 public:
     explicit AppDecoder(DnsTable& dnsTable);
-    ParseError pollFlow(const FlowKey& key, FlowTable::Flow& flow);
-    ParseError pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload);
+    ParseError pollFlow(const FlowKey& key, FlowTable::Flow& flow, bool flow_is_new = false);
+    ParseError pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload, bool flow_is_new = false);
     void reset(const FlowKey& key);
     void prune(const FlowTable& table);
     const Applications* getApplications(const FlowKey& key, bool is_reverse) const;

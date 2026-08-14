@@ -38,7 +38,7 @@ public:
 
     FlowTable() = default;
 
-    ParseError addPacket(const net::pcap::Capture& capture, FlowKey* out_key = nullptr, bool* out_is_new = nullptr);
+    ParseError addPacket(const net::pcap::Capture& capture, FlowKey* out_key = nullptr, bool* out_is_new = nullptr, Flow** out_flow = nullptr);
     void flush();
 
     std::unordered_map<FlowKey, Flow, FlowKeyHash>& flows() { return flows_; }

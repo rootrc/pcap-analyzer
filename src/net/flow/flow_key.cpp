@@ -9,7 +9,8 @@
 namespace net {
 
 bool FlowKey::operator==(const FlowKey& o) const noexcept {
-    return memcmp(src_ip, o.src_ip, 16) == 0 &&
+    return isIpv4 == o.isIpv4 &&
+            memcmp(src_ip, o.src_ip, 16) == 0 &&
             memcmp(dst_ip, o.dst_ip, 16) == 0 &&
             src_port == o.src_port &&
             dst_port == o.dst_port &&
@@ -31,11 +32,23 @@ bool FlowKey::normalize() noexcept {
 
 size_t FlowKeyHash::operator()(const FlowKey& k) const noexcept {
     size_t h = 14695981039346656037ULL;
-    const uint8_t* p = reinterpret_cast<const uint8_t*>(&k);
-    for (size_t i = 0; i < sizeof(FlowKey); ++i) {
-        h ^= p[i];
-        h *= 1099511628211ULL;
+    auto mix = [&h](uint64_t v) noexcept { h ^= v; h *= 1099511628211ULL; };
+
+    if (k.isIpv4) {
+        uint32_t src = 0, dst = 0;
+        memcpy(&src, k.src_ip, 4);
+        memcpy(&dst, k.dst_ip, 4);
+        mix((static_cast<uint64_t>(src) << 32) | dst);
+    } else {
+        uint64_t words[4];
+        memcpy(words, k.src_ip, 16);
+        memcpy(words + 2, k.dst_ip, 16);
+        mix(words[0]); mix(words[1]); mix(words[2]); mix(words[3]);
     }
+    mix((static_cast<uint64_t>(k.isIpv4) << 48) |
+        (static_cast<uint64_t>(k.src_port) << 32) |
+        (static_cast<uint64_t>(k.dst_port) << 16) |
+        static_cast<uint64_t>(k.protocol));
     return h;
 }
 
