@@ -35,6 +35,7 @@ struct FileHeader {
     uint32_t linktype;
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 struct PacketHeader {
     uint32_t ts_sec;
@@ -43,6 +44,7 @@ struct PacketHeader {
     uint32_t orig_len;
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 #pragma pack(pop)
 static_assert(sizeof(FileHeader) == FILE_HEADER_LEN);

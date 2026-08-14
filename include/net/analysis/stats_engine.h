@@ -14,6 +14,7 @@ public:
     StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable);
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 private:
     const FlowTable& flowTable_;
     const AppDecoder& appDecoder_;

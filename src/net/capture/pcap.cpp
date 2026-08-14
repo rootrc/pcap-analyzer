@@ -76,6 +76,17 @@ std::string FileHeader::toString() const noexcept {
     return oss.str();
 }
 
+std::string FileHeader::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"file_header\": {\n"
+        << "  \"magic_number\": \"0x" << std::hex << magic_number << std::dec << "\",\n"
+        << "  \"major_version\": \"" << major_version << "." << minor_version << "\",\n"
+        << "  \"snaplen\": " << snaplen << ",\n"
+        << "  \"linktype\": " << linktype << "\n"
+        << "}";
+    return oss.str();
+}
+
 std::string PacketHeader::toString() const noexcept {
     std::ostringstream oss;
     oss << "PacketHeader {\n"
@@ -83,6 +94,17 @@ std::string PacketHeader::toString() const noexcept {
         << "  ts_usec: " << ts_usec << '\n'
         << "  incl_len: " << incl_len << '\n'
         << "  orig_len: " << orig_len << '\n'
+        << "}";
+    return oss.str();
+}
+
+std::string PacketHeader::toJson() const noexcept {
+    std::ostringstream oss;
+    oss << "\"packet_header\": {\n"
+        << "  \"ts_sec\": " << ts_sec << ",\n"
+        << "  \"ts_usec\": " << ts_usec << ",\n"
+        << "  \"incl_len\": " << incl_len << ",\n"
+        << "  \"orig_len\": " << orig_len << "\n"
         << "}";
     return oss.str();
 }

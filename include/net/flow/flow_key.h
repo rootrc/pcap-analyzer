@@ -20,6 +20,7 @@ struct FlowKey {
     bool normalize() noexcept;
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 #pragma pack(pop)
 

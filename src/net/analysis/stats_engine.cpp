@@ -1,4 +1,5 @@
 #include <net/analysis/stats_engine.h>
+#include <net/util/string.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -124,6 +125,38 @@ std::string StatsEngine::toString() const noexcept {
     }
     oss << "}\n";
     oss.flags(flags);
+    return oss.str();
+}
+
+std::string StatsEngine::toJson() const noexcept {
+    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = sortedFlowsByBytes();
+    std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols = sortedProtocolsByBytes(sortedFlow);
+
+    std::ostringstream oss;
+    oss << "\"stats_engine\": {\n"
+        << "  \"flow_count\": " << sortedFlow.size() << ",\n"
+        << "  \"total_bytes\": " << flowTable_.total_bytes() << ",\n"
+        << "  \"protocols\": [\n";
+    for (size_t i = 0; i < sortedProtocols.size(); ++i) {
+        if (i) oss << ", ";
+        double pct = flowTable_.total_bytes() ? 100.0 * sortedProtocols[i].second / flowTable_.total_bytes() : 0.0;
+        oss << "    {\n"
+            << "      \"protocol\": \"" << ip::protocolName(sortedProtocols[i].first) << "\",\n"
+            << "      \"bytes\": " << sortedProtocols[i].second << ",\n"
+            << "      \"percent\": " << pct << '\n'
+            << "    }\n";
+    }
+    oss << "  ],\n"
+        << "  \"flows\": [\n";
+    for (size_t i = 0; i < sortedFlow.size(); ++i) {
+        if (i) oss << ",\n";
+        oss << "    {\n";
+        const auto& [key, flow] = sortedFlow[i];
+        oss << util::indent(key->toJson(), "      ")
+            << "\n    }";
+    }
+    oss << "\n  ]\n"
+        << "}";
     return oss.str();
 }
 

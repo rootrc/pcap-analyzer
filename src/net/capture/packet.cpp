@@ -1,4 +1,5 @@
 #include <net/capture/packet.h>
+#include <net/util/string.h>
 
 #include <sstream>
 
@@ -49,6 +50,44 @@ std::string Packet::toString() const noexcept {
     if (tcp()) oss << *tcp() << '\n';
     if (icmp()) oss << *icmp() << '\n';
     if (icmpv6()) oss << *icmpv6() << '\n';
+    return oss.str();
+}
+
+std::string Packet::toJson() const noexcept {
+    std::ostringstream oss;
+    bool first = true;
+    auto printProtocol = [&](const auto* value) {
+        if (value) {
+            if (!first) oss << ",\n";
+            oss << util::indent(value->toJson(), "  ");
+            first = false;
+        }
+    };
+
+    oss << "\"packet\": {\n";
+    printProtocol(ethernet());
+
+    if (!vlan_tags.empty()) {
+        if (!first) oss << ",\n";
+        oss << "  \"vlan\": [\n";
+        for (size_t i = 0; i < vlan_tags.size(); ++i) {
+            if (i) oss << ",\n";
+            oss << util::indent(vlan_tags[i].toJson().erase(0, 8), "    ");
+        }
+        oss << "\n  ]";
+        first = false;
+    }
+
+    printProtocol(ipv4());
+    printProtocol(ipv6());
+    printProtocol(arp());
+    printProtocol(udp());
+    printProtocol(tcp());
+    printProtocol(icmp());
+    printProtocol(icmpv6());
+
+    if (!first) oss << '\n';
+    oss << "}\n";
     return oss.str();
 }
 

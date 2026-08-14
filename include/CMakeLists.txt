@@ -7,7 +7,6 @@ add_library(network_lib
     ../src/net/decode/app_decoder.cpp
     ../src/net/decode/decoder.cpp
     ../src/net/decode/pkt_decoder.cpp
-    ../src/net/util/checksum.cpp
     ../src/net/flow/flow_key.cpp
     ../src/net/flow/flow_tracker.cpp
     ../src/net/flow/tcp_reassembler.cpp
@@ -21,6 +20,8 @@ add_library(network_lib
     ../src/net/protocols/icmp.cpp
     ../src/net/protocols/icmpv6.cpp
     ../src/net/protocols/dns.cpp
+    ../src/net/util/checksum.cpp
+    ../src/net/util/string.cpp
 )
 
 target_include_directories(network_lib

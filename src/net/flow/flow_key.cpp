@@ -41,21 +41,45 @@ size_t FlowKeyHash::operator()(const FlowKey& k) const noexcept {
 
 std::string FlowKey::toString() const noexcept {
     std::ostringstream oss;
+    if (isIpv4) {
+        ip::v4::printIp(oss, src_ip);
+    } else {
+        oss << '['; ip::v6::printIp(oss, src_ip); oss << ']';
+    }
+    oss << ':' << std::dec << src_port << " -> ";
+    if (isIpv4) {
+        ip::v4::printIp(oss, dst_ip);
+    } else {
+        oss << '['; ip::v6::printIp(oss, dst_ip); oss << ']';
+    }
+    oss << ':' << std::dec << dst_port
+        << " (" << ip::protocolName(protocol) << ')';
+    return oss.str();
+}
+
+std::string FlowKey::toJson() const noexcept {
+    std::ostringstream oss;
     auto flags = oss.flags();
+    oss << "\"flow_key\": {\n"
+        << "  \"src_ip\": \"";
     if (isIpv4) {
         ip::v4::printIp(oss, src_ip);
     } else {
         ip::v6::printIp(oss, src_ip);
     }
-    oss << ':' << src_port << " -> ";
+    oss << "\",\n"
+        << "  \"dst_ip\": \"";
     if (isIpv4) {
         ip::v4::printIp(oss, dst_ip);
     } else {
         ip::v6::printIp(oss, dst_ip);
     }
-    oss << ':' << dst_port
-        << " (" << ip::protocolName(protocol) << ')';
     oss.flags(flags);
+    oss << "\",\n"
+        << "  \"src_port\": " << src_port << ",\n"
+        << "  \"dst_port\": " << dst_port << ",\n"
+        << "  \"protocol\": \"" << ip::protocolName(protocol) << "\"\n"
+        << "}";
     return oss.str();
 }
 

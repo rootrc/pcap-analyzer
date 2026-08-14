@@ -67,6 +67,7 @@ struct Packet {
     void reset() noexcept;
 
     std::string toString() const noexcept;
+    std::string toJson() const noexcept;
 };
 
 std::ostream& operator<<(std::ostream& os, const Packet& pkt);
