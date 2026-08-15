@@ -1,6 +1,5 @@
 #include <net/protocols/tcp.h>
 
-#include <map>
 #include <vector>
 #include <string>
 
@@ -28,11 +27,18 @@ std::ostream& operator<<(std::ostream& os, TcpState state);
 struct TcpReassembler {
     static constexpr size_t MAX_OOO_BYTES = 1 << 20;
     static constexpr size_t MIN_COMPACT_BYTES = 4096;
+    static constexpr size_t INITIAL_CAPACITY = 4096;
+    static constexpr size_t SHRINK_THRESHOLD = 64 * 1024;
 
     TcpState state = TcpState::Unknown;
     uint32_t next_seq = 0;
     size_t ooo_bytes = 0;
-    std::map<uint32_t, std::vector<uint8_t>> out_of_order;
+
+    struct Segment {
+        uint32_t seq = 0;
+        std::vector<uint8_t> data;
+    };
+    std::vector<Segment> out_of_order;
     std::vector<uint8_t> assembled;
 
     bool fin_seen = false;

@@ -1,4 +1,6 @@
 #include <net/flow/tcp_reassembler.h>
+
+#include <algorithm>
 #include <iostream>
 #include <assert.h>
 
@@ -149,26 +151,27 @@ void TcpReassembler::onData(const tcp::Header& header, const std::span<const uin
 }
 
 void TcpReassembler::ingest(uint32_t seq, const std::span<const uint8_t> span) {
+    if (assembled.capacity() < INITIAL_CAPACITY) assembled.reserve(INITIAL_CAPACITY);
     if (seq == next_seq) {
         assembled.insert(assembled.end(), span.data(), span.data() + span.size());
         next_seq += static_cast<uint32_t>(span.size());
         drain();
     } else if (static_cast<int32_t>(seq - next_seq) > 0) {
-        auto [it, inserted] = out_of_order.try_emplace(seq);
-        if (inserted) {
-            if (ooo_bytes + span.size() <= MAX_OOO_BYTES) {
-                it->second.assign(span.data(), span.data() + span.size());
-                ooo_bytes += span.size();
-            } else {
-                out_of_order.erase(it);
-            }
-        } else if (span.size() > it->second.size()) {
-            size_t delta = span.size() - it->second.size();
-            if (ooo_bytes + delta <= MAX_OOO_BYTES) {
-                ooo_bytes += delta;
-                it->second.assign(span.data(), span.data() + span.size());
-            }
-        }
+        auto it = std::lower_bound(out_of_order.begin(), out_of_order.end(), seq, [](const Segment& s, uint32_t v) { return s.seq < v; });
+        if (it != out_of_order.end() && it->seq == seq) {
+            if (span.size() > it->data.size()) {
+                if (ooo_bytes + span.size() - it->data.size() <= MAX_OOO_BYTES) {
+                    ooo_bytes += span.size() - it->data.size();
+                    it->data.assign(span.data(), span.data() + span.size());
+                }
+             }
+        } else if (ooo_bytes + span.size() <= MAX_OOO_BYTES) {
+            Segment segment;
+            segment.seq = seq;
+            segment.data.assign(span.data(), span.data() + span.size());
+            out_of_order.insert(it, std::move(segment));
+            ooo_bytes += span.size();
+         }
     } else {
         uint32_t overlap = next_seq - seq;
         if (overlap < static_cast<uint32_t>(span.size())) {
@@ -180,11 +183,16 @@ void TcpReassembler::ingest(uint32_t seq, const std::span<const uint8_t> span) {
 }
 
 void TcpReassembler::drain() {
-    for (auto it = out_of_order.find(next_seq); it != out_of_order.end(); it = out_of_order.find(next_seq)) {
-        assembled.insert(assembled.end(), it->second.begin(), it->second.end());
-        next_seq += static_cast<uint32_t>(it->second.size());
-        ooo_bytes -= it->second.size();
-        out_of_order.erase(it);
+    size_t len = 0;
+    while (len < out_of_order.size() && out_of_order[len].seq == next_seq) {
+        const Segment& segment = out_of_order[len];
+        assembled.insert(assembled.end(), segment.data.begin(), segment.data.end());
+        next_seq += static_cast<uint32_t>(segment.data.size());
+        ooo_bytes -= segment.data.size();
+        ++len;
+    }
+    if (len > 0) {
+        out_of_order.erase(out_of_order.begin(), out_of_order.begin() + len);
     }
 }
 
@@ -201,6 +209,10 @@ void TcpReassembler::consume(size_t n) {
     if (read_pos > MIN_COMPACT_BYTES && read_pos > assembled.size() / 2) {
         assembled.erase(assembled.begin(), assembled.begin() + read_pos);
         read_pos = 0;
+        if (assembled.capacity() >= SHRINK_THRESHOLD &&
+            assembled.capacity() > 4 * assembled.size()) {
+            assembled.shrink_to_fit();
+        }
     }
 }
 
