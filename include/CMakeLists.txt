@@ -20,6 +20,7 @@ add_library(network_lib
     ../src/net/protocols/icmp.cpp
     ../src/net/protocols/icmpv6.cpp
     ../src/net/protocols/dns.cpp
+    ../src/net/protocols/http.cpp
     ../src/net/util/checksum.cpp
     ../src/net/util/string.cpp
 )

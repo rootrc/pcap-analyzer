@@ -8,14 +8,14 @@ ParseError AppDecoder::pollFlow(const FlowKey& key, FlowTable::Flow& flow, bool 
     FlowApplications& flowApplications = flows_[key];
     if (flow_is_new) flowApplications = FlowApplications{};
     if (flow.is_reverse) {
-        pollStream(key, flow.rev_tcp, flowApplications.rev);
+        pollStream(key, flow.rev_tcp, flowApplications.rev, flowApplications.fwd);
     } else {
-        pollStream(key, flow.fwd_tcp, flowApplications.fwd);
+        pollStream(key, flow.fwd_tcp, flowApplications.fwd, flowApplications.rev);
     }
     return ParseError::None;
 }
 
-ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Applications& applications) {
+ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Applications& applications, Applications& peer_state) {
     if (!stream.hasReadableData() || applications.decode_failed) return ParseError::None;
 
     if (key.src_port == dns::PORT || key.dst_port == dns::PORT) {
@@ -33,6 +33,74 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
             dnsTable_.record(header);
             applications.dns_messages.push_back(std::move(header));
             stream.consume(2 + msg_len);
+        }
+    } else if (key.src_port == http::PORT || key.dst_port == http::PORT) {
+        while (true) {
+            if (applications.http_body_until_close) {
+                stream.consume(stream.available());
+                break;
+            }
+            std::span<const uint8_t> span = stream.peek();
+            const size_t start_size = span.size();
+
+            http::Header header{};
+            ParseError err = http::parse(span, header);
+            if (err == ParseError::UnexpectedEof) {
+                if (stream.available() > MAX_HTTP_HEADER_BYTES) {
+                    applications.decode_failed = true;
+                }
+                break;
+            } else if (err != ParseError::None) {
+                applications.decode_failed = true;
+                break;
+            }
+
+            bool head_response = false;
+            if (header.isResponse() && header.status_code >= 200 &&
+                !peer_state.pending_head_requests.empty()) {
+                head_response = peer_state.pending_head_requests.front();
+                peer_state.pending_head_requests.pop_front();
+            }
+
+            bool body_incomplete = false;
+            if (header.bodyForbidden() || head_response) {
+
+            } else if (header.chunked) {
+                span = span.subspan(applications.http_chunk_prefix);
+                size_t validated = 0;
+                ParseError body_err = http::parseChunkedBody(span, nullptr, &validated);
+                if (body_err == ParseError::UnexpectedEof) {
+                    applications.http_chunk_prefix += validated;
+                    body_incomplete = true;
+                } else if (body_err != ParseError::None) {
+                    applications.decode_failed = true;
+                    break;
+                } else {
+                    applications.http_chunk_prefix = 0;
+                }
+            } else if (header.has_content_length) {
+                if (span.size() < header.content_length) {
+                    body_incomplete = true;
+                } else {
+                    span = span.subspan(static_cast<size_t>(header.content_length));
+                }
+            }  else if (header.isResponse()) {
+                applications.http_body_until_close = true;
+            }
+
+            if (body_incomplete) {
+                if (stream.available() > MAX_HTTP_MESSAGE_BYTES) {
+                    applications.decode_failed = true;
+                }
+                break;
+            }
+
+            if (header.isRequest() && applications.pending_head_requests.size() < MAX_PENDING_REQUESTS) {
+                applications.pending_head_requests.push_back(header.method == "HEAD");
+            }
+
+            applications.http_messages.push_back(std::move(header));
+            stream.consume(start_size - span.size());
         }
     }
     return ParseError::None;

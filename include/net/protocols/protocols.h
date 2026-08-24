@@ -11,3 +11,4 @@
 #include <net/protocols/icmp.h>
 #include <net/protocols/icmpv6.h>
 #include <net/protocols/dns.h>
+#include <net/protocols/http.h>

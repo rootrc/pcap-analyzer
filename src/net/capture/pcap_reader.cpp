@@ -81,7 +81,7 @@ void Reader::readAllPackets() {
 ParseError Reader::readPacket() {
     while (true) {
         if (span_.size() < PACKET_HEADER_LEN) {
-            decoder_.finish();
+            // decoder_.finish();
             return ParseError::UnexpectedEofF;
         }
 
