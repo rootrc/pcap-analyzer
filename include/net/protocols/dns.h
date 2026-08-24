@@ -101,9 +101,6 @@ struct Header {
     std::string toJson() const noexcept;
 };
 
-ParseError parseName(std::span<const uint8_t>& span, const uint8_t* dns_base, std::string& name, Endian endian);
-ParseError parseQuestion(std::span<const uint8_t>& span, const uint8_t* dns_base, Question& q, Endian endian);
-ParseError parseResourceRecord(std::span<const uint8_t>& span, const uint8_t* dns_base, ResourceRecord& rr, Endian endian);
 ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
 
 const char* typeName(uint16_t t);

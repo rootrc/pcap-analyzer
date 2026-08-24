@@ -8,6 +8,8 @@
 
 namespace net::dns {
 
+namespace {
+
 ParseError parseName(std::span<const uint8_t>& span, const uint8_t* dns_base, std::string& name, Endian endian) {
     name.clear();
     const uint8_t* dns_end = span.data() + span.size();
@@ -63,6 +65,8 @@ ParseError parseResourceRecord(std::span<const uint8_t>& span, const uint8_t* dn
     rr.rdata.assign(span.data(), span.data() + rdlength);
     span = span.subspan(rdlength);
     return ParseError::None;
+}
+
 }
 
 ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) {
