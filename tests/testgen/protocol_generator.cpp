@@ -365,4 +365,110 @@ void makeDnsHeader(uint8_t* data) {
     }
 }
 
+std::string randomToken(size_t min_len = 3, size_t max_len = 12) {
+    static constexpr char tchars[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        "!#$%&'*+.^_`|~";
+    size_t len = min_len + (static_cast<size_t>(std::rand()) % (max_len - min_len + 1));
+    std::string s(len, '\0');
+    for (size_t i = 0; i < len; ++i) {
+        s[i] = tchars[std::rand() % (sizeof(tchars) - 1)];
+    }
+    return s;
+}
+
+std::string randomFieldValue(size_t min_len = 0, size_t max_len = 20) {
+    size_t len = min_len + (static_cast<size_t>(std::rand()) % (max_len - min_len + 1));
+    std::string s(len, '\0');
+    for (size_t i = 0; i < len; ++i) {
+        s[i] = static_cast<char>(0x21 + (std::rand() % (0x7E - 0x21 + 1)));
+    }
+    return s;
+}
+
+int appendRandomFields(char* buf, int pos, size_t buf_size, int min_count = 0, int max_count = 100) {
+    int count = min_count + std::rand() % (max_count - min_count + 1);
+    for (int i = 0; i < count; ++i) {
+        pos += std::snprintf(buf + pos, buf_size - static_cast<size_t>(pos), "%s: %s\r\n", randomToken().c_str(), randomFieldValue().c_str());
+    }
+    return pos;
+}
+
+void makeHttpRequest(uint8_t* data) {
+    static constexpr std::string_view methods[] = { "GET", "POST", "PUT", "DELETE", "HEAD" };
+    static constexpr std::string_view targets[] = {"/", "/index.html", "/api/users", "/api/users/42", "/search?q=test" };
+    static constexpr std::string_view hosts[] = { "example.com", "api.service.net", "cdn.example.io" };
+    static constexpr std::string_view bodies[] = {"{\"ok\":true}", "hello=world&foo=bar", "some plain text body" };
+
+    std::string_view method = methods[std::rand() % (sizeof(methods) / sizeof(methods[0]))];
+    std::string_view target = targets[std::rand() % (sizeof(targets) / sizeof(targets[0]))];
+    std::string_view host = hosts[std::rand() % (sizeof(hosts) / sizeof(hosts[0]))];
+
+    char buf[16384];
+    int pos = std::snprintf(buf, sizeof(buf), "%.*s %.*s HTTP/1.1\r\nHost: %.*s\r\nUser-Agent: testgen/1.0\r\n",
+                             static_cast<int>(method.size()), method.data(),
+                             static_cast<int>(target.size()), target.data(),
+                             static_cast<int>(host.size()), host.data());
+    pos = appendRandomFields(buf, pos, sizeof(buf));
+
+    enum BodyKind { NONE, FIXED, CHUNKED, BODY_KIND_COUNT };
+    bool allow_body = method != "GET" && method != "HEAD";
+    int body_kind = allow_body ? std::rand() % BODY_KIND_COUNT : NONE;
+    std::string_view body = bodies[std::rand() % (sizeof(bodies) / sizeof(bodies[0]))];
+
+    if (body_kind == FIXED) {
+        pos += std::snprintf(buf + pos, sizeof(buf) - pos, "Content-Type: text/plain\r\nContent-Length: %zu\r\n\r\n%.*s", body.size(), static_cast<int>(body.size()), body.data());
+    } else if (body_kind == CHUNKED) {
+        pos += std::snprintf(buf + pos, sizeof(buf) - pos, "Transfer-Encoding: chunked\r\n\r\n");
+        size_t half = body.size() / 2;
+        if (half == 0) {
+            pos += std::snprintf(buf + pos, sizeof(buf) - pos, "%zx\r\n%.*s\r\n0\r\n\r\n", body.size(), static_cast<int>(body.size()), body.data());
+        } else {
+            pos += std::snprintf(buf + pos, sizeof(buf) - pos, "%zx\r\n%.*s\r\n", half, static_cast<int>(half), body.data());
+            pos += std::snprintf(buf + pos, sizeof(buf) - pos, "%zx\r\n%.*s\r\n0\r\n\r\n", body.size() - half, static_cast<int>(body.size() - half), body.data() + half);
+        }
+    } else {
+        pos += std::snprintf(buf + pos, sizeof(buf) - pos, "\r\n");
+    }
+
+    std::memcpy(data, buf, static_cast<size_t>(pos));
+}
+
+void makeHttpResponse(uint8_t* data) {
+    struct StatusLine { uint16_t code; std::string_view reason; };
+    static constexpr StatusLine statuses[] = {
+        {200, "OK"}, {201, "Created"}, {204, "No Content"},
+        {301, "Moved Permanently"}, {304, "Not Modified"},
+        {400, "Bad Request"}, {404, "Not Found"}, {500, "Internal Server Error"},
+    };
+    static constexpr std::string_view bodies[] = { "{\"ok\":true}", "<html><body>hi</body></html>" };
+
+    const StatusLine& status = statuses[std::rand() % (sizeof(statuses) / sizeof(statuses[0]))];
+    bool bodyless = status.code == 204 || status.code == 304;
+    std::string_view body = bodies[std::rand() % (sizeof(bodies) / sizeof(bodies[0]))];
+    bool chunked = !bodyless && (std::rand() % 2 == 0);
+
+    char buf[16384];
+    int pos = std::snprintf(buf, sizeof(buf), "HTTP/1.1 %u %.*s\r\nServer: testgen\r\n", status.code, static_cast<int>(status.reason.size()), status.reason.data());
+    pos = appendRandomFields(buf, pos, sizeof(buf));
+
+    if (bodyless) {
+        pos += std::snprintf(buf + pos, sizeof(buf) - pos, "\r\n");
+    } else if (chunked) {
+        pos += std::snprintf(buf + pos, sizeof(buf) - pos, "Transfer-Encoding: chunked\r\n\r\n");
+        pos += std::snprintf(buf + pos, sizeof(buf) - pos, "%zx\r\n%.*s\r\n0\r\n\r\n",
+                              body.size(), static_cast<int>(body.size()), body.data());
+    } else {
+        pos += std::snprintf(buf + pos, sizeof(buf) - pos, "Content-Type: text/plain\r\nContent-Length: %zu\r\n\r\n%.*s", body.size(), static_cast<int>(body.size()), body.data());
+    }
+
+    std::memcpy(data, buf, static_cast<size_t>(pos));
+}
+
+void makeHttpHeader(uint8_t* data) {
+    if (std::rand() % 2 == 0) makeHttpRequest(data);
+    else makeHttpResponse(data);
+    makeHttpResponse(data);
+}
+
 }

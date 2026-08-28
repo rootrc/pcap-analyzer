@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <concepts>
+#include <functional>
+#include <string_view>
 #include <tuple>
 
 extern int g_randomizedIterations;
@@ -17,6 +20,17 @@ void runHeaderTest(const uint8_t (&data)[N], net::ParseError expected, ParseFn&&
         << "Expected: " << net::toString(expected)
         << ", Got: " << net::toString(result)
         << " (data size: " << N << " bytes)";
+}
+
+template <typename ParseFn>
+void runHeaderTest(std::string_view data, net::ParseError expected, ParseFn&& parseFn) {
+    std::span<const uint8_t> span{reinterpret_cast<const uint8_t*>(data.data()), data.size()};
+    net::ParseError result = parseFn(span);
+
+    EXPECT_EQ(result, expected)
+    << "Expected: " << net::toString(expected)
+    << ", Got: " << net::toString(result)
+    << " (data size: " << data.size() << " bytes)";
 }
 
 template <typename ParseFn, typename Header, typename... Args>
@@ -39,9 +53,10 @@ auto bindHeaderParser(ParseFn&& fn, Args&&... args) {
 }
 
 template <typename GeneratorFn, typename ParseFn>
+    requires std::invocable<GeneratorFn&, uint8_t*>
 void runRandomizedTest(size_t iterations, GeneratorFn&& generator, ParseFn&& parseFn) {
     for (size_t i = 0; i < iterations; ++i) {
-        uint8_t data[2048]{};
+        uint8_t data[16384]{};
 
         generator(data);
 

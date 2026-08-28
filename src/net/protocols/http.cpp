@@ -80,7 +80,7 @@ ParseError parseChunkSize(std::string_view line, uint64_t& out) {
 ParseError parseStartLine(std::span<const uint8_t>& span, Header& header) {
     std::string_view start_line;
     if (auto err = readLineCRLF(span, start_line); err != ParseError::None) return err;
-    if (start_line.empty()) return ParseError::MalformedHeader;
+    if (start_line.empty() || start_line.find('\n') != std::string_view::npos) return ParseError::MalformedHeader;
 
     size_t space1 = start_line.find(' ');
     if (space1 == std::string_view::npos) return ParseError::MalformedHeader;
