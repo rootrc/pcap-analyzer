@@ -23,11 +23,13 @@ ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& captur
             appDecoder_.pollDatagram(flow_key, flow->is_reverse, capture.pkt.payload, flow_is_new);
         }
     }
+    ++decoded_;
 
     return ParseError::None;
 }
 
 void Decoder::finish() {
+    decoded_ = 0;
     flowTable_.flush();
     appDecoder_.prune(flowTable_);
 }

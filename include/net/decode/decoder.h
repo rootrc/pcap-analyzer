@@ -17,6 +17,7 @@ public:
 
     void finish();
 
+    uint64_t decoded() const {return decoded_; };
     const FlowTable& flowTable() const { return flowTable_; }
     const AppDecoder& appDecoder() const { return appDecoder_; }
     const DnsTable& dnsTable() const { return dnsTable_; }
@@ -26,6 +27,8 @@ private:
     DnsTable dnsTable_;
     AppDecoder appDecoder_;
     StatsEngine statsEngine_;
+
+    uint64_t decoded_ = 0;
 };
 
 }

@@ -22,6 +22,7 @@ public:
 
     const Capture& currentCapture() const { return capture_; }
     const FileHeader& fileHeader() const { return file_header_; }
+    uint64_t decoded() const { return decoder_.decoded(); }
     const FlowTable& flowTable() const { return decoder_.flowTable(); }
     const AppDecoder& appDecoder() const { return decoder_.appDecoder(); }
     const DnsTable& dnsTable() const { return decoder_.dnsTable(); }
