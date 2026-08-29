@@ -31,8 +31,9 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     header.checksum = toHost16(header.checksum, endian);
     header.src_ip = toHost32(header.src_ip, endian);
     header.dst_ip = toHost32(header.dst_ip, endian);
-
-    span = span.subspan(header.header_length());
+    
+    if (header.total_length > span.size()) return ParseError::UnexpectedEof;
+    span = span.subspan(header.header_length(), header.total_length - header.header_length());
     return ParseError::None;
 }
 

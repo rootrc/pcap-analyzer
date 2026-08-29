@@ -31,7 +31,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo
     header.length = toHost16(header.length, endian);
     header.checksum = toHost16(header.checksum, endian);
 
-    span = span.subspan(HEADER_LEN);
+    span = span.subspan(HEADER_LEN, header.length - HEADER_LEN);
     return ParseError::None;
 }
 

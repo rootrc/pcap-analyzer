@@ -19,6 +19,8 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
         return ParseError::InvalidFieldValue;
     }
     span = span.subspan(HEADER_LEN);
+    if (header.payload_length > span.size()) return ParseError::UnexpectedEof;
+    span = span.first(header.payload_length);
     return ParseError::None;
 }
 

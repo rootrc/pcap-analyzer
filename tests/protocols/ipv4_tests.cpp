@@ -65,6 +65,18 @@ namespace {
         0xC0, 0xA8, 0x01, 0x64,
         0xC0, 0xA8, 0x01, 0x01,
     };
+     inline constexpr uint8_t ipv4_total_length[] = {
+        0x45,
+        0x00,
+        0x12, 0x34,
+        0x12, 0x34,
+        0x40, 0x00,
+        0x40,
+        0x06,
+        0x92, 0xDA,
+        0xC0, 0xA8, 0x01, 0x64,
+        0xC0, 0xA8, 0x01, 0x01,
+    };
 }
 
 auto parseIpv4 = test::bindHeaderParser<
@@ -81,3 +93,4 @@ HEADER_TEST(IPV4, RejectsMalformedHeader, ipv4_malformed, net::ParseError::Malfo
 HEADER_TEST(IPV4, UnexpectedEndofBufferOptions, ipv4_endof_options, net::ParseError::UnexpectedEof, parseIpv4)
 HEADER_TEST(IPV4, RejectsInvalidFieldValue, ipv4_field, net::ParseError::InvalidFieldValue, parseIpv4)
 HEADER_TEST(IPV4, RejectsChecksumMismatch, ipv4_checksum, net::ParseError::ChecksumMismatch, parseIpv4)
+HEADER_TEST(IPV4, UnexpectedTotalLength, ipv4_total_length, net::ParseError::UnexpectedEof, parseIpv4)
