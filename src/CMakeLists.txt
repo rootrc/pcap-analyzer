@@ -3,7 +3,7 @@ add_executable(analyzer
 )
 
 set_target_properties(analyzer PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
 
 target_link_libraries(analyzer
