@@ -45,6 +45,7 @@ public:
     const std::unordered_map<FlowKey, Flow, FlowKeyHash>& flows() const { return flows_; }
     const std::vector<std::pair<FlowKey, Flow>>& completed() const { return completed_; }
     uint64_t total_bytes() const { return total_bytes_; }
+    const std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> allFlows() const;
 
 private:
     static constexpr uint64_t IDLE_TIMEOUT_US = 30000000;

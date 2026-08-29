@@ -13,6 +13,8 @@ class StatsEngine {
 public:
     StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, size_t print_limit_);
 
+    void printDns(std::ostream& os) const noexcept;
+    void printHttp(std::ostream& os) const noexcept;
     std::string toString() const noexcept;
     std::string toJson() const noexcept;
 private:

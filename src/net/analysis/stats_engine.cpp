@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <map>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
@@ -10,32 +11,57 @@
 namespace net {
 
 namespace {
-    void printBytes(std::ostream& os, uint64_t bytes) {
-        if (bytes > 10 * (1 << 20)) {
-            os << (bytes >> 20) << "MB";
-        } else if (bytes > 10 * (1 << 10)) {
-            os << (bytes >> 10) << "KB";
-        } else {
-            os << bytes << "B";
-        }
-    }
 
-    void printRate(std::ostream& os, double bps) {
-        if (bps >= 1e9) {
-            os << std::fixed << std::setprecision(2) << (bps / 1e9) << "Gbps";
-        } else if (bps >= 1e6) {
-            os << std::fixed << std::setprecision(2) << (bps / 1e6) << "Mbps";
-        } else if (bps >= 1e3) {
-            os << std::fixed << std::setprecision(2) << (bps / 1e3) << "Kbps";
-        } else {
-            os << std::fixed << std::setprecision(2) << bps << "bps";
-        }
+void printBytes(std::ostream& os, uint64_t bytes) {
+    if (bytes > 10 * (1 << 20)) {
+        os << (bytes >> 20) << "MB";
+    } else if (bytes > 10 * (1 << 10)) {
+        os << (bytes >> 10) << "KB";
+    } else {
+        os << bytes << 'B';
     }
+}
+
+void printRate(std::ostream& os, double bps) {
+    if (bps >= 1e9) {
+        os << std::fixed << std::setprecision(2) << (bps / 1e9) << "Gbps";
+    } else if (bps >= 1e6) {
+        os << std::fixed << std::setprecision(2) << (bps / 1e6) << "Mbps";
+    } else if (bps >= 1e3) {
+        os << std::fixed << std::setprecision(2) << (bps / 1e3) << "Kbps";
+    } else {
+        os << std::fixed << std::setprecision(2) << bps << "bps";
+    }
+}
+
 }
 
 StatsEngine::StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, size_t print_limit_)
     : flowTable_(flowTable), appDecoder_(appDecoder), dnsTable_(dnsTable) {
     print_limit = print_limit_;
+}
+
+std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> StatsEngine::sortedFlowsByBytes() const {
+    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow;
+    sortedFlow.reserve(flowTable_.completed().size() + flowTable_.flows().size());
+    for (const auto& [k, f] : flowTable_.completed()) {
+        sortedFlow.emplace_back(&k, &f);
+    }
+    for (const auto& [k, f] : flowTable_.flows()) {
+        sortedFlow.emplace_back(&k, &f);
+    }
+    std::sort(sortedFlow.begin(), sortedFlow.end(), [](const auto& a, const auto& b) { return a.second->totalBytes() > b.second->totalBytes(); });
+    return sortedFlow;
+}
+
+std::vector<std::pair<uint8_t, uint64_t>> StatsEngine::sortedProtocolsByBytes(std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow) const {
+    std::unordered_map<uint8_t, uint64_t> protocolBytes;
+    for (const auto& [kp, fp] : sortedFlow) {
+        protocolBytes[kp->protocol] += fp->totalBytes();
+    }
+    std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols(protocolBytes.begin(), protocolBytes.end());
+    std::sort(sortedProtocols.begin(), sortedProtocols.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+    return sortedProtocols;
 }
 
 void StatsEngine::printFlow(std::ostream& os, const FlowKey& key, const FlowTable::Flow& flow) const {
@@ -83,27 +109,87 @@ void StatsEngine::printFlow(std::ostream& os, const FlowKey& key, const FlowTabl
     os << '\n';
 }
 
-std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> StatsEngine::sortedFlowsByBytes() const {
-    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow;
-    sortedFlow.reserve(flowTable_.completed().size() + flowTable_.flows().size());
-    for (const auto& [k, f] : flowTable_.completed()) {
-        sortedFlow.emplace_back(&k, &f);
+void StatsEngine::printDns(std::ostream& os) const noexcept {
+    std::map<std::string, std::vector<std::string>> resolved;
+    size_t queries = 0;
+
+    for (const auto& [ip, domains] : dnsTable_.domainsByIp()) {
+        std::ostringstream oss;
+        if (ip.isIpv4) {
+            ip::v4::printIp(oss, ip.ip);
+        } else {
+            ip::v6::printIp(oss, ip.ip);
+        }
+
+        for (const std::string& domain : domains) {
+            resolved[domain].push_back(oss.str());
+        }
     }
-    for (const auto& [k, f] : flowTable_.flows()) {
-        sortedFlow.emplace_back(&k, &f);
+
+    os << "  queries seen      " << queries << '\n';
+    os << "  names resolved    " << resolved.size() << '\n';
+
+    size_t printed = 0;
+    for (const auto& [name, addrs] : resolved) {
+        if (printed && printed == print_limit) {
+            os << "  ... limit reached\n";
+            break;
+        }
+        os << "  " << std::left << std::setw(48) << name << ' ';
+        for (size_t i = 0; i < addrs.size(); ++i) {
+            if (i) os << ", ";
+            os << addrs[i];
+        }
+        os << '\n';
+        ++printed;
     }
-    std::sort(sortedFlow.begin(), sortedFlow.end(), [](const auto& a, const auto& b) { return a.second->totalBytes() > b.second->totalBytes(); });
-    return sortedFlow;
+    if (resolved.empty()) os << "  (no answers)\n";
+    os << '\n';
 }
 
-std::vector<std::pair<uint8_t, uint64_t>> StatsEngine::sortedProtocolsByBytes(std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow) const {
-    std::unordered_map<uint8_t, uint64_t> protocolBytes;
-    for (const auto& [kp, fp] : sortedFlow) {
-        protocolBytes[kp->protocol] += fp->totalBytes();
+void StatsEngine::printHttp(std::ostream& os) const noexcept {
+    size_t printed = 0;
+    bool truncated = false;
+
+    for (const auto& [key, flow] : flowTable_.allFlows()) {
+        for (bool reverse : {false, true}) {
+            const Applications* apps = appDecoder_.getApplications(*key, reverse);
+            if (!apps || apps->http_messages.empty()) continue;
+
+            for (const http::Header& msg : apps->http_messages) {
+                if (print_limit && printed >= print_limit) {
+                    truncated = true;
+                    break;
+                }
+                os << "  " << *key << (reverse ? "  <-  " : "  ->  ");
+                if (msg.isRequest()) {
+                    os << msg.method << ' ' << msg.target << ' ' << msg.version;
+                    if (const std::string* host = msg.fieldValue("Host")) {
+                        os << "  Host: " << *host;
+                    }
+                } else {
+                    os << msg.version << ' ' << msg.status_code;
+                    if (!msg.reason_phrase.empty()) os << ' ' << msg.reason_phrase;
+                    if (const std::string* type = msg.fieldValue("Content-Type")) {
+                        os << "  " << *type;
+                    }
+                }
+                if (msg.chunked) {
+                    os << "  [chunked]";
+                } else if (msg.has_content_length) {
+                    os << "  [" << msg.content_length << "B]";
+                }
+                os << '\n';
+                printed++;
+            }
+            if (truncated) break;
+        }
+        if (truncated) break;
     }
-    std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols(protocolBytes.begin(), protocolBytes.end());
-    std::sort(sortedProtocols.begin(), sortedProtocols.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
-    return sortedProtocols;
+
+    if (!printed) os << "  (none)\n";
+    if (truncated) os << "  ... limit reached\n";
+    os << '\n';
 }
 
 std::string StatsEngine::toString() const noexcept {

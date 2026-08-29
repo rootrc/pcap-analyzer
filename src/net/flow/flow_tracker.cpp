@@ -115,6 +115,17 @@ bool FlowTable::isExpired(const Flow& flow, uint64_t ts_us) const {
            (ts_us - flow.first_seen > ACTIVE_TIMEOUT_US);
 }
 
+const std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> FlowTable::allFlows() const {
+    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> flows;
+    flows.reserve(completed_.size() + flows_.size());
+    for (const auto& [key, flow] : completed_) flows.emplace_back(&key, &flow);
+    for (const auto& [key, flow] : flows_) flows.emplace_back(&key, &flow);
+    std::sort(flows.begin(), flows.end(), [](const auto& a, const auto& b) {
+        return a.second->totalBytes() > b.second->totalBytes();
+    });
+    return flows;
+}
+
 void FlowTable::flush() {
     for (auto& [key, flow] : flows_) {
         completed_.emplace_back(key, std::move(flow));
