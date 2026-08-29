@@ -1,6 +1,5 @@
-#include <iostream>
+#include <net/capture/cli.h>
 
-int main() {
-    std::cout << "PCAP Analyzer\n";
-    return 0;
+int main(int argc, char** argv) {
+    return cli(argc, argv);
 }
