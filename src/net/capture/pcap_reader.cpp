@@ -23,8 +23,8 @@ Reader::Reader(const std::filesystem::path& path, size_t print_limit)
         throw std::runtime_error("Reader: failed to create file mapping");
     }
 
-    span_ = std::span<const uint8_t>{static_cast<const uint8_t*>(MapViewOfFile(mapping_, FILE_MAP_READ, 0, 0, 0)),  static_cast<size_t>(size.QuadPart);};
-    WIN32_MEMORY_RANGE_ENTRY r{(PVOID)span_, file_size_};
+    span_ = std::span<const uint8_t>{static_cast<const uint8_t*>(MapViewOfFile(mapping_, FILE_MAP_READ, 0, 0, 0)), static_cast<size_t>(size.QuadPart)};
+    WIN32_MEMORY_RANGE_ENTRY r{const_cast<PVOID>(static_cast<const void*>(span_.data())), static_cast<SIZE_T>(span_.size())};
     PrefetchVirtualMemory(GetCurrentProcess(), 1, &r, 0);
     if (!span_.data()) {
         CloseHandle(mapping_);
@@ -45,23 +45,23 @@ Reader::Reader(const std::filesystem::path& path, size_t print_limit)
     size_t size = static_cast<size_t>(st.st_size);
 
     void* m = ::mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd_, 0);
-    ::madvise(const_cast<uint8_t*>(span_.data()), span_.size(), MADV_SEQUENTIAL);
     if (m == MAP_FAILED) {
         ::close(fd_);
         throw std::runtime_error("Reader: failed to mmap file");
     }
     span_ = std::span<const uint8_t>{static_cast<const uint8_t*>(m), size};
+    ::madvise(const_cast<uint8_t*>(span_.data()), span_.size(), MADV_SEQUENTIAL);
 #endif
     readFileHeader();
 }
 
 Reader::~Reader() {
 #ifdef _WIN32
-    if (span_.data())  ::munmap(const_cast<uint8_t*>(span_.data()), span_.size());
+    if (span_.data()) UnmapViewOfFile(span_.data());
     if (mapping_) CloseHandle(mapping_);
     if (file_ != INVALID_HANDLE_VALUE) CloseHandle(file_);
 #else
-    if (span_.data())  ::munmap(const_cast<uint8_t*>(span_.data()), span_.size());
+    if (span_.data()) ::munmap(const_cast<uint8_t*>(span_.data()), span_.size());
     if (fd_ != -1) ::close(fd_);
 #endif
 }
