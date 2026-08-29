@@ -4,12 +4,19 @@
 #include <net/capture/packet.h>
 #include <net/decode/decoder.h>
 
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <fcntl.h>
+    #include <sys/mman.h>
+    #include <sys/stat.h>
+    #include <unistd.h>
+#endif
+
 #include <cstdio>
-
-#include <variant>
-#include <span>
-
 #include <filesystem>
+#include <span>
+#include <variant>
 
 namespace net::pcap {
 

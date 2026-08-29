@@ -1,14 +1,5 @@
 #include <net/capture/pcap_reader.h>
 
-#ifdef _WIN32
-    #include <windows.h>
-#else
-    #include <fcntl.h>
-    #include <sys/mman.h>
-    #include <sys/stat.h>
-    #include <unistd.h>
-#endif
-
 namespace net::pcap {
 
 Reader::Reader(const std::filesystem::path& path, size_t print_limit)
