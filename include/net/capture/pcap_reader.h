@@ -15,7 +15,7 @@ namespace net::pcap {
 
 class Reader {
 public:
-    explicit Reader(const std::filesystem::path& path);
+    explicit Reader(const std::filesystem::path& path, size_t print_limit = 0);
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
     ~Reader();
@@ -48,7 +48,7 @@ private:
     std::span<const uint8_t> span_;
     Capture capture_{};
     FileHeader file_header_{};
-    Decoder decoder_{};
+    Decoder decoder_;
     bool is_nsec_;
     Endian endian_;
     uint64_t skipped_ = 0;

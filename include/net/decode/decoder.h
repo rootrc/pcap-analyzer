@@ -12,7 +12,7 @@ namespace net {
 
 class Decoder {
 public:
-    Decoder();
+    Decoder(size_t print_limit_);
     ParseError decode(std::span<const uint8_t>& span, pcap::Capture& capture);
 
     void finish();

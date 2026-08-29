@@ -11,7 +11,7 @@ namespace net {
 
 class StatsEngine {
 public:
-    StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable);
+    StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, size_t print_limit_);
 
     std::string toString() const noexcept;
     std::string toJson() const noexcept;
@@ -19,6 +19,8 @@ private:
     const FlowTable& flowTable_;
     const AppDecoder& appDecoder_;
     const DnsTable& dnsTable_;
+
+    size_t print_limit = 0;
 
     std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlowsByBytes() const;
     std::vector<std::pair<uint8_t, uint64_t>> sortedProtocolsByBytes(std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow) const;

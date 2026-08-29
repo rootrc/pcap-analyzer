@@ -2,7 +2,7 @@
 
 namespace net {
 
-Decoder::Decoder() : dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_) {}
+Decoder::Decoder(size_t print_limit_) :dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_, print_limit_) {}
 
 ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& capture) {
     capture.pkt.reset();

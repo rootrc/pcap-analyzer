@@ -33,8 +33,9 @@ namespace {
     }
 }
 
-StatsEngine::StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable)
+StatsEngine::StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, size_t print_limit_)
     : flowTable_(flowTable), appDecoder_(appDecoder), dnsTable_(dnsTable) {
+    print_limit = print_limit_;
 }
 
 void StatsEngine::printFlow(std::ostream& os, const FlowKey& key, const FlowTable::Flow& flow) const {
@@ -112,16 +113,26 @@ std::string StatsEngine::toString() const noexcept {
     std::ostringstream oss;
     auto flags = oss.flags();
     oss << std::fixed << std::setprecision(2)
-        << "FlowTable (" << sortedFlow.size() << " flows)  [";
+        << "FlowTable (" << sortedFlow.size() << " flows";
+    if (print_limit != 0 && print_limit != sortedFlow.size()) {
+        oss << ", showing " << print_limit;
+    }
+    oss << ")  [";
     for (size_t i = 0; i < sortedProtocols.size(); ++i) {
         if (i) oss << "  ";
         double pct = flowTable_.total_bytes() ? 100.0 * sortedProtocols[i].second / flowTable_.total_bytes() : 0.0;
         oss << ip::protocolName(sortedProtocols[i].first) << ": " << pct << '%';
     }
     oss << "]\n";
+    size_t printed = 0;
     for (const auto& [key, flow] : sortedFlow) {
+        if (printed && printed == print_limit) {
+            oss << "  ... limit reached\n";
+            break;
+        }
         oss << "  ";
         printFlow(oss, *key, *flow);
+        ++printed;
     }
     oss << "}\n";
     oss.flags(flags);
@@ -131,7 +142,6 @@ std::string StatsEngine::toString() const noexcept {
 std::string StatsEngine::toJson() const noexcept {
     std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = sortedFlowsByBytes();
     std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols = sortedProtocolsByBytes(sortedFlow);
-
     std::ostringstream oss;
     oss << "\"stats_engine\": {\n"
         << "  \"flow_count\": " << sortedFlow.size() << ",\n"
