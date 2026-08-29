@@ -23,6 +23,7 @@ ParseError decodeLayer2(std::span<const uint8_t>& span, Packet& out) {
             
             uint16_t ethertype = eth.ethertype;
             while (ethertype == ethernet::ETHERTYPE_VLAN || ethertype == ethernet::ETHERTYPE_VLAN_QQ) {
+                if (out.vlan_tags.size() >= vlan::MAX_TAGS) return ParseError::MalformedHeader;
                 vlan::Header vtag{};
                 if (auto err = vlan::parse(span, vtag, Endian::Big); err != ParseError::None) return err;
                 ethertype = vtag.ethertype;
