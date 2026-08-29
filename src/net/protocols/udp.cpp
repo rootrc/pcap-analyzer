@@ -7,25 +7,26 @@
 
 namespace net::udp {
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian);
+ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo_header_Sum, Endian endian, bool accept_zero_checksum);
 
 ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
-    return parse(span, header, ip::v4::computePseudoHeaderSum(ip_header), endian);
+    return parse(span, header, ip::v4::computePseudoHeaderSum(ip_header), endian, true);
 }
 
 ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
-    return parse(span, header, ip::v6::computePseudoHeaderSum(ip_header), endian);
+    return parse(span, header, ip::v6::computePseudoHeaderSum(ip_header), endian, false);
 }
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudoHeaderSum, Endian endian) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo_header_sum, Endian endian, bool accept_zero_checksum) {
     if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), HEADER_LEN);
     if (toHost16(header.length, endian) < HEADER_LEN || span.size() < toHost16(header.length, endian)) {
         return ParseError::MalformedHeader;
     }
-    if (header.checksum != 0 && !verifyChecksum(span.data(), toHost16(header.length, endian), pseudoHeaderSum)) {
+    if ((header.checksum != 0 || !accept_zero_checksum) && !verifyChecksum(span.data(), toHost16(header.length, endian), pseudo_header_sum)) {
         return ParseError::ChecksumMismatch;
     }
+
     header.src_port = toHost16(header.src_port, endian);
     header.dst_port = toHost16(header.dst_port, endian);
     header.length = toHost16(header.length, endian);

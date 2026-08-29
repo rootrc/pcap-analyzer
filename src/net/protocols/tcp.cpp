@@ -7,7 +7,7 @@
 
 namespace net::tcp {
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian);
+ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudo_header_sum, Endian endian);
 
 ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
     size_t length = ip_header.total_length - ip_header.header_length();
@@ -18,7 +18,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::H
     return parse(span, header, ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header), endian);
 }
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudoHeaderSum, Endian endian) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudo_header_sum, Endian endian) {
     if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
@@ -33,7 +33,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, 
     // if (reserved != 0) {
     //     return ParseError::InvalidFieldValue;
     // }
-    if (!verifyChecksum(span.data(), length, pseudoHeaderSum)) {
+    if (!verifyChecksum(span.data(), length, pseudo_header_sum)) {
         return ParseError::ChecksumMismatch;
     }
 
