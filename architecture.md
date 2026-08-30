@@ -1,5 +1,5 @@
 ┌──────────────────────────────────────────┐
-│             packet_reader.h              │
+│              pcap_reader.h               │
 │  Reader — mmap pcap file, reads packets  │
 └────────────────────┬─────────────────────┘
                      | per packet
@@ -29,7 +29,7 @@
          │ TCP                   │ UDP
          ▼                       ▼
 ┌──────────────────┐   ┌─────────────────────┐
-│  tcp_stream.h    │   │  payload (Buffer)   │
+│ tcp_reassembler.h│   │  payload (Buffer)   │
 │  TcpReassembler  │   │  raw datagram, no   │
 │  ├ next_seq      │   │  reassembly needed  │
 │  ├ out_of_order  │   └─────────┬───────────┘

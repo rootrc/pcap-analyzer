@@ -8,7 +8,8 @@
 #include <span>
 #include <string>
 
-// https://datatracker.ietf.org/doc/html/rfc768
+// https://datatracker.ietf.org/doc/html/rfc793
+// https://datatracker.ietf.org/doc/html/rfc9293
 
 namespace net::tcp {
 
