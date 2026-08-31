@@ -1,6 +1,32 @@
 #include <net/decode/app_decoder.h>
 
+#include <algorithm>
+#include <string_view>
+
 namespace net {
+
+namespace {
+
+size_t findHttpResync(std::span<const uint8_t> buf) {
+    static constexpr std::string_view markers[] = {
+        "HTTP/1.0", "HTTP/1.1",
+        "GET ", "POST ", "PUT ", "DELETE ", "HEAD ",
+        "OPTIONS ", "PATCH ", "TRACE ", "CONNECT ",
+    };
+    std::string_view v(reinterpret_cast<const char*>(buf.data()), buf.size());
+    size_t best = std::string_view::npos;
+    for (std::string_view m : markers) {
+        for (size_t p = v.find(m, 1); p != std::string_view::npos; p = v.find(m, p + 1)) {
+            if (p >= 2 && v[p - 1] == '\n' && v[p - 2] == '\r') {
+                best = std::min(best, p);
+                break;
+            }
+        }
+    }
+    return best;
+}
+
+}
 
 AppDecoder::AppDecoder(DnsTable& dnsTable) : dnsTable_(dnsTable) {}
 
@@ -15,8 +41,26 @@ ParseError AppDecoder::pollFlow(const FlowKey& key, FlowTable::Flow& flow, bool 
     return ParseError::None;
 }
 
+bool AppDecoder::resyncHttp(TcpReassembler& stream, Applications& applications) {
+    applications.http_chunk_prefix = 0;
+    applications.http_body_until_close = false;
+
+    size_t at = findHttpResync(stream.peek());
+    if (at != std::string_view::npos) {
+        applications.decode_failures++;
+        stream.consume(at);
+        return true;
+    }
+    if (stream.available() > MAX_HTTP_MESSAGE_BYTES) {
+        applications.decode_failures++;
+        stream.consume(stream.available());
+        return true;
+    }
+    return false;
+}
+
 ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Applications& applications, Applications& peer_state) {
-    if (!stream.hasReadableData() || applications.decode_failed) return ParseError::None;
+    if (!stream.hasReadableData()) return ParseError::None;
 
     if (key.src_port == dns::PORT || key.dst_port == dns::PORT) {
         while (true) {
@@ -27,15 +71,24 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
             std::span<const uint8_t> msg{stream.peek().data() + 2, msg_len};
             dns::Header header{};
             if (dns::parse(msg, header, Endian::Big) != ParseError::None) {
-                applications.decode_failed = true;
-                break;
+                applications.decode_failures++;
+                stream.consume(2u + msg_len);
+                continue;
             }
             dnsTable_.record(header);
             applications.dns_messages.push_back(std::move(header));
-            stream.consume(2 + msg_len);
+            stream.consume(2u + msg_len);
         }
     } else if (key.src_port == http::PORT || key.dst_port == http::PORT) {
         while (true) {
+            if (applications.http_skip > 0) {
+                size_t n = std::min(applications.http_skip, stream.available());
+                stream.consume(n);
+                applications.http_skip -= n;
+                if (applications.http_skip > 0) break;
+                continue;
+            }
+
             if (applications.http_body_until_close) {
                 stream.consume(stream.available());
                 break;
@@ -47,12 +100,13 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
             ParseError err = http::parse(span, header);
             if (err == ParseError::UnexpectedEof) {
                 if (stream.available() > MAX_HTTP_HEADER_BYTES) {
-                    applications.decode_failed = true;
+                    if (!resyncHttp(stream, applications)) break;
+                    continue;
                 }
                 break;
             } else if (err != ParseError::None) {
-                applications.decode_failed = true;
-                break;
+                if (!resyncHttp(stream, applications)) break;
+                continue;
             }
 
             bool head_response = false;
@@ -73,8 +127,8 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
                     applications.http_chunk_prefix += validated;
                     body_incomplete = true;
                 } else if (body_err != ParseError::None) {
-                    applications.decode_failed = true;
-                    break;
+                    if (!resyncHttp(stream, applications)) break;
+                    continue;
                 } else {
                     applications.http_chunk_prefix = 0;
                 }
@@ -90,7 +144,21 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
 
             if (body_incomplete) {
                 if (stream.available() > MAX_HTTP_MESSAGE_BYTES) {
-                    applications.decode_failed = true;
+                    if (header.has_content_length && !header.chunked) {
+                        size_t header_bytes = start_size - span.size();
+                        size_t body_len = static_cast<size_t>(header.content_length);
+                        if (header.isRequest() &&
+                            applications.pending_head_requests.size() < MAX_PENDING_REQUESTS) {
+                            applications.pending_head_requests.push_back(header.method == "HEAD");
+                        }
+                        applications.http_messages.push_back(std::move(header));
+                        stream.consume(header_bytes);
+                        applications.http_skip = body_len;
+                        applications.decode_failures++;
+                        continue;
+                    }
+                    if (!resyncHttp(stream, applications)) break;
+                    continue;
                 }
                 break;
             }
@@ -113,12 +181,10 @@ ParseError AppDecoder::pollDatagram(const FlowKey& key, bool is_reverse, std::sp
     if (flow_is_new) flowApplications = FlowApplications{};
     Applications& applications = is_reverse ? flowApplications.rev : flowApplications.fwd;
 
-    if (applications.decode_failed) return ParseError::None;
-
     if (key.src_port == dns::PORT || key.dst_port == dns::PORT) {
         dns::Header header{};
         if (dns::parse(payload, header, Endian::Big) != ParseError::None) {
-            applications.decode_failed = true;
+            applications.decode_failures++;
             return ParseError::None;
         }
         dnsTable_.record(header);

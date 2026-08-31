@@ -14,10 +14,11 @@ constexpr size_t MAX_HTTP_MESSAGE_BYTES = 8 * 1024 * 1024;
 constexpr size_t MAX_PENDING_REQUESTS = 1024;
 
 struct Applications {
-    bool decode_failed = false;
+    size_t decode_failures = 0;
     std::vector<dns::Header> dns_messages;
     std::vector<http::Header> http_messages;
     size_t http_chunk_prefix = 0;
+    size_t http_skip = 0;
     std::deque<bool> pending_head_requests;
     bool http_body_until_close = false;
 };
@@ -40,6 +41,7 @@ private:
     DnsTable& dnsTable_;
 
     ParseError pollStream(const FlowKey& key, TcpReassembler& stream, Applications& decoder_state, Applications& peer_state);
+    bool resyncHttp(TcpReassembler& stream, Applications& applications);
 };
 
 }

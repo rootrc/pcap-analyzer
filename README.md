@@ -176,7 +176,6 @@ Each protocol and capture-format module (Ethernet, VLAN, IPv4, IPv6, ARP, TCP, U
 - **Single-threaded** — capture files are processed sequentially; large files are read via mmap but decoding itself does not parallelize.
 - **HTTP/1.x only** — no HTTP/2 or HTTP/3 (QUIC) support.
 - **Console output only** — results are printed to stdout; there's no JSON/CSV export or programmatic API for downstream tooling yet.
-- `decode_failed` is sticky per flow direction — one malformed application message blinds that half-connection for the rest of the capture, with no resynchronization. Making it per-message is an open item.
 
 ## License
 

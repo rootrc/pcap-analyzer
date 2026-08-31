@@ -101,7 +101,7 @@ void printSummary(std::ostream& os, const pcap::Reader& reader) {
 
     size_t http_messages = 0;
     size_t dns_messages = 0;
-    size_t failed_directions = 0;
+    size_t decode_failures = 0;
     for (const auto& [key, flow] : table.allFlows()) {
         (void)flow;
         for (bool reverse : {false, true}) {
@@ -109,7 +109,7 @@ void printSummary(std::ostream& os, const pcap::Reader& reader) {
             if (!apps) continue;
             http_messages += apps->http_messages.size();
             dns_messages += apps->dns_messages.size();
-            if (apps->decode_failed) failed_directions++;
+            decode_failures += apps->decode_failures;
         }
     }
 
@@ -128,8 +128,8 @@ void printSummary(std::ostream& os, const pcap::Reader& reader) {
     if (http_messages) {    
         os << "  http messages     " << http_messages << '\n';
     }
-    if (failed_directions) {
-        os << "  undecodable dirs  " << failed_directions << '\n';
+    if (decode_failures) {
+        os << "  decode failures   " << decode_failures << '\n';
     }
     os << '\n';
 }
