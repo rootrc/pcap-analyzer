@@ -15,6 +15,8 @@ ParseError parseName(std::span<const uint8_t>& span, const uint8_t* dns_base, st
     const uint8_t* dns_end = span.data() + span.size();
     const uint8_t* cur = span.data();
     int jumps = 0;
+    size_t name_octets = 0;
+    long ptr_ceiling = -1;
 
     while (cur < dns_end) {
         if (*cur == 0) {
@@ -25,7 +27,11 @@ ParseError parseName(std::span<const uint8_t>& span, const uint8_t* dns_base, st
             if (cur + 1 >= dns_end) return ParseError::UnexpectedEof;
             if (++jumps > MaxDnsCompressionJumps ) return ParseError::MalformedHeader;
             if (jumps == 1) span = span.subspan(static_cast<size_t>(cur - span.data() + sizeof(uint16_t)));
-            cur = dns_base + (((*cur & 0x3F) << 8) | *(cur + 1));
+            long target = ((*cur & 0x3F) << 8) | *(cur + 1);
+            long limit = jumps == 1 ? static_cast<long>(cur - dns_base) : ptr_ceiling;
+            if (target >= limit) return ParseError::MalformedHeader;
+            ptr_ceiling = target;
+            cur = dns_base + target;
             continue;
         }
         if ((*cur & DnsCompressionPointerMask) != 0) return ParseError::MalformedHeader;
@@ -33,6 +39,8 @@ ParseError parseName(std::span<const uint8_t>& span, const uint8_t* dns_base, st
         uint8_t len = *cur;
         cur++;
         if (cur + len > dns_end) return ParseError::UnexpectedEof;
+        name_octets += static_cast<size_t>(len) + 1;
+        if (name_octets > MaxDnsNameOctets) return ParseError::MalformedHeader;
         if (!name.empty()) name += '.';
         name.append(reinterpret_cast<const char*>(cur), len);
         cur += len;

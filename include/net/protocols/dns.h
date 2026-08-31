@@ -38,6 +38,8 @@ constexpr uint8_t RCODE_REFUSED = 5;
 
 constexpr int MaxDnsCompressionJumps = 10;
 constexpr uint8_t DnsCompressionPointerMask = 0xC0;
+// RFC 1035 2.3.4: a domain name (label octets + length octets) is capped at 255 octets.
+constexpr size_t MaxDnsNameOctets = 255;
 
 #pragma pack(push, 1)
 struct WireHeader {

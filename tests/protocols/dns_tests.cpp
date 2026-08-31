@@ -59,6 +59,43 @@ namespace {
         0x00, 0x01,
         0x00, 0x01,
     };
+    inline constexpr uint8_t dns_name_compression_forward[] = {
+        0x12, 0x34,
+        0x01, 0x00,
+        0x00, 0x01,
+        0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00,
+        0xC0, 0x10,
+        0x00, 0x00,
+        0x03, 'c','o','m',
+        0x00,
+        0x00, 0x01,
+        0x00, 0x01,
+    };
+    inline constexpr uint8_t dns_name_too_long[] = {
+        0x12, 0x34,
+        0x01, 0x00,
+        0x00, 0x01,
+        0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00,
+        0x3F, 'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+        0x3F, 'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+        0x3F, 'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+        0x3F, 'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+              'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+        0x00,
+        0x00, 0x01,
+        0x00, 0x01,
+    };
     inline constexpr uint8_t dns_name_compression_invalid[] = {
         0x12, 0x34,
         0x01, 0x00,
@@ -87,3 +124,5 @@ HEADER_TEST(DNS, UnexpectedEndofBufferQuestion, dns_question_endof, net::ParseEr
 HEADER_TEST(DNS, UnexpectedEndofBufferName, dns_name_endof, net::ParseError::UnexpectedEof, parseDns)
 HEADER_TEST(DNS, RejectsMalformedHeaderNameCompressionTooLong, dns_name_compression_long, net::ParseError::MalformedHeader, parseDns)
 HEADER_TEST(DNS, RejectsMalformedHeaderNameCompressionInvalid, dns_name_compression_invalid, net::ParseError::MalformedHeader, parseDns)
+HEADER_TEST(DNS, RejectsForwardCompressionPointer, dns_name_compression_forward, net::ParseError::MalformedHeader, parseDns)
+HEADER_TEST(DNS, RejectsNameOverTwoFiftyFiveOctets, dns_name_too_long, net::ParseError::MalformedHeader, parseDns)
