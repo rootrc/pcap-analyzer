@@ -40,7 +40,7 @@ uint64_t computePseudoHeaderSum(const Header& header) {
     return sum;
 }
 
-inline std::ostream& printIp(std::ostream& os, const uint8_t ip[16]) {
+std::ostream& printIp(std::ostream& os, const uint8_t ip[16]) {
     int bestStart = -1;
     int bestLen = 0;
     for (int i = 0; i < 16; i += 2) {

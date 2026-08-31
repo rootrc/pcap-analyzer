@@ -2,7 +2,9 @@
 
 #include <cstdint>
 
-static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "This program requires little-endian architecture");
+#if !defined(_MSC_VER) || defined(__clang__)
+    static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "This program requires little-endian architecture");
+#endif
 
 namespace net {
 
