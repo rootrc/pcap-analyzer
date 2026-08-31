@@ -27,15 +27,27 @@ namespace {
     inline constexpr std::string_view http_invalid_transfer_encoding = "POST /data HTTP/1.1\r\nTransfer-Encoding: chunk\r\n\r\n";
     inline constexpr std::string_view http_invalid_decimal_content_length = "POST /data HTTP/1.1\r\nContent-Length: abcd\r\n\r\n";
     inline constexpr std::string_view http_over_limit_content_length = "POST /data HTTP/1.1\r\nContent-Length: 999999999999999999999999999999999999999999999\r\n\r\n";
+
+    inline constexpr std::string_view chunk_size_empty = ";ext\r\n0\r\n\r\n";
+    inline constexpr std::string_view chunk_size_invalid_hex = "xyz\r\n0\r\n\r\n";
+    inline constexpr std::string_view chunk_data_truncated = "4\r\nWi";
+    inline constexpr std::string_view chunk_terminator_eof = "4\r\nWiki";
+    inline constexpr std::string_view chunk_terminator_missing_lf = "4\r\nWiki\rX0\r\n\r\n";
+    inline constexpr std::string_view chunk_terminator_not_empty = "4\r\nWikiXX\r\n0\r\n\r\n";
+    inline constexpr std::string_view chunk_trailer_eof = "4\r\nWiki\r\n0\r\n";
+    inline constexpr std::string_view chunk_trailer_malformed = "0\r\nBad Header\r\n\r\n";
 }
 
-// GET /data HTTP/1.1
 auto parseHttp = test::bindHeaderParser<
     decltype(net::http::parse),
     net::http::Header
 >(
     net::http::parse
 );
+
+auto parseChunked = [](std::span<const uint8_t>& span) {
+    return net::http::parseChunkedBody(span);
+};
 
 RANDOMIZED_TEST(HTTP, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeHttpHeader(data);}, parseHttp)
 HEADER_TEST(HTTP, UnexpectedEndofBuffer, http_endof, net::ParseError::UnexpectedEof, parseHttp)
@@ -61,3 +73,12 @@ HEADER_TEST(HTTP, RejectsTransferEncodingAndContentLength, http_transfer_encodin
 HEADER_TEST(HTTP, RejectsInvalidTransferEncoding, http_invalid_transfer_encoding, net::ParseError::MalformedHeader, parseHttp)
 HEADER_TEST(HTTP, RejectsInvalidDecimalContentLength, http_invalid_decimal_content_length, net::ParseError::MalformedHeader, parseHttp)
 HEADER_TEST(HTTP, RejectsInvalidLimitContentLength, http_over_limit_content_length, net::ParseError::MalformedHeader, parseHttp)
+
+HEADER_TEST(HTTP, RejectsEmptyChunkSize, chunk_size_empty, net::ParseError::MalformedHeader, parseChunked)
+HEADER_TEST(HTTP, RejectsInvalidHexChunkSize, chunk_size_invalid_hex, net::ParseError::MalformedHeader, parseChunked)
+HEADER_TEST(HTTP, RejectsTruncatedChunkData, chunk_data_truncated, net::ParseError::UnexpectedEof, parseChunked)
+HEADER_TEST(HTTP, RejectsChunkTerminatorUnexpectedEof, chunk_terminator_eof, net::ParseError::UnexpectedEof, parseChunked)
+HEADER_TEST(HTTP, RejectsChunkTerminatorMissingLineFeed, chunk_terminator_missing_lf, net::ParseError::MalformedHeader, parseChunked)
+HEADER_TEST(HTTP, RejectsNonEmptyChunkTerminator, chunk_terminator_not_empty, net::ParseError::MalformedHeader, parseChunked)
+HEADER_TEST(HTTP, RejectsTrailerUnexpectedEof, chunk_trailer_eof, net::ParseError::UnexpectedEof, parseChunked)
+HEADER_TEST(HTTP, RejectsMalformedTrailerField, chunk_trailer_malformed, net::ParseError::MalformedHeader, parseChunked)
