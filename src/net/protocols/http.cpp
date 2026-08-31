@@ -68,6 +68,7 @@ ParseError parseChunkSize(std::string_view line, uint64_t& out) {
     size_t ext = line.find(';');
     std::string_view digits = line;
     if (ext != std::string_view::npos) digits = line.substr(0, ext);
+    while (!digits.empty() && (digits.back() == ' ' || digits.back() == '\t')) digits.remove_suffix(1);
     if (digits.empty()) return ParseError::MalformedHeader;
 
     const auto result = std::from_chars(digits.data(), digits.data() + digits.size(), out, 16);

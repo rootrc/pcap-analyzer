@@ -123,13 +123,16 @@ summary
   bytes             9215613
   flows             747  (635 active, 112 retired)
   dns messages      68
-  http messages     953
-  undecodable dirs  3
+  http messages     965
 
-FlowTable (747 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%]
+FlowTable (747 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
   (5.62%)  130.117.72.100:443 -> 172.16.255.1:10638 (TCP)  fwd=354pkts/496KB avg=1436B  rev=170pkts/9525B avg=56B  TCP=Closed/TimeWait  rate=228.65Kbps
   (2.32%)  192.168.3.131:58789 -> 209.17.73.30:80 (TCP)  fwd=64pkts/3901B avg=60B  rev=144pkts/205KB avg=1459B  TCP=Closed/TimeWait  rate=193.50Kbps
+  (2.27%)  192.168.3.131:58790 -> 209.17.73.30:80 (TCP)  fwd=63pkts/3847B avg=61B  rev=140pkts/200KB avg=1463B  TCP=Closed/TimeWait  rate=188.74Kbps
+  (2.25%)  192.168.3.131:57243 -> 204.14.234.85:443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
+  (2.25%)  192.168.3.131:57243 -> 204.14.234.85:8443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
   ... limit reached
+}
 ```
 
 ## Development
@@ -173,7 +176,7 @@ Each protocol and capture-format module (Ethernet, VLAN, IPv4, IPv6, ARP, TCP, U
 - **Single-threaded** — capture files are processed sequentially; large files are read via mmap but decoding itself does not parallelize.
 - **HTTP/1.x only** — no HTTP/2 or HTTP/3 (QUIC) support.
 - **Console output only** — results are printed to stdout; there's no JSON/CSV export or programmatic API for downstream tooling yet.
-- Some real-world captures still surface `decode_failed` directions for a small number of flows (see the example counters above); root-causing the remaining edge cases in TCP/HTTP framing is an open item.
+- `decode_failed` is sticky per flow direction — one malformed application message blinds that half-connection for the rest of the capture, with no resynchronization. Making it per-message is an open item.
 
 ## License
 

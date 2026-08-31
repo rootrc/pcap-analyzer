@@ -209,7 +209,7 @@ std::string StatsEngine::toString() const noexcept {
         double pct = flowTable_.total_bytes() ? 100.0 * sortedProtocols[i].second / flowTable_.total_bytes() : 0.0;
         oss << ip::protocolName(sortedProtocols[i].first) << ": " << pct << '%';
     }
-    oss << "]\n";
+    oss << "] {\n";
     size_t printed = 0;
     for (const auto& [key, flow] : sortedFlow) {
         if (printed && printed == print_limit) {
