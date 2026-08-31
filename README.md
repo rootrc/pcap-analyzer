@@ -1,5 +1,6 @@
 # pcap-analyzer
 
+[![CI](https://github.com/rootrc/pcap-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/rootrc/pcap-analyzer/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-informational)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
@@ -163,8 +164,6 @@ ctest --test-dir build --progress
 ```
 
 Each protocol and capture-format module (Ethernet, VLAN, IPv4, IPv6, ARP, TCP, UDP, ICMP, ICMPv6, DNS, HTTP, and the pcap reader itself) has its own GoogleTest binary, discovered and run individually via `ctest`; see [tests/CMakeLists.txt](tests/CMakeLists.txt) for the full list.
-
-There is no separate lint/format step configured in this repository.
 
 ## Known Limitations / Future Improvements
 
