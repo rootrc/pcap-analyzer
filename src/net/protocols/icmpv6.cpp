@@ -37,7 +37,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::H
             if (header.code > CODE_PARAM_UNKNOWN_OPTION) return ParseError::InvalidFieldValue;
             break;
         default:
-            return ParseError::InvalidFieldValue;
+            break;
     }
     if (header.type == TYPE_PACKET_TOO_BIG) {
         header.mtu = toHost32(header.mtu, endian);

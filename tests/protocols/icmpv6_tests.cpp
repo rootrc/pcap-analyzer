@@ -20,10 +20,10 @@ namespace {
         0x00, 0x01,
         0x00, 0x00, 0x00,
     };
-    inline constexpr uint8_t icmpv6_invalid_field_type[] = {
+    inline constexpr uint8_t icmpv6_unknown_type[] = {
         0xFF,
         0x00,
-        0x00, 0x00,
+        0xB4, 0x47,
         0x00, 0x00, 0x00, 0x00,
     };
     inline constexpr uint8_t icmpv6_invalid_field_code[] = {
@@ -62,7 +62,7 @@ auto parseIcmpv6(const uint8_t (&pseudo_header)[N]) {
 
 RANDOMIZED_TEST(ICMPV6, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIcmpv6Header(data, test::makePseudoHeader<net::ip::v6::Header>(ipv6_pseudo));}, parseIcmpv6(ipv6_pseudo))
 HEADER_TEST(ICMPV6, UnexpectedEndofBuffer, icmpv6_endof, net::ParseError::UnexpectedEof, parseIcmpv6(ipv6_pseudo))
-HEADER_TEST(ICMPV6, RejectsInvalidFieldValueType, icmpv6_invalid_field_type, net::ParseError::InvalidFieldValue, parseIcmpv6(ipv6_pseudo))
+HEADER_TEST(ICMPV6, AcceptsUnknownType, icmpv6_unknown_type, net::ParseError::None, parseIcmpv6(ipv6_pseudo))
 HEADER_TEST(ICMPV6, RejectsInvalidFieldValueCode, icmpv6_invalid_field_code, net::ParseError::InvalidFieldValue, parseIcmpv6(ipv6_pseudo))
 HEADER_TEST(ICMPV6, RejectsInvalidFieldValueMtu, icmpv6_invalid_field_mtu, net::ParseError::InvalidFieldValue, parseIcmpv6(ipv6_pseudo))
 HEADER_TEST(ICMPV6, RejectsChecksumMismatch, icmpv6_checksum, net::ParseError::ChecksumMismatch, parseIcmpv6(ipv6_pseudo))

@@ -10,10 +10,10 @@ namespace {
         0x00, 0x08,
         0x00, 0x00, 0x00,
     };
-    inline constexpr uint8_t icmp_invalid_field_type[] = {
+    inline constexpr uint8_t icmp_unknown_type[] = {
         0xFF,
         0x00,
-        0x00, 0x00,
+        0x00, 0xFF,
         0x00, 0x00, 0x00, 0x00,
     };
     inline constexpr uint8_t icmp_invalid_field_code[] = {
@@ -40,6 +40,6 @@ auto parseIcmp = test::bindHeaderParser<
 
 RANDOMIZED_TEST(ICMP, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIcmpHeader(data);}, parseIcmp)
 HEADER_TEST(ICMP, UnexpectedEndofBuffer, icmp_endof, net::ParseError::UnexpectedEof, parseIcmp)
-HEADER_TEST(ICMP, RejectsInvalidFieldValueType, icmp_invalid_field_type, net::ParseError::InvalidFieldValue, parseIcmp)
+HEADER_TEST(ICMP, AcceptsUnknownType, icmp_unknown_type, net::ParseError::None, parseIcmp)
 HEADER_TEST(ICMP, RejectsInvalidFieldValueCode, icmp_invalid_field_code, net::ParseError::InvalidFieldValue, parseIcmp)
 HEADER_TEST(ICMP, RejectsChecksumMismatch, icmp_checksum, net::ParseError::ChecksumMismatch, parseIcmp)

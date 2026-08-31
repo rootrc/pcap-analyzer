@@ -35,7 +35,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
             if (header.code > CODE_PARAM_MISSING_OPT) return ParseError::InvalidFieldValue;
             break;
         default:
-            return ParseError::InvalidFieldValue;
+            break;
     }
     if (header.type == TYPE_REDIRECT) {
         header.gateway = toHost32(header.gateway, endian);
