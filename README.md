@@ -177,6 +177,10 @@ Each protocol and capture-format module (Ethernet, VLAN, IPv4, IPv6, ARP, TCP, U
 - **HTTP/1.x only** — no HTTP/2 or HTTP/3 (QUIC) support.
 - **Console output only** — results are printed to stdout; there's no JSON/CSV export or programmatic API for downstream tooling yet.
 
+## Credits
+
+`samples/smallFlows.pcap` is from the [tcpreplay / AppNeta sample captures](https://tcpreplay.appneta.com/reference/sample-captures/) collection. See [samples/README.md](samples/README.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Copyright (c) 2026 rootrc.
