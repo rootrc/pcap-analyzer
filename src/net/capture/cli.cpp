@@ -17,6 +17,7 @@ struct Options {
     bool show_http = false;
     bool show_dns = false;
     bool show_summary = false;
+    bool show_bench = false;
     size_t limit = 0;
     bool help = false;
 };
@@ -34,6 +35,7 @@ void printUsage(std::ostream& os) {
         "  -H, --http         HTTP requests and responses, grouped by flow\n"
         "  -d, --dns          DNS questions and answers, and resolved names\n"
         "  -s, --summary      packet, flow and byte counters\n"
+        "  -b, --bench        capture read and decode timings\n"
         "  -a, --all          all of the above\n"
         "\n"
         "options\n"
@@ -56,11 +58,14 @@ bool parseArgs(int argc, char** argv, Options& out) {
             out.show_dns = true;
         } else if (matches(arg, "-s", "--summary")) {
             out.show_summary = true;
+        } else if (matches(arg, "-b", "--bench")) {
+            out.show_bench = true;
         } else if (matches(arg, "-a", "--all")) {
             out.show_summary = true;
             out.show_flows = true;
             out.show_http = true;
             out.show_dns = true;
+            out.show_bench = true;
         } else if (matches(arg, "-n", "--limit")) {
             if (i + 1 >= argc) {
                 std::cerr << kProgram << ": " << arg << " requires a count\n";
@@ -88,7 +93,7 @@ bool parseArgs(int argc, char** argv, Options& out) {
         std::cerr << kProgram << ": no capture file given\n";
         return false;
     }
-    if (!out.show_flows && !out.show_http && !out.show_dns && !out.show_summary) {
+    if (!out.show_flows && !out.show_http && !out.show_dns && !out.show_summary && !out.show_bench) {
         out.show_summary = true;
         out.show_flows = true;
     }
@@ -131,6 +136,7 @@ void printSummary(std::ostream& os, const pcap::Reader& reader) {
     if (decode_failures) {
         os << "  decode failures   " << decode_failures << '\n';
     }
+    os << "  total time        " << Benchmark::formatDuration(reader.benchmark().elapsedNs(Benchmark::Phase::Total)) << '\n';
     os << '\n';
 }
 
@@ -156,6 +162,7 @@ int cli(int argc, char** argv) {
         if (options.show_flows) std::cout << reader.statsEngine() << '\n';
         if (options.show_http) reader.statsEngine().printHttp(std::cout);
         if (options.show_dns) reader.statsEngine().printDns(std::cout);
+        if (options.show_bench) reader.statsEngine().printBenchmark(std::cout);
     } catch (const std::exception& e) {
         std::cerr << kProgram << ": " << options.path << ": " << e.what() << '\n';
         return 1;

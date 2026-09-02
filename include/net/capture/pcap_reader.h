@@ -1,5 +1,6 @@
 #pragma once
 
+#include <net/analysis/benchmark.h>
 #include <net/capture/capture.h>
 #include <net/capture/packet.h>
 #include <net/decode/decoder.h>
@@ -34,6 +35,7 @@ public:
     const AppDecoder& appDecoder() const { return decoder_.appDecoder(); }
     const DnsTable& dnsTable() const { return decoder_.dnsTable(); }
     const StatsEngine& statsEngine() const { return decoder_.statsEngine(); }
+    const Benchmark& benchmark() const { return benchmark_; }
 
     Endian endian() const { return endian_; }
     
@@ -55,6 +57,7 @@ private:
     std::span<const uint8_t> span_;
     Capture capture_{};
     FileHeader file_header_{};
+    Benchmark benchmark_;
     Decoder decoder_;
     bool is_nsec_;
     Endian endian_;

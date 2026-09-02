@@ -3,7 +3,7 @@
 namespace net::pcap {
 
 Reader::Reader(const std::filesystem::path& path, size_t print_limit)
-    : decoder_(print_limit) {
+    : decoder_(benchmark_, print_limit) {
 #ifdef _WIN32
     file_ = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ,
                         nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -52,7 +52,10 @@ Reader::Reader(const std::filesystem::path& path, size_t print_limit)
     span_ = std::span<const uint8_t>{static_cast<const uint8_t*>(m), size};
     ::madvise(const_cast<uint8_t*>(span_.data()), span_.size(), MADV_SEQUENTIAL);
 #endif
+    benchmark_.setBytes(span_.size());
+    benchmark_.start(Benchmark::Phase::FileHeader);
     readFileHeader();
+    benchmark_.stop(Benchmark::Phase::FileHeader);
 }
 
 Reader::~Reader() {
@@ -67,7 +70,9 @@ Reader::~Reader() {
 }
 
 void Reader::readAllPackets() {
+    benchmark_.start(Benchmark::Phase::Total);
     while (readPacket() == ParseError::None);
+    benchmark_.stop(Benchmark::Phase::Total);
 }
 
 ParseError Reader::readPacket() {
@@ -77,11 +82,15 @@ ParseError Reader::readPacket() {
             return ParseError::UnexpectedEofF;
         }
 
+        benchmark_.start(Benchmark::Phase::PacketHeader);
+
         if (auto err = parse(span_, capture_.packetHeader, endian_); err != ParseError::None) {
+            benchmark_.stop(Benchmark::Phase::PacketHeader);
             return err;
         }
 
         if (span_.size() < capture_.packetHeader.incl_len) {
+            benchmark_.stop(Benchmark::Phase::PacketHeader);
             return ParseError::UnexpectedEofF;
         }
 
@@ -95,10 +104,15 @@ ParseError Reader::readPacket() {
 
         std::span<const uint8_t> packet_span{span_.data(), capture_.packetHeader.incl_len};
         span_ = span_.subspan(capture_.packetHeader.incl_len);
+        benchmark_.stop(Benchmark::Phase::PacketHeader);
 
-        if (auto err = decoder_.decode(packet_span, capture_); err != ParseError::None) {
+        benchmark_.start(Benchmark::Phase::Decode);
+        ParseError decode_err = decoder_.decode(packet_span, capture_);
+        benchmark_.stop(Benchmark::Phase::Decode);
+
+        if (decode_err != ParseError::None) {
             ++skipped_;
-            last_skip_err_ = err;
+            last_skip_err_ = decode_err;
             continue;
         }
 

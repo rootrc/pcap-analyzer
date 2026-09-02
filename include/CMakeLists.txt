@@ -1,4 +1,5 @@
 add_library(network_lib
+    ../src/net/analysis/benchmark.cpp
     ../src/net/analysis/dns_table.cpp
     ../src/net/analysis/stats_engine.cpp
     ../src/net/capture/cli.cpp

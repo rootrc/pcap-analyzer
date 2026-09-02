@@ -1,5 +1,6 @@
 #pragma once
 
+#include <net/analysis/benchmark.h>
 #include <net/analysis/dns_table.h>
 #include <net/analysis/stats_engine.h>
 #include <net/capture/capture.h>
@@ -12,7 +13,7 @@ namespace net {
 
 class Decoder {
 public:
-    Decoder(size_t print_limit_);
+    Decoder(Benchmark& benchmark, size_t print_limit = 0);
     ParseError decode(std::span<const uint8_t>& span, pcap::Capture& capture);
 
     void finish();
@@ -23,6 +24,7 @@ public:
     const DnsTable& dnsTable() const { return dnsTable_; }
     const StatsEngine& statsEngine() const { return statsEngine_; }
 private:
+    Benchmark& benchmark_;
     FlowTable flowTable_;
     DnsTable dnsTable_;
     AppDecoder appDecoder_;

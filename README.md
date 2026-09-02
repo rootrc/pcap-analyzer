@@ -22,6 +22,7 @@ The project was built to demonstrate protocol-level networking knowledge and sys
 - **Flow tracking** — 5-tuple flow keys with idle/active timeouts and per-direction byte/packet counters.
 - **Zero runtime dependencies** — the core library and CLI use only the C++ standard library and OS APIs (mmap on POSIX, memory-mapped files on Windows); GoogleTest is only needed to build the test suite.
 - **Copy-minimizing design** — decoded layers operate on buffer views (`std::span`) into the memory-mapped capture rather than copying data; the only copy made is for buffering out-of-order TCP segments.
+- **Built-in phase benchmarking** — always-on timing of file-header parsing, per-packet header parsing, and decoding (broken down further into wire-format parsing, flow lookup, and app-layer decode), surfaced via `-b`/`--bench`.
 
 ## Supported Protocols (L1–L7)
 
@@ -104,6 +105,7 @@ Run the built binary against any classic-format `.pcap` file:
 | `-H`, `--http` | Print HTTP requests and responses, grouped by flow. |
 | `-d`, `--dns` | Print DNS questions and answers, and resolved names. |
 | `-s`, `--summary` | Print packet, flow, and byte counters. |
+| `-b`, `--bench` | Print capture read and decode phase timings. |
 | `-a`, `--all` | Print all available sections. |
 | `-n`, `--limit N` | Print at most N rows per section (`0` = no limit). |
 | `-h`, `--help` | Display the help message. |
@@ -124,6 +126,7 @@ summary
   flows             747  (635 active, 112 retired)
   dns messages      68
   http messages     965
+  total time        227.64ms
 
 FlowTable (747 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
   (5.62%)  130.117.72.100:443 -> 172.16.255.1:10638 (TCP)  fwd=354pkts/496KB avg=1436B  rev=170pkts/9525B avg=56B  TCP=Closed/TimeWait  rate=228.65Kbps
@@ -133,7 +136,6 @@ FlowTable (747 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
   (2.25%)  192.168.3.131:57243 -> 204.14.234.85:8443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
   ... limit reached
 }
-```
 
 ## Development
 

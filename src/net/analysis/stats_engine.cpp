@@ -36,10 +36,8 @@ void printRate(std::ostream& os, double bps) {
 
 }
 
-StatsEngine::StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, size_t print_limit_)
-    : flowTable_(flowTable), appDecoder_(appDecoder), dnsTable_(dnsTable) {
-    print_limit = print_limit_;
-}
+StatsEngine::StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, const Benchmark& benchmark, size_t print_limit)
+    : flowTable_(flowTable), appDecoder_(appDecoder), dnsTable_(dnsTable), benchmark_(benchmark), print_limit(print_limit) {}
 
 std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> StatsEngine::sortedFlowsByBytes() const {
     std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow;
@@ -190,6 +188,10 @@ void StatsEngine::printHttp(std::ostream& os) const noexcept {
     if (!printed) os << "  (none)\n";
     if (truncated) os << "  ... limit reached\n";
     os << '\n';
+}
+
+void StatsEngine::printBenchmark(std::ostream& os) const noexcept {
+    os << benchmark_.toString() << '\n';
 }
 
 std::string StatsEngine::toString() const noexcept {

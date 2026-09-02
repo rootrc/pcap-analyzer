@@ -1,5 +1,6 @@
 #pragma once
 
+#include <net/analysis/benchmark.h>
 #include <net/analysis/dns_table.h>
 #include <net/decode/app_decoder.h>
 #include <net/flow/flow_tracker.h>
@@ -11,16 +12,18 @@ namespace net {
 
 class StatsEngine {
 public:
-    StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, size_t print_limit_);
+    StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, const Benchmark& benchmark, size_t print_limit = 0);
 
     void printDns(std::ostream& os) const noexcept;
     void printHttp(std::ostream& os) const noexcept;
+    void printBenchmark(std::ostream& os) const noexcept;
     std::string toString() const noexcept;
     std::string toJson() const noexcept;
 private:
     const FlowTable& flowTable_;
     const AppDecoder& appDecoder_;
     const DnsTable& dnsTable_;
+    const Benchmark& benchmark_;
 
     size_t print_limit = 0;
 
