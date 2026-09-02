@@ -10,6 +10,8 @@
 
 namespace net {
 
+struct FlowApplications;
+
 class FlowTable {
 public:
     struct FlowStats {
@@ -25,6 +27,7 @@ public:
         TcpReassembler fwd_tcp;
         TcpReassembler rev_tcp;
         bool is_reverse = false;
+        FlowApplications* app_state = nullptr;
 
         constexpr uint64_t totalPackets() const noexcept { return fwd_stats.packets + rev_stats.packets; }
         constexpr uint64_t totalBytes() const noexcept { return fwd_stats.bytes + rev_stats.bytes; }

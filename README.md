@@ -126,7 +126,7 @@ summary
   flows             747  (635 active, 112 retired)
   dns messages      68
   http messages     965
-  total time        227.64ms
+  total time        24.63ms
 
 FlowTable (747 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
   (5.62%)  130.117.72.100:443 -> 172.16.255.1:10638 (TCP)  fwd=354pkts/496KB avg=1436B  rev=170pkts/9525B avg=56B  TCP=Closed/TimeWait  rate=228.65Kbps

@@ -30,7 +30,7 @@ ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& captur
         if (capture.pkt.isTcp()) {
             appDecoder_.pollFlow(flow_key, *flow, flow_is_new);
         } else if (capture.pkt.isUdp()) {
-            appDecoder_.pollDatagram(flow_key, flow->is_reverse, capture.pkt.payload, flow_is_new);
+            appDecoder_.pollDatagram(flow_key, *flow, capture.pkt.payload, flow_is_new);
         }
         benchmark_.stop(Benchmark::Phase::AppDecode);
     }

@@ -23,19 +23,21 @@ struct Applications {
     bool http_body_until_close = false;
 };
 
+struct FlowApplications {
+    Applications fwd;
+    Applications rev;
+};
+
 class AppDecoder {
 public:
     explicit AppDecoder(DnsTable& dnsTable);
     ParseError pollFlow(const FlowKey& key, FlowTable::Flow& flow, bool flow_is_new = false);
-    ParseError pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload, bool flow_is_new = false);
+    ParseError pollDatagram(const FlowKey& key, FlowTable::Flow& flow, std::span<const uint8_t> payload, bool flow_is_new = false);
     void reset(const FlowKey& key);
     void prune(const FlowTable& table);
     const Applications* getApplications(const FlowKey& key, bool is_reverse) const;
 private:
-    struct FlowApplications {
-        Applications fwd;
-        Applications rev;
-    };
+    FlowApplications& appStateFor(const FlowKey& key, FlowTable::Flow& flow, bool flow_is_new);
 
     std::unordered_map<FlowKey, FlowApplications, FlowKeyHash> flows_;
     DnsTable& dnsTable_;

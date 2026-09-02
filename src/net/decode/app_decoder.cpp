@@ -30,9 +30,16 @@ size_t findHttpResync(std::span<const uint8_t> buf) {
 
 AppDecoder::AppDecoder(DnsTable& dnsTable) : dnsTable_(dnsTable) {}
 
+FlowApplications& AppDecoder::appStateFor(const FlowKey& key, FlowTable::Flow& flow, bool flow_is_new) {
+    if (flow.app_state == nullptr) {
+        flow.app_state = &flows_[key];
+    }
+    if (flow_is_new) *flow.app_state = FlowApplications{};
+    return *flow.app_state;
+}
+
 ParseError AppDecoder::pollFlow(const FlowKey& key, FlowTable::Flow& flow, bool flow_is_new) {
-    FlowApplications& flowApplications = flows_[key];
-    if (flow_is_new) flowApplications = FlowApplications{};
+    FlowApplications& flowApplications = appStateFor(key, flow, flow_is_new);
     if (flow.is_reverse) {
         pollStream(key, flow.rev_tcp, flowApplications.rev, flowApplications.fwd);
     } else {
@@ -174,12 +181,11 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
     return ParseError::None;
 }
 
-ParseError AppDecoder::pollDatagram(const FlowKey& key, bool is_reverse, std::span<const uint8_t> payload, bool flow_is_new) {
+ParseError AppDecoder::pollDatagram(const FlowKey& key, FlowTable::Flow& flow, std::span<const uint8_t> payload, bool flow_is_new) {
     if (payload.size() == 0) return ParseError::None;
 
-    FlowApplications& flowApplications = flows_[key];
-    if (flow_is_new) flowApplications = FlowApplications{};
-    Applications& applications = is_reverse ? flowApplications.rev : flowApplications.fwd;
+    FlowApplications& flowApplications = appStateFor(key, flow, flow_is_new);
+    Applications& applications = flow.is_reverse ? flowApplications.rev : flowApplications.fwd;
 
     if (key.src_port == dns::PORT || key.dst_port == dns::PORT) {
         dns::Header header{};
