@@ -1,5 +1,5 @@
 #include <net/protocols/http.h>
-#include <net/util/string.h>
+#include <net/util/text.h>
 
 #include <cstring>
 #include <charconv>

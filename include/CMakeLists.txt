@@ -24,7 +24,7 @@ add_library(network_lib
     ../src/net/protocols/dns.cpp
     ../src/net/protocols/http.cpp
     ../src/net/util/checksum.cpp
-    ../src/net/util/string.cpp
+    ../src/net/util/text.cpp
 )
 
 target_include_directories(network_lib

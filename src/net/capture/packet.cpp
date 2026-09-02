@@ -1,5 +1,5 @@
 #include <net/capture/packet.h>
-#include <net/util/string.h>
+#include <net/util/text.h>
 
 #include <sstream>
 

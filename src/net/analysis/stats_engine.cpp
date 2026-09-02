@@ -1,5 +1,5 @@
 #include <net/analysis/stats_engine.h>
-#include <net/util/string.h>
+#include <net/util/text.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -9,32 +9,6 @@
 #include <vector>
 
 namespace net {
-
-namespace {
-
-void printBytes(std::ostream& os, uint64_t bytes) {
-    if (bytes > 10 * (1 << 20)) {
-        os << (bytes >> 20) << "MB";
-    } else if (bytes > 10 * (1 << 10)) {
-        os << (bytes >> 10) << "KB";
-    } else {
-        os << bytes << 'B';
-    }
-}
-
-void printRate(std::ostream& os, double bps) {
-    if (bps >= 1e9) {
-        os << std::fixed << std::setprecision(2) << (bps / 1e9) << "Gbps";
-    } else if (bps >= 1e6) {
-        os << std::fixed << std::setprecision(2) << (bps / 1e6) << "Mbps";
-    } else if (bps >= 1e3) {
-        os << std::fixed << std::setprecision(2) << (bps / 1e3) << "Kbps";
-    } else {
-        os << std::fixed << std::setprecision(2) << bps << "bps";
-    }
-}
-
-}
 
 StatsEngine::StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, const Benchmark& benchmark, size_t print_limit)
     : flowTable_(flowTable), appDecoder_(appDecoder), dnsTable_(dnsTable), benchmark_(benchmark), print_limit(print_limit) {}
@@ -87,7 +61,7 @@ void StatsEngine::printFlow(std::ostream& os, const FlowKey& key, const FlowTabl
     auto printStats = [&](const char* label, const FlowTable::FlowStats& s) {
         if (!s.bytes) return;
         os << "  " << label << '=' << s.packets << "pkts/";
-        printBytes(os, s.bytes);
+        util::printBytes(os, s.bytes);
         if (s.packets > 1) {
             os << " avg=" << (s.bytes / s.packets) << "B";
         }
@@ -102,7 +76,7 @@ void StatsEngine::printFlow(std::ostream& os, const FlowKey& key, const FlowTabl
     if (flow.durationUs() && flow.totalPackets() > 1) {
         os << "  rate=";
         double bps = static_cast<double>(flow.totalBytes()) * 8.0 * 1e6 / static_cast<double>(flow.durationUs());
-        printRate(os, bps);
+        util::printRate(os, bps);
     }
     os << '\n';
 }

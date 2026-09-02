@@ -1,47 +1,10 @@
 #include <net/analysis/benchmark.h>
+#include <net/util/text.h>
 
 #include <iomanip>
 #include <sstream>
 
 namespace net {
-
-namespace {
-
-void printDuration(std::ostream& os, uint64_t ns) {
-    if (ns >= 1'000'000'000ULL) {
-        os << std::fixed << std::setprecision(3) << (static_cast<double>(ns) / 1e9) << 's';
-    } else if (ns >= 1'000'000ULL) {
-        os << std::fixed << std::setprecision(2) << (static_cast<double>(ns) / 1e6) << "ms";
-    } else if (ns >= 1'000ULL) {
-        os << std::fixed << std::setprecision(2) << (static_cast<double>(ns) / 1e3) << "us";
-    } else {
-        os << ns << "ns";
-    }
-}
-
-void printBytes(std::ostream& os, uint64_t bytes) {
-    if (bytes > 10 * (1 << 20)) {
-        os << (bytes >> 20) << "MB";
-    } else if (bytes > 10 * (1 << 10)) {
-        os << (bytes >> 10) << "KB";
-    } else {
-        os << bytes << 'B';
-    }
-}
-
-void printRate(std::ostream& os, double bps) {
-    if (bps >= 1e9) {
-        os << std::fixed << std::setprecision(2) << (bps / 1e9) << "Gbps";
-    } else if (bps >= 1e6) {
-        os << std::fixed << std::setprecision(2) << (bps / 1e6) << "Mbps";
-    } else if (bps >= 1e3) {
-        os << std::fixed << std::setprecision(2) << (bps / 1e3) << "Kbps";
-    } else {
-        os << std::fixed << std::setprecision(2) << bps << "bps";
-    }
-}
-
-}
 
 std::string_view Benchmark::toString(Phase phase) noexcept {
     switch (phase) {
@@ -59,7 +22,7 @@ std::string_view Benchmark::toString(Phase phase) noexcept {
 
 std::string Benchmark::formatDuration(uint64_t ns) noexcept {
     std::ostringstream oss;
-    printDuration(oss, ns);
+    util::printDuration(oss, ns);
     return oss.str();
 }
 
@@ -85,17 +48,17 @@ std::string Benchmark::toString() const noexcept {
     auto flags = oss.flags();
     oss << "benchmark {\n";
     oss << "  " << std::left << std::setw(VALUE_COLUMN - 2) << "total";
-    printDuration(oss, elapsedNs(Phase::Total));
+    util::printDuration(oss, elapsedNs(Phase::Total));
     oss << '\n';
 
     auto printPhase = [&](Phase phase, int indent) {
         const PhaseStats& stats = this->phase(phase);
         oss << std::string(indent, ' ') << std::left << std::setw(VALUE_COLUMN - indent) << toString(phase);
-        printDuration(oss, stats.elapsed_ns);
+        util::printDuration(oss, stats.elapsed_ns);
         oss << "  (" << stats.calls << (stats.calls == 1 ? " call" : " calls");
         if (stats.calls) {
             oss << ", ";
-            printDuration(oss, stats.elapsed_ns / stats.calls);
+            util::printDuration(oss, stats.elapsed_ns / stats.calls);
             oss << " avg";
         }
         oss << ")\n";
@@ -111,11 +74,11 @@ std::string Benchmark::toString() const noexcept {
 
     double seconds = static_cast<double>(elapsedNs(Phase::Total)) / 1e9;
     oss << "  " << std::left << std::setw(VALUE_COLUMN - 2) << "throughput";
-    printBytes(oss, bytes_);
+    util::printBytes(oss, bytes_);
     oss << " in ";
-    printDuration(oss, elapsedNs(Phase::Total));
+    util::printDuration(oss, elapsedNs(Phase::Total));
     oss << "  (";
-    printRate(oss, seconds > 0.0 ? (static_cast<double>(bytes_) * 8.0 / seconds) : 0.0);
+    util::printRate(oss, seconds > 0.0 ? (static_cast<double>(bytes_) * 8.0 / seconds) : 0.0);
     oss << ", " << (seconds > 0.0 ? static_cast<uint64_t>(static_cast<double>(packets()) / seconds) : 0) << " pkt/s)\n";
 
     oss << "}";
