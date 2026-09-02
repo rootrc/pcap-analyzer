@@ -151,6 +151,17 @@ void TcpReassembler::onData(const tcp::Header& header, const std::span<const uin
 }
 
 void TcpReassembler::ingest(uint32_t seq, const std::span<const uint8_t> span) {
+    if (!keep_payload) {
+        if (seq == next_seq) {
+            next_seq += static_cast<uint32_t>(span.size());
+        } else if (static_cast<int32_t>(seq - next_seq) < 0) {
+            uint32_t overlap = next_seq - seq;
+            if (overlap < static_cast<uint32_t>(span.size())) {
+                next_seq += static_cast<uint32_t>(span.size()) - overlap;
+            }
+        }
+        return;
+    }
     if (assembled.capacity() < INITIAL_CAPACITY) assembled.reserve(INITIAL_CAPACITY);
     if (seq == next_seq) {
         assembled.insert(assembled.end(), span.data(), span.data() + span.size());

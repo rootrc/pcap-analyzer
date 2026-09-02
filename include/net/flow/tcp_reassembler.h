@@ -46,6 +46,8 @@ struct TcpReassembler {
 
     bool seeded = false;
 
+    bool keep_payload = true;
+
     void onSent(const tcp::Header& header, const std::span<const uint8_t> span);
     void onReceived(const tcp::Header& header);
 

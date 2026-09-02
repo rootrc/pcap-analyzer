@@ -1,5 +1,8 @@
 #include <net/flow/flow_tracker.h>
 
+#include <net/protocols/dns.h>
+#include <net/protocols/http.h>
+
 #include <algorithm>
 #include <iomanip>
 
@@ -7,6 +10,13 @@ template<typename... Ts>
 struct overload : Ts... { using Ts::operator()...; };
 
 namespace net {
+
+namespace {
+bool portHasAppDecoder(const FlowKey& key) noexcept {
+    return key.src_port == dns::PORT || key.dst_port == dns::PORT ||
+           key.src_port == http::PORT || key.dst_port == http::PORT;
+}
+}
 
 ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_key, bool* out_is_new, Flow** out_flow) {
     if (out_flow) *out_flow = nullptr;
@@ -30,6 +40,10 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
     if (it == flows_.end()) {
         it = flows_.try_emplace(key).first;
         it->second.first_seen = capture.ts_us;
+        if (!portHasAppDecoder(key)) {
+            it->second.fwd_tcp.keep_payload = false;
+            it->second.rev_tcp.keep_payload = false;
+        }
         if (out_is_new) *out_is_new = true;
     }
 
