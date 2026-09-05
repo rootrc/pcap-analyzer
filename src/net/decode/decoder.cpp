@@ -25,6 +25,15 @@ ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& captur
         return flow_err;
     }
 
+    if (flow && capture.pkt.isTcp()) {
+        benchmark_.start(Benchmark::Phase::TcpReassembly);
+        TcpReassembler& self = flow->is_reverse ? flow->rev_tcp : flow->fwd_tcp;
+        TcpReassembler& other = flow->is_reverse ? flow->fwd_tcp : flow->rev_tcp;
+        self.onSent(*capture.pkt.tcp(), capture.pkt.payload);
+        other.onReceived(*capture.pkt.tcp());
+        benchmark_.stop(Benchmark::Phase::TcpReassembly);
+    }
+
     if (flow) {
         benchmark_.start(Benchmark::Phase::AppDecode);
         if (capture.pkt.isTcp()) {

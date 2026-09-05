@@ -55,13 +55,6 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
     ++stats.packets;
     stats.bytes += capture.packetHeader.incl_len;
 
-    if (capture.pkt.isTcp()) {
-        TcpReassembler& self = flow.is_reverse ? flow.rev_tcp : flow.fwd_tcp;
-        TcpReassembler& other = flow.is_reverse ? flow.fwd_tcp : flow.rev_tcp;
-        self.onSent(*capture.pkt.tcp(), capture.pkt.payload);
-        other.onReceived(*capture.pkt.tcp());
-    }
-
     return ParseError::None;
 }
 

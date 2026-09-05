@@ -14,6 +14,7 @@ std::string_view Benchmark::toString(Phase phase) noexcept {
         case Phase::Decode: return "decode";
         case Phase::DecodePacket: return "decode packet";
         case Phase::FlowLookup: return "flow lookup";
+        case Phase::TcpReassembly: return "tcp reassembly";
         case Phase::AppDecode: return "app decode";
         case Phase::Count: break;
     }
@@ -44,7 +45,7 @@ void Benchmark::stop(Phase phase) noexcept {
 }
 
 std::string Benchmark::toString() const noexcept {
-    constexpr int VALUE_COLUMN = 20;
+    constexpr int VALUE_COLUMN = 24;
 
     std::ostringstream oss;
     auto flags = oss.flags();
@@ -70,7 +71,7 @@ std::string Benchmark::toString() const noexcept {
         printPhase(phase, 4);
     }
     printPhase(Phase::Decode, 4);
-    for (Phase phase : {Phase::DecodePacket, Phase::FlowLookup, Phase::AppDecode}) {
+    for (Phase phase : {Phase::DecodePacket, Phase::FlowLookup, Phase::TcpReassembly, Phase::AppDecode}) {
         printPhase(phase, 6);
     }
 

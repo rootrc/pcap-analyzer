@@ -18,6 +18,7 @@ public:
         Decode,
         DecodePacket,
         FlowLookup,
+        TcpReassembly,
         AppDecode,
         Count
     };
