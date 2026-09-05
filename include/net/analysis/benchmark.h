@@ -32,6 +32,12 @@ public:
     void start(Phase phase) noexcept;
     void stop(Phase phase) noexcept;
 
+    void setDetailed(bool on) noexcept { detailed_ = on; }
+    bool detailed() const noexcept { return detailed_; }
+    static constexpr bool isPerPacket(Phase phase) noexcept {
+        return phase != Phase::Total && phase != Phase::FileHeader;
+    }
+
     const PhaseStats& phase(Phase phase) const noexcept { return phases_[static_cast<size_t>(phase)].stats; }
     uint64_t elapsedNs(Phase phase) const noexcept { return phases_[static_cast<size_t>(phase)].stats.elapsed_ns; }
     uint64_t calls(Phase phase) const noexcept { return phases_[static_cast<size_t>(phase)].stats.calls; }
@@ -51,6 +57,7 @@ private:
 
     PhaseState phases_[PHASE_COUNT]{};
     uint64_t bytes_ = 0;
+    bool detailed_ = false;
 };
 
 inline std::ostream& operator<<(std::ostream& os, Benchmark::Phase phase) { return os << Benchmark::toString(phase); }

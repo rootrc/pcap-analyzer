@@ -7,23 +7,22 @@ namespace net {
 
 namespace {
 
-size_t findHttpResync(std::span<const uint8_t> buf) {
+size_t findHttpResync(std::span<const uint8_t> buf, size_t from) {
     static constexpr std::string_view markers[] = {
         "HTTP/1.0", "HTTP/1.1",
         "GET ", "POST ", "PUT ", "DELETE ", "HEAD ",
         "OPTIONS ", "PATCH ", "TRACE ", "CONNECT ",
     };
     std::string_view v(reinterpret_cast<const char*>(buf.data()), buf.size());
-    size_t best = std::string_view::npos;
-    for (std::string_view m : markers) {
-        for (size_t p = v.find(m, 1); p != std::string_view::npos; p = v.find(m, p + 1)) {
-            if (p >= 2 && v[p - 1] == '\n' && v[p - 2] == '\r') {
-                best = std::min(best, p);
-                break;
-            }
+    size_t p = v.find('\n', from < 1 ? 1 : from);
+    for (; p != std::string_view::npos; p = v.find('\n', p + 1)) {
+        if (p < 2 || v[p - 1] != '\r') continue;
+        std::string_view rest = v.substr(p + 1);
+        for (std::string_view m : markers) {
+            if (rest.starts_with(m)) return p + 1;
         }
     }
-    return best;
+    return std::string_view::npos;
 }
 
 }
@@ -39,6 +38,8 @@ FlowApplications& AppDecoder::appStateFor(const FlowKey& key, FlowTable::Flow& f
 }
 
 ParseError AppDecoder::pollFlow(const FlowKey& key, FlowTable::Flow& flow, bool flow_is_new) {
+    if (key.src_port != dns::PORT && key.dst_port != dns::PORT &&
+        key.src_port != http::PORT && key.dst_port != http::PORT) return ParseError::None;
     FlowApplications& flowApplications = appStateFor(key, flow, flow_is_new);
     if (flow.is_reverse) {
         pollStream(key, flow.rev_tcp, flowApplications.rev, flowApplications.fwd);
@@ -52,15 +53,19 @@ bool AppDecoder::resyncHttp(TcpReassembler& stream, Applications& applications) 
     applications.http_chunk_prefix = 0;
     applications.http_body_until_close = false;
 
-    size_t at = findHttpResync(stream.peek());
+    size_t avail = stream.available();
+    size_t at = findHttpResync(stream.peek(), applications.http_resync_scanned);
     if (at != std::string_view::npos) {
         applications.decode_failures++;
+        applications.http_resync_scanned = 0;
         stream.consume(at);
         return true;
     }
-    if (stream.available() > MAX_HTTP_MESSAGE_BYTES) {
+    applications.http_resync_scanned = avail > 8 ? avail - 8 : 0;
+    if (avail > MAX_HTTP_MESSAGE_BYTES) {
         applications.decode_failures++;
-        stream.consume(stream.available());
+        applications.http_resync_scanned = 0;
+        stream.consume(avail);
         return true;
     }
     return false;
@@ -100,11 +105,14 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
                 stream.consume(stream.available());
                 break;
             }
-            std::span<const uint8_t> span = stream.peek();
-            const size_t start_size = span.size();
+            std::span<const uint8_t> full = stream.peek();
+            const size_t start_size = full.size();
+            const size_t window = std::min(start_size, MAX_HTTP_HEADER_BYTES);
+            std::span<const uint8_t> span = full.first(window);
 
             http::Header header{};
             ParseError err = http::parse(span, header);
+            if (err == ParseError::None) span = full.subspan(window - span.size());
             if (err == ParseError::UnexpectedEof) {
                 if (stream.available() > MAX_HTTP_HEADER_BYTES) {
                     if (!resyncHttp(stream, applications)) break;
@@ -183,6 +191,7 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
 
 ParseError AppDecoder::pollDatagram(const FlowKey& key, FlowTable::Flow& flow, std::span<const uint8_t> payload, bool flow_is_new) {
     if (payload.size() == 0) return ParseError::None;
+    if (key.src_port != dns::PORT && key.dst_port != dns::PORT) return ParseError::None;
 
     FlowApplications& flowApplications = appStateFor(key, flow, flow_is_new);
     Applications& applications = flow.is_reverse ? flowApplications.rev : flowApplications.fwd;

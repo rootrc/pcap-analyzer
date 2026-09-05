@@ -23,7 +23,7 @@ namespace net::pcap {
 
 class Reader {
 public:
-    explicit Reader(const std::filesystem::path& path, size_t print_limit = 0);
+    explicit Reader(const std::filesystem::path& path, size_t print_limit = 0, bool detailed_bench = false);
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
     ~Reader();

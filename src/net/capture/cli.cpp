@@ -154,7 +154,7 @@ int cli(int argc, char** argv) {
     }
 
     try {
-        pcap::Reader reader(options.path, options.limit);
+        pcap::Reader reader(options.path, options.limit, options.show_bench);
 
         reader.readAllPackets();
 

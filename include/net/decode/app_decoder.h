@@ -18,6 +18,7 @@ struct Applications {
     std::vector<dns::Header> dns_messages;
     std::vector<http::Header> http_messages;
     size_t http_chunk_prefix = 0;
+    size_t http_resync_scanned = 0;
     size_t http_skip = 0;
     std::deque<bool> pending_head_requests;
     bool http_body_until_close = false;

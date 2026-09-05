@@ -27,12 +27,14 @@ std::string Benchmark::formatDuration(uint64_t ns) noexcept {
 }
 
 void Benchmark::start(Phase phase) noexcept {
+    if (!detailed_ && isPerPacket(phase)) return;
     PhaseState& state = phases_[static_cast<size_t>(phase)];
     state.started = std::chrono::steady_clock::now();
     state.running = true;
 }
 
 void Benchmark::stop(Phase phase) noexcept {
+    if (!detailed_ && isPerPacket(phase)) return;
     auto now = std::chrono::steady_clock::now();
     PhaseState& state = phases_[static_cast<size_t>(phase)];
     if (!state.running) return;
