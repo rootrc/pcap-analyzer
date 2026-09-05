@@ -13,7 +13,8 @@ namespace net {
 
 class Decoder {
 public:
-    Decoder(Benchmark& benchmark, size_t print_limit = 0, bool verify_checksum = true);
+    Decoder(Benchmark& benchmark, size_t print_limit = 0, bool verify_checksum = true, uint64_t flow_active_timeout_us = 0,
+            uint64_t flow_idle_timeout_us = FlowTable::DEFAULT_IDLE_TIMEOUT_US);
     ParseError decode(std::span<const uint8_t>& span, pcap::Capture& capture);
 
     void finish();

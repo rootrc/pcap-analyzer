@@ -19,7 +19,7 @@ The project was built to demonstrate protocol-level networking knowledge and sys
 - **TCP stream reassembly** — out-of-order segment buffering, sequence-number wraparound handling, and TCP state tracking, so application data can be read as a contiguous stream rather than individual packets.
 - **Application-layer extraction** — DNS message parsing (with compression-pointer following and a jump-count ceiling to guard against pointer loops) and HTTP/1.x request/response framing.
 - **RFC-conscious HTTP parsing** — handles `Transfer-Encoding` / `Content-Length` interactions per RFC 9110/9112 to avoid the classic request-smuggling ambiguity.
-- **Flow tracking** — 5-tuple flow keys with idle/active timeouts and per-direction byte/packet counters.
+- **Flow tracking** — 5-tuple flow keys with configurable idle/active timeouts (`-i`/`-t`, see below) and per-direction byte/packet counters.
 - **Zero runtime dependencies** — the core library and CLI use only the C++ standard library and OS APIs (mmap on POSIX, memory-mapped files on Windows); GoogleTest is only needed to build the test suite.
 - **Copy-minimizing design** — decoded layers operate on buffer views (`std::span`) into the memory-mapped capture rather than copying data; the only copy made is for buffering out-of-order TCP segments.
 - **Built-in phase benchmarking** — always-on timing of file-header parsing, per-packet header parsing, and decoding (broken down further into wire-format parsing, flow lookup, and app-layer decode), surfaced via `-b`/`--bench`.
@@ -109,6 +109,8 @@ Run the built binary against any classic-format `.pcap` file:
 | `-a`, `--all` | Print all available sections. |
 | `-n`, `--limit N` | Print at most N rows per section (`0` = no limit). |
 | `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums (captures taken on a sending host often carry invalid checksums due to NIC offload). |
+| `-t`, `--timeout SEC` | Retire a flow after `SEC` seconds of activity, even if it never goes idle, and start a new one under the same key (default: `0` = no timeout, a flow only retires by going idle). |
+| `-i`, `--idle SEC` | Retire a flow after `SEC` seconds without a packet, so a later packet reusing the same 5-tuple starts a new flow instead of joining the old one (default: `30`). |
 | `-h`, `--help` | Display the help message. |
 
 If no output-selection option is given, `analyzer` defaults to `--summary --flows`.
@@ -120,21 +122,22 @@ If no output-selection option is given, `analyzer` defaults to `--summary --flow
 ```
 
 ```
+ian@DESKTOP-7CEPI8N:~/projects/pcap-analyzer$ ./analyzer samples/smallFlows.pcap -n 5
 summary
   packets decoded   14261
   packets skipped   0
   bytes             9215613
-  flows             747  (635 active, 112 retired)
+  flows             744  (635 active, 109 retired)
   dns messages      68
   http messages     965
-  total time        24.63ms
+  total time        33.29ms
 
-FlowTable (747 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
+FlowTable (744 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
   (5.62%)  130.117.72.100:443 -> 172.16.255.1:10638 (TCP)  fwd=354pkts/496KB avg=1436B  rev=170pkts/9525B avg=56B  TCP=Closed/TimeWait  rate=228.65Kbps
   (2.32%)  192.168.3.131:58789 -> 209.17.73.30:80 (TCP)  fwd=64pkts/3901B avg=60B  rev=144pkts/205KB avg=1459B  TCP=Closed/TimeWait  rate=193.50Kbps
   (2.27%)  192.168.3.131:58790 -> 209.17.73.30:80 (TCP)  fwd=63pkts/3847B avg=61B  rev=140pkts/200KB avg=1463B  TCP=Closed/TimeWait  rate=188.74Kbps
-  (2.25%)  192.168.3.131:57243 -> 204.14.234.85:443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
   (2.25%)  192.168.3.131:57243 -> 204.14.234.85:8443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
+  (2.25%)  192.168.3.131:57243 -> 204.14.234.85:443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
   ... limit reached
 }
 

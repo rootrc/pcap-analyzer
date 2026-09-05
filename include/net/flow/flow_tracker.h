@@ -39,7 +39,10 @@ public:
         }
     };
 
-    FlowTable() = default;
+    static constexpr uint64_t DEFAULT_IDLE_TIMEOUT_US = 30000000;
+
+    explicit FlowTable(uint64_t active_timeout_us = 0, uint64_t idle_timeout_us = DEFAULT_IDLE_TIMEOUT_US)
+        : active_timeout_us_(active_timeout_us), idle_timeout_us_(idle_timeout_us) {}
 
     ParseError addPacket(const net::pcap::Capture& capture, FlowKey* out_key = nullptr, bool* out_is_new = nullptr, Flow** out_flow = nullptr);
     void flush();
@@ -51,9 +54,8 @@ public:
     const std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> allFlows() const;
 
 private:
-    static constexpr uint64_t IDLE_TIMEOUT_US = 30000000;
-    static constexpr uint64_t ACTIVE_TIMEOUT_US = 120000000;
-
+    uint64_t active_timeout_us_ = 0;
+    uint64_t idle_timeout_us_ = DEFAULT_IDLE_TIMEOUT_US;
     uint64_t total_bytes_ = 0;
     std::unordered_map<FlowKey, Flow, FlowKeyHash> flows_;
     std::vector<std::pair<FlowKey, Flow>> completed_;

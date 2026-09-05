@@ -15,6 +15,7 @@ constexpr size_t MAX_PENDING_REQUESTS = 1024;
 
 struct Applications {
     size_t decode_failures = 0;
+    size_t http_bodies_skipped = 0;
     std::vector<dns::Header> dns_messages;
     std::vector<http::Header> http_messages;
     size_t http_chunk_prefix = 0;

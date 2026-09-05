@@ -20,6 +20,8 @@ struct Options {
     bool show_bench = false;
     bool verify_checksum = true;
     size_t limit = 0;
+    uint64_t flow_timeout_us = 0;
+    uint64_t idle_timeout_us = FlowTable::DEFAULT_IDLE_TIMEOUT_US;
     bool help = false;
 };
 
@@ -44,6 +46,13 @@ void printUsage(std::ostream& os) {
         "  -C, --no-checksum  accept packets with bad IP/TCP/UDP/ICMP checksums\n"
         "                     (captures taken on a sending host often carry\n"
         "                      invalid checksums due to NIC offload)\n"
+        "  -t, --timeout SEC  retire a flow after SEC seconds of activity, even if\n"
+        "                     it never goes idle, and start a new one under the same\n"
+        "                     key (default: 0 = no timeout, a flow only retires by\n"
+        "                     going idle for 30s)\n"
+        "  -i, --idle SEC     retire a flow after SEC seconds without a packet, so a\n"
+        "                     later packet reusing the same 5-tuple starts a new flow\n"
+        "                     instead of joining the old one (default: 30)\n"
         "  -h, --help         this message\n";
 }
 
@@ -84,6 +93,30 @@ bool parseArgs(int argc, char** argv, Options& out) {
                 return false;
             }
             out.limit = static_cast<size_t>(value);
+        } else if (matches(arg, "-t", "--timeout")) {
+            if (i + 1 >= argc) {
+                std::cerr << kProgram << ": " << arg << " requires a number of seconds\n";
+                return false;
+            }
+            char* end = nullptr;
+            long value = std::strtol(argv[++i], &end, 10);
+            if (!end || *end != '\0' || value < 0) {
+                std::cerr << kProgram << ": invalid timeout '" << argv[i] << "'\n";
+                return false;
+            }
+            out.flow_timeout_us = static_cast<uint64_t>(value) * 1'000'000;
+        } else if (matches(arg, "-i", "--idle")) {
+            if (i + 1 >= argc) {
+                std::cerr << kProgram << ": " << arg << " requires a number of seconds\n";
+                return false;
+            }
+            char* end = nullptr;
+            long value = std::strtol(argv[++i], &end, 10);
+            if (!end || *end != '\0' || value < 0) {
+                std::cerr << kProgram << ": invalid idle timeout '" << argv[i] << "'\n";
+                return false;
+            }
+            out.idle_timeout_us = static_cast<uint64_t>(value) * 1'000'000;
         } else if (arg[0] == '-' && arg[1] != '\0') {
             std::cerr << kProgram << ": unknown option '" << arg << "'\n";
             return false;
@@ -113,6 +146,7 @@ void printSummary(std::ostream& os, const pcap::Reader& reader) {
     size_t http_messages = 0;
     size_t dns_messages = 0;
     size_t decode_failures = 0;
+    size_t http_bodies_skipped = 0;
     for (const auto& [key, flow] : table.allFlows()) {
         (void)flow;
         for (bool reverse : {false, true}) {
@@ -121,6 +155,7 @@ void printSummary(std::ostream& os, const pcap::Reader& reader) {
             http_messages += apps->http_messages.size();
             dns_messages += apps->dns_messages.size();
             decode_failures += apps->decode_failures;
+            http_bodies_skipped += apps->http_bodies_skipped;
         }
     }
 
@@ -142,6 +177,10 @@ void printSummary(std::ostream& os, const pcap::Reader& reader) {
     if (decode_failures) {
         os << "  decode failures   " << decode_failures << '\n';
     }
+    if (http_bodies_skipped) {
+        os << "  http bodies skipped " << http_bodies_skipped
+           << "  (>" << (MAX_HTTP_MESSAGE_BYTES / (1024 * 1024)) << "MB, not decode failures)\n";
+    }
     os << "  total time        " << Benchmark::formatDuration(reader.benchmark().elapsedNs(Benchmark::Phase::Total)) << '\n';
     os << '\n';
 }
@@ -160,7 +199,7 @@ int cli(int argc, char** argv) {
     }
 
     try {
-        pcap::Reader reader(options.path, options.limit, options.show_bench, options.verify_checksum);
+        pcap::Reader reader(options.path, options.limit, options.show_bench, options.verify_checksum, options.flow_timeout_us, options.idle_timeout_us);
 
         reader.readAllPackets();
 

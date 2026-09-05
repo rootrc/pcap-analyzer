@@ -2,8 +2,8 @@
 
 namespace net {
 
-Decoder::Decoder(Benchmark& benchmark, size_t print_limit, bool verify_checksum)
-    : benchmark_(benchmark), dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_, benchmark, print_limit), verify_checksum_(verify_checksum) {}
+Decoder::Decoder(Benchmark& benchmark, size_t print_limit, bool verify_checksum, uint64_t flow_active_timeout_us, uint64_t flow_idle_timeout_us)
+    : benchmark_(benchmark), flowTable_(flow_active_timeout_us, flow_idle_timeout_us), dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_, benchmark, print_limit), verify_checksum_(verify_checksum) {}
 
 ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& capture) {
     capture.pkt.reset();

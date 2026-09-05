@@ -169,7 +169,7 @@ ParseError AppDecoder::pollStream(const FlowKey& key, TcpReassembler& stream, Ap
                         applications.http_messages.push_back(std::move(header));
                         stream.consume(header_bytes);
                         applications.http_skip = body_len;
-                        applications.decode_failures++;
+                        applications.http_bodies_skipped++;
                         continue;
                     }
                     if (!resyncHttp(stream, applications)) break;

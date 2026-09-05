@@ -23,7 +23,8 @@ namespace net::pcap {
 
 class Reader {
 public:
-    explicit Reader(const std::filesystem::path& path, size_t print_limit = 0, bool detailed_bench = false, bool verify_checksum = true);
+    explicit Reader(const std::filesystem::path& path, size_t print_limit = 0, bool detailed_bench = false, bool verify_checksum = true,
+                     uint64_t flow_active_timeout_us = 0, uint64_t flow_idle_timeout_us = FlowTable::DEFAULT_IDLE_TIMEOUT_US);
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
     ~Reader();

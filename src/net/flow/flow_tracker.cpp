@@ -125,8 +125,8 @@ bool FlowTable::setPorts(const net::Packet::TransportHeader transport, FlowKey& 
 
 bool FlowTable::isExpired(const Flow& flow, uint64_t ts_us) const {
     if (ts_us < flow.last_seen) return false;
-    return (ts_us - flow.last_seen > IDLE_TIMEOUT_US) ||
-           (ts_us - flow.first_seen > ACTIVE_TIMEOUT_US);
+    return (ts_us - flow.last_seen > idle_timeout_us_) ||
+           (active_timeout_us_ != 0 && ts_us - flow.first_seen > active_timeout_us_);
 }
 
 const std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> FlowTable::allFlows() const {
