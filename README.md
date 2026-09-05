@@ -108,6 +108,7 @@ Run the built binary against any classic-format `.pcap` file:
 | `-b`, `--bench` | Print capture read and decode phase timings. |
 | `-a`, `--all` | Print all available sections. |
 | `-n`, `--limit N` | Print at most N rows per section (`0` = no limit). |
+| `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums (captures taken on a sending host often carry invalid checksums due to NIC offload). |
 | `-h`, `--help` | Display the help message. |
 
 If no output-selection option is given, `analyzer` defaults to `--summary --flows`.

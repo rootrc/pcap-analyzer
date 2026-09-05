@@ -8,7 +8,7 @@
 
 namespace net::ip::v4 {
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian, bool verify_checksum) {
     if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
@@ -21,7 +21,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     if (header.version() != SUPPORTED_VERSION) {
         return ParseError::InvalidFieldValue;
     }
-    if (!verifyChecksum(span.data(), header.header_length())) {
+    if (verify_checksum && !verifyChecksum(span.data(), header.header_length())) {
         return ParseError::ChecksumMismatch;
     }
 

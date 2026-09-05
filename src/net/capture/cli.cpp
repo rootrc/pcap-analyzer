@@ -18,6 +18,7 @@ struct Options {
     bool show_dns = false;
     bool show_summary = false;
     bool show_bench = false;
+    bool verify_checksum = true;
     size_t limit = 0;
     bool help = false;
 };
@@ -40,6 +41,9 @@ void printUsage(std::ostream& os) {
         "\n"
         "options\n"
         "  -n, --limit N      print at most N rows per section (0 = no limit)\n"
+        "  -C, --no-checksum  accept packets with bad IP/TCP/UDP/ICMP checksums\n"
+        "                     (captures taken on a sending host often carry\n"
+        "                      invalid checksums due to NIC offload)\n"
         "  -h, --help         this message\n";
 }
 
@@ -66,6 +70,8 @@ bool parseArgs(int argc, char** argv, Options& out) {
             out.show_http = true;
             out.show_dns = true;
             out.show_bench = true;
+        } else if (matches(arg, "-C", "--no-checksum")) {
+            out.verify_checksum = false;
         } else if (matches(arg, "-n", "--limit")) {
             if (i + 1 >= argc) {
                 std::cerr << kProgram << ": " << arg << " requires a count\n";
@@ -154,7 +160,7 @@ int cli(int argc, char** argv) {
     }
 
     try {
-        pcap::Reader reader(options.path, options.limit, options.show_bench);
+        pcap::Reader reader(options.path, options.limit, options.show_bench, options.verify_checksum);
 
         reader.readAllPackets();
 

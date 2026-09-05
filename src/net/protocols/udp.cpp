@@ -7,23 +7,23 @@
 
 namespace net::udp {
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo_header_Sum, Endian endian, bool accept_zero_checksum);
+ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo_header_Sum, Endian endian, bool accept_zero_checksum, bool verify_checksum);
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
-    return parse(span, header, ip::v4::computePseudoHeaderSum(ip_header), endian, true);
+ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian, bool verify_checksum) {
+    return parse(span, header, ip::v4::computePseudoHeaderSum(ip_header), endian, true, verify_checksum);
 }
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
-    return parse(span, header, ip::v6::computePseudoHeaderSum(ip_header), endian, false);
+ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian, bool verify_checksum) {
+    return parse(span, header, ip::v6::computePseudoHeaderSum(ip_header), endian, false, verify_checksum);
 }
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo_header_sum, Endian endian, bool accept_zero_checksum) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, uint64_t pseudo_header_sum, Endian endian, bool accept_zero_checksum, bool verify_checksum) {
     if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), HEADER_LEN);
     if (toHost16(header.length, endian) < HEADER_LEN || span.size() < toHost16(header.length, endian)) {
         return ParseError::MalformedHeader;
     }
-    if ((header.checksum != 0 || !accept_zero_checksum) && !verifyChecksum(span.data(), toHost16(header.length, endian), pseudo_header_sum)) {
+    if (verify_checksum && (header.checksum != 0 || !accept_zero_checksum) && !verifyChecksum(span.data(), toHost16(header.length, endian), pseudo_header_sum)) {
         return ParseError::ChecksumMismatch;
     }
 

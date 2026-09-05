@@ -84,7 +84,8 @@ auto parseIpv4 = test::bindHeaderParser<
     net::ip::v4::Header
 >(
     net::ip::v4::parse,
-    net::Endian::Big
+    net::Endian::Big,
+    true
 );
 
 RANDOMIZED_TEST(IPV4, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIPv4Header(data, 0, randomgen::randRange8(net::ip::v4::MIN_IHL, net::ip::v4::MAX_IHL));}, parseIpv4)

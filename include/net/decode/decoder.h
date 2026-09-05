@@ -13,7 +13,7 @@ namespace net {
 
 class Decoder {
 public:
-    Decoder(Benchmark& benchmark, size_t print_limit = 0);
+    Decoder(Benchmark& benchmark, size_t print_limit = 0, bool verify_checksum = true);
     ParseError decode(std::span<const uint8_t>& span, pcap::Capture& capture);
 
     void finish();
@@ -31,6 +31,7 @@ private:
     StatsEngine statsEngine_;
 
     uint64_t decoded_ = 0;
+    bool verify_checksum_ = true;
 };
 
 }

@@ -7,7 +7,7 @@
 
 namespace net::icmpv6 {
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian, bool verify_checksum) {
     if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), HEADER_LEN);
 
@@ -48,7 +48,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::H
         header.echo.id = toHost16(header.echo.id, endian);
         header.echo.seq = toHost16(header.echo.seq, endian);
     }
-    if (!verifyChecksum(span.data(), ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header))) {
+    if (verify_checksum && !verifyChecksum(span.data(), ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header))) {
         return ParseError::ChecksumMismatch;
     }
 

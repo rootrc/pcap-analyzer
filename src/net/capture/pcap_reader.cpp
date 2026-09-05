@@ -2,8 +2,8 @@
 
 namespace net::pcap {
 
-Reader::Reader(const std::filesystem::path& path, size_t print_limit, bool detailed_bench)
-    : decoder_(benchmark_, print_limit) {
+Reader::Reader(const std::filesystem::path& path, size_t print_limit, bool detailed_bench, bool verify_checksum)
+    : decoder_(benchmark_, print_limit, verify_checksum) {
     benchmark_.setDetailed(detailed_bench);
 #ifdef _WIN32
     file_ = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ,

@@ -44,7 +44,7 @@ struct Header {
 #pragma pack(pop)
 static_assert(sizeof(Header) == MIN_HEADER_LEN);
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
+ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian, bool verify_checksum = true);
 uint64_t computePseudoHeaderSum(const Header& ip_header);
 
 std::ostream& printIp(std::ostream& os, const uint32_t ip);

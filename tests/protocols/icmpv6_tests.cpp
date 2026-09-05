@@ -56,7 +56,8 @@ auto parseIcmpv6(const uint8_t (&pseudo_header)[N]) {
     >(
         net::icmpv6::parse,
         header,
-        net::Endian::Big
+        net::Endian::Big,
+        true
     );
 }
 

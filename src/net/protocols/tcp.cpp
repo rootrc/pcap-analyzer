@@ -7,18 +7,18 @@
 
 namespace net::tcp {
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudo_header_sum, Endian endian);
+ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudo_header_sum, Endian endian, bool verify_checksum);
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v4::Header& ip_header, Endian endian, bool verify_checksum) {
     size_t length = ip_header.total_length - ip_header.header_length();
-    return parse(span, header, length, ip::v4::computePseudoHeaderSum(ip_header), endian);
+    return parse(span, header, length, ip::v4::computePseudoHeaderSum(ip_header), endian, verify_checksum);
 }
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian) {
-    return parse(span, header, ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header), endian);
+ParseError parse(std::span<const uint8_t>& span, Header& header, const ip::v6::Header& ip_header, Endian endian, bool verify_checksum) {
+    return parse(span, header, ip_header.payload_length, ip::v6::computePseudoHeaderSum(ip_header), endian, verify_checksum);
 }
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudo_header_sum, Endian endian) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, uint64_t pseudo_header_sum, Endian endian, bool verify_checksum) {
     if (span.size() < MIN_HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), MIN_HEADER_LEN);
 
@@ -33,7 +33,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, size_t length, 
     // if (reserved != 0) {
     //     return ParseError::InvalidFieldValue;
     // }
-    if (!verifyChecksum(span.data(), length, pseudo_header_sum)) {
+    if (verify_checksum && !verifyChecksum(span.data(), length, pseudo_header_sum)) {
         return ParseError::ChecksumMismatch;
     }
 

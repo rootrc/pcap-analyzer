@@ -2,14 +2,14 @@
 
 namespace net {
 
-Decoder::Decoder(Benchmark& benchmark, size_t print_limit)
-    : benchmark_(benchmark), dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_, benchmark, print_limit) {}
+Decoder::Decoder(Benchmark& benchmark, size_t print_limit, bool verify_checksum)
+    : benchmark_(benchmark), dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_, benchmark, print_limit), verify_checksum_(verify_checksum) {}
 
 ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& capture) {
     capture.pkt.reset();
 
     benchmark_.start(Benchmark::Phase::DecodePacket);
-    ParseError decode_err = decode::decodePacket(span, capture.pkt);
+    ParseError decode_err = decode::decodePacket(span, capture.pkt, verify_checksum_);
     benchmark_.stop(Benchmark::Phase::DecodePacket);
     if (decode_err != ParseError::None) {
         return decode_err;

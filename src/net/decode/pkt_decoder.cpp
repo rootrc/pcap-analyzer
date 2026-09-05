@@ -5,13 +5,13 @@ struct overload : Ts... { using Ts::operator()...; };
 
 namespace net::decode {
 
-ParseError decodePacket(std::span<const uint8_t>& span, Packet& out) {
+ParseError decodePacket(std::span<const uint8_t>& span, Packet& out, bool verify_checksum) {
     if (auto err = decodeLayer2(span, out); err != ParseError::None) return err;
-    if (auto err = decodeLayer3(span, out); err != ParseError::None) return err;
+    if (auto err = decodeLayer3(span, out, verify_checksum); err != ParseError::None) return err;
     if (out.isArp()) {
         return ParseError::None;
     }
-    if (auto err = decodeLayer4(span, out); err != ParseError::None) return err;
+    if (auto err = decodeLayer4(span, out, verify_checksum); err != ParseError::None) return err;
     out.payload = span;
     return ParseError::None;
 }
@@ -38,10 +38,10 @@ ParseError decodeLayer2(std::span<const uint8_t>& span, Packet& out) {
     }, out.datalink);
 }
 
-ParseError decodeLayer3(std::span<const uint8_t>& span, Packet& out) {
+ParseError decodeLayer3(std::span<const uint8_t>& span, Packet& out, bool verify_checksum) {
     return std::visit(overload{
         [&](ip::v4::Header& v4) -> ParseError {
-            if (auto err = ip::v4::parse(span, v4, Endian::Big); err != ParseError::None) return err;
+            if (auto err = ip::v4::parse(span, v4, Endian::Big, verify_checksum); err != ParseError::None) return err;
             out.setTransportFromProtocol(v4.protocol);
             return ParseError::None;
         },
@@ -58,23 +58,23 @@ ParseError decodeLayer3(std::span<const uint8_t>& span, Packet& out) {
     }, out.network);
 }
 
-ParseError decodeLayer4(std::span<const uint8_t>& span, Packet& out) {
+ParseError decodeLayer4(std::span<const uint8_t>& span, Packet& out, bool verify_checksum) {
     return std::visit(overload{
         [&](const ip::v4::Header& ip) -> ParseError {
             return std::visit(overload{
-                [&](tcp::Header& h) { return tcp::parse(span, h, ip, Endian::Big); },
-                [&](udp::Header& h) { return udp::parse(span, h, ip, Endian::Big); },
-                [&](icmp::Header& h) { return icmp::parse(span, h, Endian::Big); },
+                [&](tcp::Header& h) { return tcp::parse(span, h, ip, Endian::Big, verify_checksum); },
+                [&](udp::Header& h) { return udp::parse(span, h, ip, Endian::Big, verify_checksum); },
+                [&](icmp::Header& h) { return icmp::parse(span, h, Endian::Big, verify_checksum); },
                 [&](icmpv6::Header&) { return ParseError::UnsupportedTransportType; },
                 [&](std::monostate) { return ParseError::UnsupportedTransportType; },
             }, out.transport);
         },
         [&](const ip::v6::Header& ip) -> ParseError {
             return std::visit(overload{
-                [&](tcp::Header& h) { return tcp::parse(span, h, ip, Endian::Big); },
-                [&](udp::Header& h) { return udp::parse(span, h, ip, Endian::Big); },
+                [&](tcp::Header& h) { return tcp::parse(span, h, ip, Endian::Big, verify_checksum); },
+                [&](udp::Header& h) { return udp::parse(span, h, ip, Endian::Big, verify_checksum); },
                 [&](icmp::Header&) { return ParseError::UnsupportedTransportType; },
-                [&](icmpv6::Header& h) { return icmpv6::parse(span, h, ip, Endian::Big); },
+                [&](icmpv6::Header& h) { return icmpv6::parse(span, h, ip, Endian::Big, verify_checksum); },
                 [&](std::monostate) { return ParseError::UnsupportedTransportType; },
             }, out.transport);
         },

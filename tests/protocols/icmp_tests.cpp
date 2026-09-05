@@ -35,7 +35,8 @@ auto parseIcmp = test::bindHeaderParser<
     net::icmp::Header
 >(
     net::icmp::parse,
-    net::Endian::Big
+    net::Endian::Big,
+    true
 );
 
 RANDOMIZED_TEST(ICMP, Randomized, g_randomizedIterations, [](uint8_t* data) {testgen::makeIcmpHeader(data);}, parseIcmp)

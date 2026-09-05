@@ -8,7 +8,7 @@
 
 namespace net::icmp {
     
-ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) {
+ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian, bool verify_checksum) {
     if (span.size() < HEADER_LEN) return ParseError::UnexpectedEof;
     std::memcpy(&header, span.data(), HEADER_LEN);
 
@@ -43,7 +43,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
         header.echo.id = toHost16(header.echo.id, endian);
         header.echo.seq = toHost16(header.echo.seq, endian);
     }
-    if (!verifyChecksum(span.data(), span.size())) {
+    if (verify_checksum && !verifyChecksum(span.data(), span.size())) {
         return ParseError::ChecksumMismatch;
     }
     header.checksum = toHost16(header.checksum, endian);

@@ -56,7 +56,7 @@ struct Header {
 #pragma pack(pop)
 static_assert(sizeof(Header) == HEADER_LEN);
 
-ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
+ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian, bool verify_checksum = true);
 
 std::ostream& operator<<(std::ostream& os, const Header& h);
 
