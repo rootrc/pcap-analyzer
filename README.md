@@ -101,19 +101,19 @@ Run the built binary against any classic-format `.pcap` file:
 
 | Option | Description |
 |---|---|
-| `-f`, `--flows` | Print a per-flow table, sorted by bytes. |
-| `-H`, `--http` | Print HTTP requests and responses, grouped by flow. |
-| `-d`, `--dns` | Print DNS questions and answers, and resolved names. |
-| `-s`, `--summary` | Print packet, flow, and byte counters. |
-| `-b`, `--bench` | Print capture read and decode phase timings. |
-| `-p`, `--packets` | Print every decoded packet and its layers. Not included in `--all`; with `--bench`, the time spent writing it is counted in the total phase. |
-| `-a`, `--all` | Print all available sections except `--packets`. |
-| `-j`, `--json` | Print `--packets` and `--flows` as JSON. Has no effect on `--http`/`--dns`/`--summary`/`--bench`, which have no JSON form. |
-| `-o`, `--out DIR` | Write each selected section to its own file in `DIR` (`summary.txt`, `flows.txt`, `http.txt`, `dns.txt`, `bench.txt`, `packets.txt`) instead of stdout. `DIR` is created if it does not exist, and existing files are overwritten. |
+| `-f`, `--flows` | Per-flow table, sorted by bytes. |
+| `-H`, `--http` | HTTP requests and responses, grouped by flow. |
+| `-d`, `--dns` | DNS questions and answers, and resolved names. |
+| `-s`, `--summary` | Packet, flow, and byte counters. |
+| `-b`, `--bench` | Capture read and decode phase timings. |
+| `-p`, `--packets` | Every decoded packet and its layers (not included in `--all`). |
+| `-a`, `--all` | All of the above except `--packets`. |
+| `-j`, `--json` | Print `--packets`/`--flows` as JSON instead of text. No effect on the other sections. |
+| `-o`, `--out DIR` | Write each section to its own file in `DIR` (`summary.txt`, `flows.txt`, `http.txt`, `dns.txt`, `bench.txt`, `packets.txt`) instead of stdout, creating `DIR` if needed. |
 | `-n`, `--limit N` | Print at most N rows per section (`0` = no limit). |
-| `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums (captures taken on a sending host often carry invalid checksums due to NIC offload). |
-| `-t`, `--timeout SEC` | Retire a flow after `SEC` seconds of activity, even if it never goes idle, and start a new one under the same key (default: `0` = no timeout, a flow only retires by going idle). |
-| `-i`, `--idle SEC` | Retire a flow after `SEC` seconds without a packet, so a later packet reusing the same 5-tuple starts a new flow instead of joining the old one (default: `30`). |
+| `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums. |
+| `-t`, `--timeout SEC` | Retire an active flow after `SEC` seconds (default: `0` = never). |
+| `-i`, `--idle SEC` | Retire a flow after `SEC` idle seconds (default: `30`). |
 | `-h`, `--help` | Display the help message. |
 
 If no output-selection option is given, `analyzer` defaults to `--summary --flows` — or, when `--out` is given, to every section.
