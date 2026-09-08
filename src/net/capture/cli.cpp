@@ -1,4 +1,5 @@
 #include <net/capture/cli.h>
+#include <net/util/text.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -22,6 +23,7 @@ struct Options {
     bool show_summary = false;
     bool show_bench = false;
     bool show_packets = false;
+    bool json = false;
     std::string out_dir;
     bool verify_checksum = true;
     size_t limit = 0;
@@ -50,6 +52,9 @@ void printUsage(std::ostream& os) {
         "  -a, --all          all of the above except --packets\n"
         "\n"
         "options\n"
+        "  -j, --json         print --packets as a JSON array and --flows as a JSON\n"
+        "                     object instead of text (has no effect on --http/--dns/\n"
+        "                     --summary/--bench, which have no JSON form)\n"
         "  -o, --out DIR  write each selected section to its own file in DIR\n"
         "                     (summary.txt, flows.txt, http.txt, dns.txt, bench.txt,\n"
         "                      packets.txt) instead of stdout; DIR is created if it\n"
@@ -88,6 +93,8 @@ bool parseArgs(int argc, char** argv, Options& out) {
             out.show_bench = true;
         } else if (matches(arg, "-p", "--packets")) {
             out.show_packets = true;
+        } else if (matches(arg, "-j", "--json")) {
+            out.json = true;
         } else if (matches(arg, "-o", "--out")) {
             if (i + 1 >= argc) {
                 std::cerr << kProgram << ": " << arg << " requires a directory\n";
@@ -264,15 +271,19 @@ int cli(int argc, char** argv) {
             }
         }
 
+        reader.setJson(options.json);
+
         size_t packets_written = 0;
         if (out) {
+            if (options.json) *out << "[\n";
             reader.readAllPackets([&](const pcap::Capture& capture) {
                 if (options.limit && packets_written >= options.limit) return;
-                *out << "packet " << reader.decoded() << '\n'
-                    << capture.packetHeader.toString() << '\n'
-                    << capture.pkt.toString() << '\n';
-                if (++packets_written == options.limit) *out << "  ... limit reached\n";
+                if (options.json && packets_written > 0) *out << ",\n";
+                reader.print(*out, capture);
+                ++packets_written;
+                if (!options.json && packets_written == options.limit) *out << "  ... limit reached\n";
             });
+            if (options.json) *out << "]\n";
             if (!options.out_dir.empty()) {
                 packets_file.close();
                 if (!packets_file) {
@@ -303,7 +314,12 @@ int cli(int argc, char** argv) {
         };
 
         if (options.show_summary) emit("summary.txt", [&](std::ostream& os) { printSummary(os, reader); });
-        if (options.show_flows) emit("flows.txt", [&](std::ostream& os) { os << reader.statsEngine() << '\n'; });
+        if (options.show_flows) {
+            emit("flows.txt", [&](std::ostream& os) {
+                if (options.json) os << "{\n" << util::indent(reader.statsEngine().toJson(), "  ") << "\n}\n";
+                else os << reader.statsEngine() << '\n';
+            });
+        }
         if (options.show_http) emit("http.txt", [&](std::ostream& os) { reader.statsEngine().printHttp(os); });
         if (options.show_dns) emit("dns.txt", [&](std::ostream& os) { reader.statsEngine().printDns(os); });
         if (options.show_bench) emit("bench.txt", [&](std::ostream& os) { reader.statsEngine().printBenchmark(os); });

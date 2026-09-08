@@ -108,6 +108,7 @@ Run the built binary against any classic-format `.pcap` file:
 | `-b`, `--bench` | Print capture read and decode phase timings. |
 | `-p`, `--packets` | Print every decoded packet and its layers. Not included in `--all`; with `--bench`, the time spent writing it is counted in the total phase. |
 | `-a`, `--all` | Print all available sections except `--packets`. |
+| `-j`, `--json` | Print `--packets` and `--flows` as JSON. Has no effect on `--http`/`--dns`/`--summary`/`--bench`, which have no JSON form. |
 | `-o`, `--out DIR` | Write each selected section to its own file in `DIR` (`summary.txt`, `flows.txt`, `http.txt`, `dns.txt`, `bench.txt`, `packets.txt`) instead of stdout. `DIR` is created if it does not exist, and existing files are overwritten. |
 | `-n`, `--limit N` | Print at most N rows per section (`0` = no limit). |
 | `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums (captures taken on a sending host often carry invalid checksums due to NIC offload). |

@@ -83,7 +83,6 @@ void StatsEngine::printFlow(std::ostream& os, const FlowKey& key, const FlowTabl
 
 void StatsEngine::printDns(std::ostream& os) const noexcept {
     std::map<std::string, std::vector<std::string>> resolved;
-    size_t queries = 0;
 
     for (const auto& [ip, domains] : dnsTable_.domainsByIp()) {
         std::ostringstream oss;
@@ -98,7 +97,6 @@ void StatsEngine::printDns(std::ostream& os) const noexcept {
         }
     }
 
-    os << "  queries seen      " << queries << '\n';
     os << "  names resolved    " << resolved.size() << '\n';
 
     size_t printed = 0;
@@ -201,6 +199,14 @@ std::string StatsEngine::toString() const noexcept {
     return oss.str();
 }
 
+namespace {
+
+void jsonStats(std::ostream& os, const char* label, const FlowTable::FlowStats& s) {
+    os << "\"" << label << "\": { \"packets\": " << s.packets << ", \"bytes\": " << s.bytes << " }";
+}
+
+}
+
 std::string StatsEngine::toJson() const noexcept {
     std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = sortedFlowsByBytes();
     std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols = sortedProtocolsByBytes(sortedFlow);
@@ -210,25 +216,59 @@ std::string StatsEngine::toJson() const noexcept {
         << "  \"total_bytes\": " << flowTable_.total_bytes() << ",\n"
         << "  \"protocols\": [\n";
     for (size_t i = 0; i < sortedProtocols.size(); ++i) {
-        if (i) oss << ", ";
+        if (i) oss << ",\n";
         double pct = flowTable_.total_bytes() ? 100.0 * sortedProtocols[i].second / flowTable_.total_bytes() : 0.0;
         oss << "    {\n"
             << "      \"protocol\": \"" << ip::protocolName(sortedProtocols[i].first) << "\",\n"
             << "      \"bytes\": " << sortedProtocols[i].second << ",\n"
             << "      \"percent\": " << pct << '\n'
-            << "    }\n";
+            << "    }";
     }
-    oss << "  ],\n"
+    oss << "\n  ],\n"
         << "  \"flows\": [\n";
-    for (size_t i = 0; i < sortedFlow.size(); ++i) {
-        if (i) oss << ",\n";
-        oss << "    {\n";
-        const auto& [key, flow] = sortedFlow[i];
-        oss << util::indent(key->toJson(), "      ")
-            << "\n    }";
+    size_t printed = 0;
+    bool limit_reached = false;
+    for (const auto& [key, flow] : sortedFlow) {
+        if (printed && printed == print_limit) {
+            limit_reached = true;
+            break;
+        }
+        if (printed) oss << ",\n";
+        double percent = flow->payloadPercent(flowTable_.total_bytes());
+
+        oss << "    {\n"
+            << "      \"percent\": " << percent << ",\n"
+            << util::indent(key->toJson(), "      ") << ",\n";
+
+        const std::vector<std::string>* src_domains = dnsTable_.domainsFor(key->src_ip, key->isIpv4);
+        const std::vector<std::string>* dst_domains = dnsTable_.domainsFor(key->dst_ip, key->isIpv4);
+        if (src_domains && !src_domains->empty()) {
+            oss << "      \"src_domain\": \"" << util::jsonEscape((*src_domains)[0]) << "\",\n";
+        }
+        if (dst_domains && !dst_domains->empty()) {
+            oss << "      \"dst_domain\": \"" << util::jsonEscape((*dst_domains)[0]) << "\",\n";
+        }
+
+        oss << "      "; jsonStats(oss, "fwd", flow->fwd_stats); oss << ",\n";
+        oss << "      "; jsonStats(oss, "rev", flow->rev_stats);
+
+        if (key->protocol == ip::PROTOCOL_TCP) {
+            oss << ",\n      \"tcp\": { \"fwd_state\": \"" << flow->fwd_tcp.state
+                << "\", \"rev_state\": \"" << flow->rev_tcp.state << "\" }";
+        }
+
+        oss << ",\n      \"duration_us\": " << flow->durationUs();
+        if (flow->durationUs() && flow->totalPackets() > 1) {
+            double bps = static_cast<double>(flow->totalBytes()) * 8.0 * 1e6 / static_cast<double>(flow->durationUs());
+            oss << ",\n      \"rate_bps\": " << bps;
+        }
+
+        oss << "\n    }";
+        ++printed;
     }
-    oss << "\n  ]\n"
-        << "}";
+    oss << "\n  ]";
+    if (limit_reached) oss << ",\n  \"limit_reached\": true";
+    oss << "\n}";
     return oss.str();
 }
 

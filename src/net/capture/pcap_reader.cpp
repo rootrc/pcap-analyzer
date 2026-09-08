@@ -1,4 +1,5 @@
 #include <net/capture/pcap_reader.h>
+#include <net/util/text.h>
 
 namespace net::pcap {
 
@@ -84,6 +85,20 @@ void Reader::readAllPackets(const PacketCallback& on_packet) {
     benchmark_.start(Benchmark::Phase::Total);
     while (readPacket() == ParseError::None) on_packet(capture_);
     benchmark_.stop(Benchmark::Phase::Total);
+}
+
+void Reader::print(std::ostream& os, const Capture& out) const {
+    if (json_) {
+        os << "{\n"
+           << "  \"index\": " << decoder_.decoded() << ",\n"
+           << util::indent(out.packetHeader.toJson(), "  ") << ",\n"
+           << util::indent(out.pkt.toJson(), "  ")
+           << "}\n";
+        return;
+    }
+    os << "packet " << decoder_.decoded() << '\n'
+       << out.packetHeader.toString() << '\n'
+       << out.pkt.toString() << '\n';
 }
 
 ParseError Reader::readPacket() {

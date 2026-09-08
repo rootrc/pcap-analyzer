@@ -40,7 +40,10 @@ public:
     const Benchmark& benchmark() const { return benchmark_; }
 
     Endian endian() const { return endian_; }
-    
+
+    void setJson(bool json) noexcept { json_ = json; }
+    bool json() const noexcept { return json_; }
+
     using PacketCallback = std::function<void(const Capture&)>;
 
     void readAllPackets();
@@ -49,6 +52,8 @@ public:
 
     uint64_t skipped() const { return skipped_; }
     ParseError lastSkipErr() const { return last_skip_err_; }
+
+    void print(std::ostream& os, const Capture& out) const;
 
 private:
 #ifdef _WIN32
@@ -66,7 +71,8 @@ private:
     Endian endian_;
     uint64_t skipped_ = 0;
     ParseError last_skip_err_ = ParseError::None;
-    
+    bool json_ = false;
+
     static Packet::NetworkHeader networkFromEthertype(uint16_t ethertype) noexcept; 
     static Packet::TransportHeader transportFromProtocol(uint8_t protocal) noexcept;
 
