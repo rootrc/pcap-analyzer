@@ -76,6 +76,16 @@ void Reader::readAllPackets() {
     benchmark_.stop(Benchmark::Phase::Total);
 }
 
+void Reader::readAllPackets(const PacketCallback& on_packet) {
+    if (!on_packet) {
+        readAllPackets();
+        return;
+    }
+    benchmark_.start(Benchmark::Phase::Total);
+    while (readPacket() == ParseError::None) on_packet(capture_);
+    benchmark_.stop(Benchmark::Phase::Total);
+}
+
 ParseError Reader::readPacket() {
     while (true) {
         if (span_.size() < PACKET_HEADER_LEN) {

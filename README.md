@@ -106,14 +106,30 @@ Run the built binary against any classic-format `.pcap` file:
 | `-d`, `--dns` | Print DNS questions and answers, and resolved names. |
 | `-s`, `--summary` | Print packet, flow, and byte counters. |
 | `-b`, `--bench` | Print capture read and decode phase timings. |
-| `-a`, `--all` | Print all available sections. |
+| `-p`, `--packets` | Print every decoded packet and its layers. Not included in `--all`; with `--bench`, the time spent writing it is counted in the total phase. |
+| `-a`, `--all` | Print all available sections except `--packets`. |
+| `-o`, `--out DIR` | Write each selected section to its own file in `DIR` (`summary.txt`, `flows.txt`, `http.txt`, `dns.txt`, `bench.txt`, `packets.txt`) instead of stdout. `DIR` is created if it does not exist, and existing files are overwritten. |
 | `-n`, `--limit N` | Print at most N rows per section (`0` = no limit). |
 | `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums (captures taken on a sending host often carry invalid checksums due to NIC offload). |
 | `-t`, `--timeout SEC` | Retire a flow after `SEC` seconds of activity, even if it never goes idle, and start a new one under the same key (default: `0` = no timeout, a flow only retires by going idle). |
 | `-i`, `--idle SEC` | Retire a flow after `SEC` seconds without a packet, so a later packet reusing the same 5-tuple starts a new flow instead of joining the old one (default: `30`). |
 | `-h`, `--help` | Display the help message. |
 
-If no output-selection option is given, `analyzer` defaults to `--summary --flows`.
+If no output-selection option is given, `analyzer` defaults to `--summary --flows` — or, when `--out` is given, to every section.
+
+```bash
+./analyzer samples/smallFlows.pcap -o dump
+```
+
+```
+analyzer: wrote 6 files to dump
+  packets.txt  (14261 packets)
+  summary.txt
+  flows.txt
+  http.txt
+  dns.txt
+  bench.txt
+```
 
 ### Example
 

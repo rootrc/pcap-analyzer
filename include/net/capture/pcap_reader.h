@@ -16,6 +16,7 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <functional>
 #include <span>
 #include <variant>
 
@@ -40,14 +41,15 @@ public:
 
     Endian endian() const { return endian_; }
     
+    using PacketCallback = std::function<void(const Capture&)>;
+
     void readAllPackets();
+    void readAllPackets(const PacketCallback& on_packet);
     ParseError readPacket();
 
     uint64_t skipped() const { return skipped_; }
     ParseError lastSkipErr() const { return last_skip_err_; }
 
-    void print(std::ostream& os, const Capture& out) const;
-    
 private:
 #ifdef _WIN32
     HANDLE file_ = INVALID_HANDLE_VALUE;
