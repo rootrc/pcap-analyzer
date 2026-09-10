@@ -3,7 +3,7 @@
 #include <net/analysis/benchmark.h>
 #include <net/analysis/dns_table.h>
 #include <net/decode/app_decoder.h>
-#include <net/flow/flow_tracker.h>
+#include <net/flow/flow_table.h>
 
 #include <ostream>
 #include <string>

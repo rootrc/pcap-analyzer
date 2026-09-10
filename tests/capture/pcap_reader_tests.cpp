@@ -1,9 +1,9 @@
 
 #include <gtest/gtest.h>
 #include <net/capture/pcap_reader.h>
-#include "../common/header_tester.h"
-#include "../testgen/pcap_generator.h"
-#include "../testgen/packet_generator.h"
+#include "common/header_tester.h"
+#include "testgen/pcap_generator.h"
+#include "testgen/packet_generator.h"
 
 #include <cstdio>
 #include <filesystem>

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <net/protocols/tcp.h>
-#include "../common/header_tester.h"
-#include "../testgen/protocol_generator.h"
+#include "common/header_tester.h"
+#include "testgen/protocol_generator.h"
 
 namespace {    
     inline constexpr uint8_t ipv4_pseudo[] = {

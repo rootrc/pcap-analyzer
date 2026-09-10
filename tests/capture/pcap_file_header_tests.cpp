@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <net/capture/pcap.h>
-#include "../common/header_tester.h"
-#include "../testgen/packet_generator.h"
+#include "common/header_tester.h"
+#include "testgen/packet_generator.h"
 
 namespace {
     inline constexpr uint8_t file_header_endof[] = {

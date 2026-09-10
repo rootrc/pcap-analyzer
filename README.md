@@ -47,7 +47,7 @@ Every protocol below is decoded by a from-scratch parser under [include/net/prot
 
 ## Architecture
 
-See [architecture.md](architecture.md) for a diagram of the read → decode → flow-track → app-decode pipeline (mmap'd reader → per-packet L2/L3/L4 decoder → flow tracker → TCP reassembler / UDP passthrough → DNS/HTTP app decoder).
+See [docs/architecture.md](docs/architecture.md) for a diagram of the read → decode → flow-track → app-decode pipeline (mmap'd reader → per-packet L2/L3/L4 decoder → flow tracker → TCP reassembler / UDP passthrough → DNS/HTTP app decoder).
 
 ## Tech Stack
 

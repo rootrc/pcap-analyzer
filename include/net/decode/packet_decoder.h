@@ -1,6 +1,6 @@
 #pragma once
 
-#include <net/capture/packet.h>
+#include <net/decode/packet.h>
 
 #include <span>
 

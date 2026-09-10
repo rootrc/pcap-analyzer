@@ -1,4 +1,4 @@
-#include <net/capture/packet.h>
+#include <net/decode/packet.h>
 #include <net/util/text.h>
 
 #include <sstream>

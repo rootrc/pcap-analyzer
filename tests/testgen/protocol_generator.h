@@ -1,7 +1,7 @@
 #pragma once
 
 #include <net/protocols/protocols.h>
-#include "../common/random_gen.h"
+#include "common/random_gen.h"
 
 namespace testgen {
 

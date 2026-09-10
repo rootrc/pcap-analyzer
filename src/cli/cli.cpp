@@ -1,4 +1,9 @@
-#include <net/capture/cli.h>
+#include "cli.h"
+
+#include <net/capture/pcap.h>
+#include <net/capture/pcap_reader.h>
+#include <net/flow/flow_table.h>
+#include <net/protocols/protocols.h>
 #include <net/protocols/ip.h>
 #include <net/protocols/ipv4.h>
 #include <net/protocols/ipv6.h>

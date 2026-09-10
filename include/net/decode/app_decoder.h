@@ -1,7 +1,7 @@
 #pragma once
 
 #include <net/analysis/dns_table.h>
-#include <net/flow/flow_tracker.h>
+#include <net/flow/flow_table.h>
 
 #include <deque>
 #include <unordered_map>

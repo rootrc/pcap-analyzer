@@ -2,7 +2,7 @@
 
 #include <net/analysis/benchmark.h>
 #include <net/capture/capture.h>
-#include <net/capture/packet.h>
+#include <net/decode/packet.h>
 #include <net/decode/decoder.h>
 
 #ifdef _WIN32

@@ -10,17 +10,17 @@
               └──────┬──────┘
                      │
                      ▼
-           ┌───────────────────┐
-           │  pkt_decoder.cpp  │
-           │    decodePacket   │
-           │    L2 → L3 → L4   │
-           │    fills Packet   │
-           │    sets payload   │
-           └─────────┬─────────┘
+          ┌────────────────────┐
+          │ packet_decoder.cpp │
+          │    decodePacket    │
+          │    L2 → L3 → L4    │
+          │    fills Packet    │
+          │    sets payload    │
+          └──────────┬─────────┘
                      │
                      ▼
         ┌────────────────────────┐
-        │    flow_tracker.cpp    │
+        │     flow_table.cpp     │
         │  FlowTable::addPacket  │
         │  flow expiry/timeout   │
         └────────────┬───────────┘

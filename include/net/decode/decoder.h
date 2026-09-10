@@ -4,10 +4,10 @@
 #include <net/analysis/dns_table.h>
 #include <net/analysis/stats_engine.h>
 #include <net/capture/capture.h>
-#include <net/capture/packet.h>
+#include <net/decode/packet.h>
 #include <net/decode/app_decoder.h>
-#include <net/decode/pkt_decoder.h>
-#include <net/flow/flow_tracker.h>
+#include <net/decode/packet_decoder.h>
+#include <net/flow/flow_table.h>
 
 namespace net {
 

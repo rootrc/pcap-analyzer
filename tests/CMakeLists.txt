@@ -32,35 +32,41 @@ target_link_libraries(test_lib
 
 set(RANDOMIZED_ITERATIONS 100 CACHE STRING "Number of randomized test iterations")
 
+# Each module gets its own gtest binary: <dir>/<name>_tests.cpp -> <name>_tests
+function(add_module_tests dir)
+    foreach(test IN LISTS ARGN)
+        add_executable(${test}_tests
+            ${TEST_MAIN}
+            ${dir}/${test}_tests.cpp
+        )
+
+        target_link_libraries(${test}_tests
+            PRIVATE
+                test_lib
+                GTest::gtest
+        )
+
+        target_include_directories(${test}_tests
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+
+        gtest_discover_tests(
+            ${test}_tests
+            EXTRA_ARGS -n ${RANDOMIZED_ITERATIONS}
+        )
+    endforeach()
+endfunction()
+
 set(CAPTURE_TESTS
     pcap_file_header
     pcap_packet_header
-    packet
     pcap_reader
 )
 
-foreach(test IN LISTS CAPTURE_TESTS)
-    add_executable(${test}_tests
-        ${TEST_MAIN}
-        capture/${test}_tests.cpp
-    )
-
-    target_link_libraries(${test}_tests
-        PRIVATE
-            test_lib
-            GTest::gtest
-    )
-
-    target_include_directories(${test}_tests
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-    gtest_discover_tests(
-        ${test}_tests
-        EXTRA_ARGS -n ${RANDOMIZED_ITERATIONS}
-    )
-endforeach()
+set(DECODE_TESTS
+    packet_decoder
+)
 
 set(PROTOCOL_TESTS
     ethernet
@@ -76,25 +82,6 @@ set(PROTOCOL_TESTS
     http
 )
 
-foreach(test IN LISTS PROTOCOL_TESTS)
-    add_executable(${test}_tests
-        ${TEST_MAIN}
-        protocols/${test}_tests.cpp
-    )
-
-    target_link_libraries(${test}_tests
-        PRIVATE
-            test_lib
-            GTest::gtest
-    )
-
-    target_include_directories(${test}_tests
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-    gtest_discover_tests(
-        ${test}_tests
-        EXTRA_ARGS -n ${RANDOMIZED_ITERATIONS}
-    )
-endforeach()
+add_module_tests(capture ${CAPTURE_TESTS})
+add_module_tests(decode ${DECODE_TESTS})
+add_module_tests(protocols ${PROTOCOL_TESTS})

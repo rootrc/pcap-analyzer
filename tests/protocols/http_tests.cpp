@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <net/protocols/http.h>
-#include "../common/header_tester.h"
-#include "../testgen/protocol_generator.h"
+#include "common/header_tester.h"
+#include "testgen/protocol_generator.h"
 
 namespace {    
     inline constexpr std::string_view http_endof = "abcdefg";

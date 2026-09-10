@@ -1,7 +1,7 @@
 #pragma once
 
 #include <net/capture/capture.h>
-#include <net/capture/packet.h>
+#include <net/decode/packet.h>
 #include <net/flow/flow_key.h>
 #include <net/flow/tcp_reassembler.h>
 
