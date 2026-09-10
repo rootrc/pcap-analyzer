@@ -71,6 +71,71 @@ std::ostream& printIp(std::ostream& os, const uint8_t ip[16]) {
     return os;
 }
 
+bool addressFromString(std::string_view text, uint8_t out[16]) noexcept {
+    auto hexVal = [](char c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return -1;
+    };
+
+    uint16_t groups[8];
+    int count = 0;
+    int gap = -1;
+    size_t i = 0;
+
+    if (text.size() >= 2 && text[0] == ':' && text[1] == ':') {
+        gap = 0;
+        i = 2;
+        if (i == text.size()) {
+            std::memset(out, 0, 16);
+            return true;
+        }
+    } else if (!text.empty() && text[0] == ':') {
+        return false;
+    }
+
+    while (i < text.size()) {
+        uint32_t value = 0;
+        int digits = 0;
+        for (int d = hexVal(text[i]); i < text.size() && d >= 0; ++i) {
+            value = value * 16 + static_cast<uint32_t>(d);
+            if (++digits > 4) return false;
+        }
+        if (digits == 0 || count >= 8) return false;
+        groups[count++] = static_cast<uint16_t>(value);
+
+        if (i == text.size()) break;
+        if (text[i] != ':') return false;
+        ++i;
+        if (i < text.size() && text[i] == ':') {
+            if (gap != -1) return false;
+            gap = count;
+            ++i;
+            if (i == text.size()) break;
+        } else if (i == text.size()) {
+            return false;
+        }
+    }
+
+    auto assign = [&](int i, uint16_t n) {
+        out[2 * i] = static_cast<uint8_t>(n >> 8);
+        out[2 * i + 1] = static_cast<uint8_t>(n & 0xFF);
+    };
+
+    if (gap == -1) {
+        if (count != 8) return false;
+        for (int i = 0; i < 8; ++i) assign(i, groups[i]);
+        return true;
+    }
+    if (count >= 8) return false;
+    int slot = 0;
+    for (int i = 0; i < gap; ++i) assign(slot++, groups[i]);
+    for (int i = 0; i < 8 - count; ++i) assign(slot++, 0);
+    for (int i = gap; i < count; ++i) assign(slot++, groups[i]);
+    return slot == 8;
+}
+
 std::string Header::toString() const noexcept {
     std::ostringstream oss;
     oss << "IPv6Header {\n"

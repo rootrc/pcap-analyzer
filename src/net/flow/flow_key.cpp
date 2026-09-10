@@ -3,6 +3,7 @@
 #include <net/protocols/ipv4.h>
 #include <net/protocols/ipv6.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 
@@ -28,6 +29,26 @@ bool FlowKey::normalize() noexcept {
         return true;
     }
     return false;
+}
+
+namespace {
+bool anyNonZero(const uint8_t* p, size_t n) noexcept {
+    return std::any_of(p, p + n, [](uint8_t b) { return b != 0; });
+}
+}
+
+bool FlowKey::isNonZero() const noexcept {
+    return protocol != 0 || src_port != 0 || dst_port != 0 ||
+           anyNonZero(src_ip, 16) || anyNonZero(dst_ip, 16);
+}
+
+bool FlowKey::matches(const FlowKey& pkt) const noexcept {
+    if (protocol != 0 && protocol != pkt.protocol) return false;
+    if (src_port != 0 && src_port != pkt.src_port) return false;
+    if (dst_port != 0 && dst_port != pkt.dst_port) return false;
+    if (anyNonZero(src_ip, 16) && (isIpv4 != pkt.isIpv4 || memcmp(src_ip, pkt.src_ip, 16) != 0)) return false;
+    if (anyNonZero(dst_ip, 16) && (isIpv4 != pkt.isIpv4 || memcmp(dst_ip, pkt.dst_ip, 16) != 0)) return false;
+    return true;
 }
 
 size_t FlowKeyHash::operator()(const FlowKey& k) const noexcept {

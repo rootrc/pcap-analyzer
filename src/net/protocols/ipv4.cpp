@@ -63,6 +63,24 @@ std::ostream& printIp(std::ostream& os, const uint8_t ip[4]) {
               << static_cast<int>(ip[3]);
 }
 
+bool addressFromString(std::string_view text, uint8_t out[4]) noexcept {
+    int octets = 0;
+    int value = 0;
+    for (size_t i = 0; i <= text.size(); ++i) {
+        if (i < text.size() && text[i] >= '0' && text[i] <= '9') {
+            value = value * 10 + (text[i] - '0');
+            if (value > 255) return false;
+        } else if (i == text.size() || text[i] == '.') {
+            if (value == 0 || octets > 3) return false;
+            out[octets++] = static_cast<uint8_t>(value);
+            value = 0;
+        } else {
+            return false;
+        }
+    }
+    return octets == 4;
+}
+
 std::string Header::toString() const noexcept {
     std::ostringstream oss;
     oss << "IPv4Header {\n"

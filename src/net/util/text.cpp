@@ -16,6 +16,19 @@ bool isEquals(std::string_view a, std::string_view b) {
     return true;
 }
 
+bool parseUint(std::string_view text, uint64_t& out, uint64_t max) noexcept {
+    if (text.empty()) return false;
+    uint64_t value = 0;
+    for (char c : text) {
+        if (c < '0' || c > '9') return false;
+        const uint64_t digit = static_cast<uint64_t>(c - '0');
+        if (value > max / 10 || value * 10 > max - digit) return false;
+        value = value * 10 + digit;
+    }
+    out = value;
+    return true;
+}
+
 std::string indent(std::string_view str, std::string_view prefix) {
     if (str.empty()) return {};
 
@@ -65,11 +78,11 @@ std::string jsonEscape(std::string_view s) {
 }
 
 void printDuration(std::ostream& os, uint64_t ns) {
-    if (ns >= 1'000'000'000ULL) {
+    if (ns >= 1000000000ULL) {
         os << std::fixed << std::setprecision(3) << (static_cast<double>(ns) / 1e9) << 's';
-    } else if (ns >= 1'000'000ULL) {
+    } else if (ns >= 1000000ULL) {
         os << std::fixed << std::setprecision(2) << (static_cast<double>(ns) / 1e6) << "ms";
-    } else if (ns >= 1'000ULL) {
+    } else if (ns >= 1000ULL) {
         os << std::fixed << std::setprecision(2) << (static_cast<double>(ns) / 1e3) << "us";
     } else {
         os << ns << "ns";

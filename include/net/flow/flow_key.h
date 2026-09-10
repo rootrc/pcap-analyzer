@@ -19,6 +19,9 @@ struct FlowKey {
     bool operator==(const FlowKey& o) const noexcept;
     bool normalize() noexcept;
 
+    bool isNonZero() const noexcept;
+    bool matches(const FlowKey& pkt) const noexcept;
+
     std::string toString() const noexcept;
     std::string toJson() const noexcept;
 };

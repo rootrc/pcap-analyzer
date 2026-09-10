@@ -5,6 +5,7 @@
 
 #include <span>
 #include <string>
+#include <string_view>
 
 // https://datatracker.ietf.org/doc/html/rfc791
 
@@ -50,5 +51,7 @@ uint64_t computePseudoHeaderSum(const Header& ip_header);
 std::ostream& printIp(std::ostream& os, const uint32_t ip);
 std::ostream& printIp(std::ostream& os, const uint8_t ip[4]);
 std::ostream& operator<<(std::ostream& os, const Header& h);
+
+bool addressFromString(std::string_view text, uint8_t out[4]) noexcept;
 
 }

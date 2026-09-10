@@ -13,8 +13,14 @@ namespace net {
 
 class Decoder {
 public:
-    Decoder(Benchmark& benchmark, size_t print_limit = 0, bool verify_checksum = true, uint64_t flow_active_timeout_us = 0,
-            uint64_t flow_idle_timeout_us = FlowTable::DEFAULT_IDLE_TIMEOUT_US);
+    struct Config {
+        size_t print_limit = 0;
+        bool verify_checksum = true;
+        uint64_t flow_active_timeout_us = 0;
+        uint64_t flow_idle_timeout_us = FlowTable::DEFAULT_IDLE_TIMEOUT_US;
+        FlowKey filter{};
+    };
+    Decoder(Benchmark& benchmark, Config config);
     ParseError decode(std::span<const uint8_t>& span, pcap::Capture& capture);
 
     void finish();
@@ -31,8 +37,8 @@ private:
     AppDecoder appDecoder_;
     StatsEngine statsEngine_;
 
+    Config config_;
     uint64_t decoded_ = 0;
-    bool verify_checksum_ = true;
 };
 
 }

@@ -2,17 +2,24 @@
 
 namespace net {
 
-Decoder::Decoder(Benchmark& benchmark, size_t print_limit, bool verify_checksum, uint64_t flow_active_timeout_us, uint64_t flow_idle_timeout_us)
-    : benchmark_(benchmark), flowTable_(flow_active_timeout_us, flow_idle_timeout_us), dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_, benchmark, print_limit), verify_checksum_(verify_checksum) {}
+Decoder::Decoder(Benchmark& benchmark, Config config)
+    : benchmark_(benchmark), flowTable_(config.flow_active_timeout_us, config.flow_idle_timeout_us), dnsTable_(), appDecoder_(dnsTable_), statsEngine_(flowTable_, appDecoder_, dnsTable_, benchmark, config.print_limit), config_(config) {}
 
 ParseError Decoder::decode(std::span<const uint8_t>& span, pcap::Capture& capture) {
     capture.pkt.reset();
 
     benchmark_.start(Benchmark::Phase::DecodePacket);
-    ParseError decode_err = decode::decodePacket(span, capture.pkt, verify_checksum_);
+    ParseError decode_err = decode::decodePacket(span, capture.pkt, config_.verify_checksum);
     benchmark_.stop(Benchmark::Phase::DecodePacket);
     if (decode_err != ParseError::None) {
         return decode_err;
+    }
+
+    if (config_.filter.isNonZero()) {
+        FlowKey key{};
+        if (FlowTable::keyFromPacket(capture.pkt, key) != ParseError::None || !config_.filter.matches(key)) {
+            return ParseError::Filtered;
+        }
     }
 
     FlowKey flow_key{};

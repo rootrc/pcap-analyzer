@@ -47,6 +47,8 @@ public:
     ParseError addPacket(const net::pcap::Capture& capture, FlowKey* out_key = nullptr, bool* out_is_new = nullptr, Flow** out_flow = nullptr);
     void flush();
 
+    static ParseError keyFromPacket(const Packet& pkt, FlowKey& out);
+
     std::unordered_map<FlowKey, Flow, FlowKeyHash>& flows() { return flows_; }
     const std::unordered_map<FlowKey, Flow, FlowKeyHash>& flows() const { return flows_; }
     const std::vector<std::pair<FlowKey, Flow>>& completed() const { return completed_; }
@@ -60,9 +62,8 @@ private:
     std::unordered_map<FlowKey, Flow, FlowKeyHash> flows_;
     std::vector<std::pair<FlowKey, Flow>> completed_;
 
-    ParseError keyFromPacket(const Packet& pkt, FlowKey& out, bool& is_reverse);
-    bool setPorts(const net::Packet::TransportHeader transport, FlowKey& out);
-    bool setNetwork(const net::Packet::NetworkHeader network, FlowKey& out);
+    static bool setPorts(const net::Packet::TransportHeader transport, FlowKey& out);
+    static bool setNetwork(const net::Packet::NetworkHeader network, FlowKey& out);
     
     bool isExpired(const FlowTable::Flow& flow, uint64_t ts_us) const;
 };

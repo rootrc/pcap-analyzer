@@ -24,8 +24,7 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
         return ParseError::None;
     }
     FlowKey key{};
-    bool is_reverse = false;
-    if (auto err = keyFromPacket(capture.pkt, key, is_reverse); err != ParseError::None) return err;
+    if (auto err = keyFromPacket(capture.pkt, key); err != ParseError::None) return err;
     if (out_key) *out_key = key;
     if (out_is_new) *out_is_new = false;
 
@@ -50,7 +49,7 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
     Flow& flow = it->second;
     if (out_flow) *out_flow = &flow;
     flow.last_seen = capture.ts_us;
-    flow.is_reverse = is_reverse;
+    flow.is_reverse = key.normalize();
     FlowStats& stats = flow.is_reverse ? flow.rev_stats : flow.fwd_stats;
     ++stats.packets;
     stats.bytes += capture.packetHeader.incl_len;
@@ -58,10 +57,9 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
     return ParseError::None;
 }
 
-ParseError FlowTable::keyFromPacket(const Packet& pkt, FlowKey& out, bool& is_reverse) {
+ParseError FlowTable::keyFromPacket(const Packet& pkt, FlowKey& out) {
     if (!setNetwork(pkt.network, out)) return ParseError::UnsupportedNetworkType;
     if (!setPorts(pkt.transport, out)) return ParseError::UnsupportedTransportType;
-    is_reverse = out.normalize();
     return ParseError::None;
 }
 

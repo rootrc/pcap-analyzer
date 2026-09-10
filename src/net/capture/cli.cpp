@@ -1,7 +1,11 @@
 #include <net/capture/cli.h>
+#include <net/protocols/ip.h>
+#include <net/protocols/ipv4.h>
+#include <net/protocols/ipv6.h>
 #include <net/util/text.h>
 
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -25,9 +29,7 @@ struct Options {
     bool show_packets = false;
     bool json = false;
     std::string out_dir;
-    bool verify_checksum = true;
-    size_t limit = 0;
-    uint64_t flow_timeout_us = 0;
+    net::Decoder::Config config;
     uint64_t idle_timeout_us = FlowTable::DEFAULT_IDLE_TIMEOUT_US;
     bool help = false;
 };
@@ -56,12 +58,46 @@ void printUsage(std::ostream& os) {
         "  -C, --no-checksum  accept packets with bad IP/TCP/UDP/ICMP checksums\n"
         "  -t, --timeout SEC  retire an active flow after SEC seconds (default: 0 = never)\n"
         "  -i, --idle SEC     retire a flow after SEC idle seconds (default: 30)\n"
-        "  -h, --help         this message\n";
+        "  -h, --help         this message\n"
+        "\n"
+        "filtering (directional, AND-combined; non-matching packets are dropped\n"
+        "before decoding and excluded from every section and the skip counter)\n"
+        "      --src-ip ADDR   keep only packets from this IPv4/IPv6 address\n"
+        "      --dst-ip ADDR   keep only packets to this IPv4/IPv6 address\n"
+        "      --src-port N    keep only packets from this port\n"
+        "      --dst-port N    keep only packets to this port\n"
+        "      --proto NAME    keep only this L4 protocol (tcp|udp|icmp|icmpv6|<num>)\n";
+}
+
+bool parseFilterIp(const char* text, uint8_t out_ip[16], bool& is_ipv4) {
+    uint8_t v4[4];
+    if (net::ip::v4::addressFromString(text, v4)) {
+        std::memset(out_ip, 0, 16);
+        std::memcpy(out_ip, v4, 4);
+        is_ipv4 = true;
+        return true;
+    }
+    uint8_t v6[16];
+    if (net::ip::v6::addressFromString(text, v6)) {
+        std::memcpy(out_ip, v6, 16);
+        is_ipv4 = false;
+        return true;
+    }
+    return false;
 }
 
 bool parseArgs(int argc, char** argv, Options& out) {
+    int ip_version = 0;
     for (int i = 1; i < argc; ++i) {
         const char* arg = argv[i];
+
+        auto nextValue = [&](const char* what) -> const char* {
+            if (i + 1 >= argc) {
+                std::cerr << kProgram << ": " << arg << " requires " << what << "\n";
+                return nullptr;
+            }
+            return argv[++i];
+        };
 
         if (matches(arg, "-h", "--help")) {
             out.help = true;
@@ -81,11 +117,9 @@ bool parseArgs(int argc, char** argv, Options& out) {
         } else if (matches(arg, "-j", "--json")) {
             out.json = true;
         } else if (matches(arg, "-o", "--out")) {
-            if (i + 1 >= argc) {
-                std::cerr << kProgram << ": " << arg << " requires a directory\n";
-                return false;
-            }
-            out.out_dir = argv[++i];
+            const char* s = nextValue("a directory");
+            if (!s) return false;
+            out.out_dir = s;
             if (out.out_dir.empty()) {
                 std::cerr << kProgram << ": empty output directory\n";
                 return false;
@@ -97,43 +131,69 @@ bool parseArgs(int argc, char** argv, Options& out) {
             out.show_dns = true;
             out.show_bench = true;
         } else if (matches(arg, "-C", "--no-checksum")) {
-            out.verify_checksum = false;
+            out.config.verify_checksum = false;
         } else if (matches(arg, "-n", "--limit")) {
-            if (i + 1 >= argc) {
-                std::cerr << kProgram << ": " << arg << " requires a count\n";
+            const char* s = nextValue("a count");
+            if (!s) return false;
+            uint64_t value = 0;
+            if (!util::parseUint(s, value, SIZE_MAX)) {
+                std::cerr << kProgram << ": invalid count '" << s << "'\n";
                 return false;
             }
-            char* end = nullptr;
-            long value = std::strtol(argv[++i], &end, 10);
-            if (!end || *end != '\0' || value < 0) {
-                std::cerr << kProgram << ": invalid count '" << argv[i] << "'\n";
-                return false;
-            }
-            out.limit = static_cast<size_t>(value);
+            out.config.print_limit = static_cast<size_t>(value);
         } else if (matches(arg, "-t", "--timeout")) {
-            if (i + 1 >= argc) {
-                std::cerr << kProgram << ": " << arg << " requires a number of seconds\n";
+            const char* s = nextValue("a number of seconds");
+            if (!s) return false;
+            uint64_t sec = 0;
+            if (!util::parseUint(s, sec, UINT64_MAX / 1000000)) {
+                std::cerr << kProgram << ": invalid timeout '" << s << "'\n";
                 return false;
             }
-            char* end = nullptr;
-            long value = std::strtol(argv[++i], &end, 10);
-            if (!end || *end != '\0' || value < 0) {
-                std::cerr << kProgram << ": invalid timeout '" << argv[i] << "'\n";
-                return false;
-            }
-            out.flow_timeout_us = static_cast<uint64_t>(value) * 1'000'000;
+            out.config.flow_active_timeout_us = sec * 1000000;
         } else if (matches(arg, "-i", "--idle")) {
-            if (i + 1 >= argc) {
-                std::cerr << kProgram << ": " << arg << " requires a number of seconds\n";
+            const char* s = nextValue("a number of seconds");
+            if (!s) return false;
+            uint64_t sec = 0;
+            if (!util::parseUint(s, sec, UINT64_MAX / 1000000)) {
+                std::cerr << kProgram << ": invalid idle timeout '" << s << "'\n";
                 return false;
             }
-            char* end = nullptr;
-            long value = std::strtol(argv[++i], &end, 10);
-            if (!end || *end != '\0' || value < 0) {
-                std::cerr << kProgram << ": invalid idle timeout '" << argv[i] << "'\n";
+            out.config.flow_idle_timeout_us = sec * 1000000;
+        } else if (std::strcmp(arg, "--src-ip") == 0 || std::strcmp(arg, "--dst-ip") == 0) {
+            const char* s = nextValue("an address");
+            if (!s) return false;
+            uint8_t ip[16];
+            bool is_ipv4 = false;
+            if (!parseFilterIp(s, ip, is_ipv4)) {
+                std::cerr << kProgram << ": invalid address '" << s << "'\n";
                 return false;
             }
-            out.idle_timeout_us = static_cast<uint64_t>(value) * 1'000'000;
+            const int version = is_ipv4 ? 4 : 6;
+            if (ip_version != 0 && ip_version != version) {
+                std::cerr << kProgram << ": mixed IPv4/IPv6 address filter\n";
+                return false;
+            }
+            ip_version = version;
+            out.config.filter.isIpv4 = is_ipv4;
+            std::memcpy(arg[2] == 'd' ? out.config.filter.dst_ip : out.config.filter.src_ip, ip, 16);
+        } else if (std::strcmp(arg, "--src-port") == 0 || std::strcmp(arg, "--dst-port") == 0) {
+            const char* s = nextValue("a port");
+            if (!s) return false;
+            uint64_t value = 0;
+            if (!util::parseUint(s, value, 65535) || value == 0) {
+                std::cerr << kProgram << ": invalid port '" << s << "'\n";
+                return false;
+            }
+            (arg[2] == 'd' ? out.config.filter.dst_port : out.config.filter.src_port) = static_cast<uint16_t>(value);
+        } else if (std::strcmp(arg, "--proto") == 0) {
+            const char* s = nextValue("a protocol");
+            if (!s) return false;
+            uint8_t proto = 0;
+            if (!net::ip::protocolFromName(s, proto) || proto == 0) {
+                std::cerr << kProgram << ": invalid protocol '" << s << "'\n";
+                return false;
+            }
+            out.config.filter.protocol = proto;
         } else if (arg[0] == '-' && arg[1] != '\0') {
             std::cerr << kProgram << ": unknown option '" << arg << "'\n";
             return false;
@@ -236,7 +296,7 @@ int cli(int argc, char** argv) {
     }
 
     try {
-        pcap::Reader reader(options.path, options.limit, options.show_bench, options.verify_checksum, options.flow_timeout_us, options.idle_timeout_us);
+        pcap::Reader reader(options.path, options.config, options.show_bench);
 
         std::vector<std::string> written;
         bool write_failed = false;
@@ -262,11 +322,11 @@ int cli(int argc, char** argv) {
         if (out) {
             if (options.json) *out << "[\n";
             reader.readAllPackets([&](const pcap::Capture& capture) {
-                if (options.limit && packets_written >= options.limit) return;
+                if (options.config.print_limit && packets_written >= options.config.print_limit) return;
                 if (options.json && packets_written > 0) *out << ",\n";
                 reader.print(*out, capture);
                 ++packets_written;
-                if (!options.json && packets_written == options.limit) *out << "  ... limit reached\n";
+                if (!options.json && packets_written == options.config.print_limit) *out << "  ... limit reached\n";
             });
             if (options.json) *out << "]\n";
             if (!options.out_dir.empty()) {

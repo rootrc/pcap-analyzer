@@ -5,6 +5,7 @@
 
 #include <span>
 #include <string>
+#include <string_view>
 
 // https://datatracker.ietf.org/doc/html/rfc8200
 
@@ -35,6 +36,8 @@ static_assert(sizeof(Header) == HEADER_LEN);
 
 ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian);
 uint64_t computePseudoHeaderSum(const Header& ip_header);
+
+bool addressFromString(std::string_view text, uint8_t out[16]) noexcept;
 
 std::ostream& printIp(std::ostream& os, const uint8_t ip[16]);
 std::ostream& operator<<(std::ostream& os, const Header& h);

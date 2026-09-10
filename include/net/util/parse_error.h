@@ -7,6 +7,7 @@ namespace net {
 
 enum class ParseError {
     None,
+    Filtered,
     UnexpectedEofF,
     UnexpectedEof,
     UnsupportedVersion,
@@ -30,6 +31,7 @@ constexpr std::string_view toString(ParseError e) noexcept {
         case ParseError::MalformedHeader: return "malformed header";
         case ParseError::InvalidFieldValue: return "invalid field value";
         case ParseError::ChecksumMismatch: return "checksum mismatch";
+        case ParseError::Filtered: return "filtered out";
         default: return "unknown error";
     }
 }

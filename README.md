@@ -114,7 +114,14 @@ Run the built binary against any classic-format `.pcap` file:
 | `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums. |
 | `-t`, `--timeout SEC` | Retire an active flow after `SEC` seconds (default: `0` = never). |
 | `-i`, `--idle SEC` | Retire a flow after `SEC` idle seconds (default: `30`). |
+| `--src-ip ADDR` | Keep only packets whose source address is `ADDR` (IPv4 or IPv6). |
+| `--dst-ip ADDR` | Keep only packets whose destination address is `ADDR` (IPv4 or IPv6). |
+| `--src-port N` | Keep only packets whose source port is `N`. |
+| `--dst-port N` | Keep only packets whose destination port is `N`. |
+| `--proto NAME` | Keep only packets of this L4 protocol (`tcp`, `udp`, `icmp`, `icmpv6`, or a decimal IP protocol number). |
 | `-h`, `--help` | Display the help message. |
+
+The five filter options are **directional** (`--src-ip`/`--src-port` match the address/port seen as the packet's source, `--dst-*` its destination — the two directions of a flow are matched independently) and **combine with AND**. A non-matching packet is dropped before decoding: it is absent from every section and is *not* counted toward "packets skipped". `0.0.0.0`, port `0`, and IP protocol `0` cannot be used as filter values.
 
 If no output-selection option is given, `analyzer` defaults to `--summary --flows` — or, when `--out` is given, to every section.
 

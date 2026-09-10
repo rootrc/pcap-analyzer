@@ -3,8 +3,8 @@
 
 namespace net::pcap {
 
-Reader::Reader(const std::filesystem::path& path, size_t print_limit, bool detailed_bench, bool verify_checksum, uint64_t flow_active_timeout_us, uint64_t flow_idle_timeout_us)
-    : decoder_(benchmark_, print_limit, verify_checksum, flow_active_timeout_us, flow_idle_timeout_us) {
+Reader::Reader(const std::filesystem::path& path, Decoder::Config config, bool detailed_bench)
+    : decoder_(benchmark_, config) {
     benchmark_.setDetailed(detailed_bench);
 #ifdef _WIN32
     file_ = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ,
@@ -135,6 +135,10 @@ ParseError Reader::readPacket() {
         benchmark_.start(Benchmark::Phase::Decode);
         ParseError decode_err = decoder_.decode(packet_span, capture_);
         benchmark_.stop(Benchmark::Phase::Decode);
+
+        if (decode_err == ParseError::Filtered) {
+            continue;
+        }
 
         if (decode_err != ParseError::None) {
             ++skipped_;
