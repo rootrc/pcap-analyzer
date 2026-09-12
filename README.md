@@ -36,6 +36,7 @@ Every protocol below is decoded by a from-scratch parser under [include/net/prot
 | L3 – Network | ARP | RFC 826 | Request/reply operations; sender/target hardware and protocol addresses. |
 | L3 – Network | IPv4 | RFC 791 | Header validation incl. IHL/version, flags (DF/MF), fragment offset, TTL, protocol dispatch, checksum. |
 | L3 – Network | IPv6 | RFC 8200 | Fixed 40-byte header, traffic class / flow label extraction, next-header dispatch, pseudo-header checksum computation for upper-layer validation. |
+| L3 – Network | IPv6 extension headers | RFC 8200 §4 / RFC 4302 / RFC 8754 | Hop-by-Hop, Routing, Fragment, Destination Options, AH, Mobility, HIP and Shim6 chains (up to 8 headers); upper-layer pseudo-header uses the post-extension length/protocol and the routing header's final destination (types 0, 2 and SRH). |
 | L3 – Network | ICMP | RFC 792 | Echo request/reply, destination unreachable, source quench, redirect, TTL exceeded, parameter problem, timestamp, and info request/reply types, each with their defined codes (e.g. net/host/port unreachable). |
 | L3 – Network | ICMPv6 | RFC 4443 | Destination unreachable, packet-too-big, TTL exceeded, parameter problem, echo request/reply, and router/neighbor solicitation/advertisement message types. |
 | L4 – Transport | TCP | RFC 793 / RFC 9293 | Full flag set (CWR/ECE/URG/ACK/PSH/RST/SYN/FIN), sequence/ack numbers, window size, checksum; feeds the stream reassembler in [flow/tcp_reassembler](include/net/flow/tcp_reassembler.h) (out-of-order buffering, sequence-space wraparound, connection state machine). |
@@ -43,7 +44,7 @@ Every protocol below is decoded by a from-scratch parser under [include/net/prot
 | L7 – Application | DNS | RFC 1035 | Header + question/resource records; record types A, NS, CNAME, SOA, PTR, MX, TXT, AAAA, SRV; class IN; name-compression pointer following with a 10-jump ceiling to prevent pointer loops; reply codes (format/server/name/not-implemented/refused errors). |
 | L7 – Application | HTTP/1.0 & HTTP/1.1 | RFC 9110 / RFC 9112 | Request and response message framing over a reassembled TCP stream; method, target, version, status code, reason phrase, and header fields; `Content-Length` vs. `Transfer-Encoding: chunked` resolution per RFC 9112 §6.3 to avoid request-smuggling ambiguity. |
 
-**Not decoded:** any link type other than Ethernet II (e.g. Wi-Fi/radiotap, Linux cooked capture), IP options/extension headers beyond what's needed for header-length parsing, IPv6 fragmentation, and any application protocol other than DNS and HTTP/1.x (e.g. TLS is passed through as opaque TCP payload, not decrypted or parsed).
+**Not decoded:** any link type other than Ethernet II (e.g. Wi-Fi/radiotap, Linux cooked capture), IPv4 options beyond what's needed for header-length parsing, IPv6 extension-header option contents, IPv6 fragments and ESP (parsed to L3, then skipped), and any application protocol other than DNS and HTTP/1.x (e.g. TLS is passed through as opaque TCP payload, not decrypted or parsed).
 
 ## Architecture
 

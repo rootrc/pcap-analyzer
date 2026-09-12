@@ -96,11 +96,32 @@ void makePcapPacket(uint8_t* data, size_t total_length) {
         net::ip::v4::parse(span, ipv4_header, net::Endian::Big);
         data += header_length;
     } else if (network == net::ethernet::ETHERTYPE_IPV6) {
+        constexpr uint8_t ext_types[] = {
+            net::ip::PROTOCOL_IPV6_ROUTE,
+            net::ip::PROTOCOL_IPV6_FRAG,
+            net::ip::PROTOCOL_AH,
+            net::ip::PROTOCOL_IPV6_OPTS,
+        };
+        uint8_t chain[4];
+        size_t ext_count = std::rand() % 4;
+        for (size_t i = 0; i < ext_count; ++i) {
+            chain[i] = (i == 0 && std::rand() % 2) ? net::ip::PROTOCOL_HOPOPT : ext_types[std::rand() % 4];
+        }
+
         total_length -= net::ip::v6::HEADER_LEN;
-        testgen::makeIPv6Header(data, transport, total_length);
+        testgen::makeIPv6Header(data, ext_count ? chain[0] : transport, total_length);
         std::span<const uint8_t> span{data, net::ip::v6::HEADER_LEN};
         net::ip::v6::parse(span, ipv6_header, net::Endian::Big);
         data += net::ip::v6::HEADER_LEN;
+
+        for (size_t i = 0; i < ext_count; ++i) {
+            uint8_t next = (i + 1 < ext_count) ? chain[i + 1] : transport;
+            size_t ext_length = testgen::makeIPv6ExtHeader(data, chain[i], next, randomgen::randRange8(0, 3));
+            total_length -= ext_length;
+            data += ext_length;
+        }
+        ipv6_header.payload_length = static_cast<uint16_t>(total_length);
+        ipv6_header.next_header = transport;
     } else if (network == net::ethernet::ETHERTYPE_ARP) {
         total_length -= net::arp::MIN_HEADER_LEN + 2 * sizeof(net::ethernet::Header::src_mac) + 2 * sizeof(net::ip::v4::Header::src_ip);
         testgen::makeArpHeader(data);

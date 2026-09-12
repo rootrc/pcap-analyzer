@@ -1,6 +1,7 @@
 #include "protocol_generator.h"
 
 #include <cstring>
+#include <iterator>
 #include <stdexcept>
 
 namespace testgen {
@@ -82,6 +83,50 @@ void makeIPv6Header(uint8_t* data, uint8_t next_header, uint16_t payload_length)
         h.dst_ip[i] = randomgen::rand8();
     }
     memcpy(data, &h, net::ip::v6::HEADER_LEN);
+}
+
+size_t makeIPv6ExtHeader(uint8_t* data, uint8_t type, uint8_t next_header, uint8_t hdr_ext_len) {
+    using namespace net::ip::v6::ext;
+    size_t length = 0;
+    switch (type) {
+        case net::ip::PROTOCOL_IPV6_FRAG: length = MIN_HEADER_LEN; hdr_ext_len = 0; break;
+        case net::ip::PROTOCOL_AH:
+            if (hdr_ext_len < 1) hdr_ext_len = 1;
+            length = (static_cast<size_t>(hdr_ext_len) + 2) * sizeof(uint32_t);
+            break;
+        default: length = (static_cast<size_t>(hdr_ext_len) + 1) * MIN_HEADER_LEN; break;
+    }
+    for (size_t i = 0; i < length; ++i) {
+        data[i] = randomgen::rand8();
+    }
+
+    WireHeader h{};
+    memcpy(&h, data, MIN_HEADER_LEN);
+    h.next_header = next_header;
+    h.hdr_ext_len = hdr_ext_len;
+    if (type == net::ip::PROTOCOL_IPV6_ROUTE) {
+        h.routing.segments_left = 0;
+    } else if (type == net::ip::PROTOCOL_IPV6_FRAG) {
+        h.fragment.offset_flags = net::bswap16(randomgen::rand16() & 0x0006);
+    }
+    memcpy(data, &h, MIN_HEADER_LEN);
+    return length;
+}
+
+size_t makeIPv6ExtHeader(uint8_t* data, uint8_t next_header, uint8_t* out_type) {
+    static constexpr uint8_t types[] = {
+        net::ip::PROTOCOL_HOPOPT,
+        net::ip::PROTOCOL_IPV6_ROUTE,
+        net::ip::PROTOCOL_IPV6_FRAG,
+        net::ip::PROTOCOL_AH,
+        net::ip::PROTOCOL_IPV6_OPTS,
+        net::ip::PROTOCOL_MOBILITY,
+        net::ip::PROTOCOL_HIP,
+        net::ip::PROTOCOL_SHIM6,
+    };
+    uint8_t type = types[randomgen::randRange8(0, std::size(types) - 1)];
+    if (out_type) *out_type = type;
+    return makeIPv6ExtHeader(data, type, next_header, randomgen::rand8());
 }
 
 void makeArpHeader(uint8_t* data) {

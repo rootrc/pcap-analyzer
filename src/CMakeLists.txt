@@ -15,6 +15,7 @@ add_library(network_lib
     net/protocols/vlan.cpp
     net/protocols/ipv4.cpp
     net/protocols/ipv6.cpp
+    net/protocols/ipv6_ext.cpp
     net/protocols/arp.cpp
     net/protocols/tcp.cpp
     net/protocols/udp.cpp

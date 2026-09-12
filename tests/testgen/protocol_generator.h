@@ -10,6 +10,8 @@ void makeEthernetHeader(uint8_t* data, uint16_t ethertype);
 void makeVlanHeader(uint8_t* data, uint16_t ethertype);
 void makeIPv4Header(uint8_t* data, uint8_t protocol, uint8_t ihl, uint16_t payload_len = 0);
 void makeIPv6Header(uint8_t* data, uint8_t next_header, uint16_t payload_length = 0);
+size_t makeIPv6ExtHeader(uint8_t* data, uint8_t type, uint8_t next_header, uint8_t hdr_ext_len);
+size_t makeIPv6ExtHeader(uint8_t* data, uint8_t next_header, uint8_t* out_type = nullptr);
 void makeArpHeader(uint8_t* data);
 void makeTcpHeader(uint8_t* data, uint64_t pseudo_sum, uint8_t data_offset, size_t payload_len);
 void makeTcpHeader(uint8_t* data, const net::ip::v4::Header& ip, uint8_t data_offset, size_t payload_len = 0);

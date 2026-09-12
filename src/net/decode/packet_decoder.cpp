@@ -47,7 +47,18 @@ ParseError decodeLayer3(std::span<const uint8_t>& span, Packet& out, bool verify
         },
         [&](ip::v6::Header& v6) -> ParseError {
             if (auto err = ip::v6::parse(span, v6, Endian::Big); err != ParseError::None) return err;
-            out.setTransportFromProtocol(v6.next_header);
+
+            uint8_t next_header = v6.next_header;
+            while (ip::v6::ext::isExtension(next_header)) {
+                if (out.ipv6_ext.size() >= ip::v6::ext::MAX_HEADERS) return ParseError::MalformedHeader;
+                if (next_header == ip::PROTOCOL_HOPOPT && !out.ipv6_ext.empty()) return ParseError::InvalidFieldValue;
+                ip::v6::ext::Header ext{};
+                if (auto err = ip::v6::ext::parse(span, ext, next_header, Endian::Big); err != ParseError::None) return err;
+                out.ipv6_ext.push_back(ext);
+                if (ext.isFragment()) return ParseError::None;
+                next_header = ext.next_header;
+            }
+            out.setTransportFromProtocol(next_header);
             return ParseError::None;
         },
         [&](arp::Header& arp) -> ParseError {
@@ -69,7 +80,10 @@ ParseError decodeLayer4(std::span<const uint8_t>& span, Packet& out, bool verify
                 [&](std::monostate) { return ParseError::UnsupportedTransportType; },
             }, out.transport);
         },
-        [&](const ip::v6::Header& ip) -> ParseError {
+        [&](const ip::v6::Header& fixed) -> ParseError {
+            ip::v6::Header upper{};
+            if (out.hasIpv6Ext()) upper = ip::v6::ext::pseudoHeader(fixed, out.ipv6_ext, span.size());
+            const ip::v6::Header& ip = out.hasIpv6Ext() ? upper : fixed;
             return std::visit(overload{
                 [&](tcp::Header& h) { return tcp::parse(span, h, ip, Endian::Big, verify_checksum); },
                 [&](udp::Header& h) { return udp::parse(span, h, ip, Endian::Big, verify_checksum); },

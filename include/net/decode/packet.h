@@ -28,6 +28,7 @@ struct Packet {
         arp::Header
     >;
     NetworkHeader network{};
+    std::vector<ip::v6::ext::Header> ipv6_ext;
 
     // Layer 4
     using TransportHeader = std::variant<
@@ -45,6 +46,7 @@ struct Packet {
     [[nodiscard]] bool isVlan() const noexcept { return !vlan_tags.empty(); }
     [[nodiscard]] bool isIpv4() const noexcept { return std::holds_alternative<ip::v4::Header>(network); }
     [[nodiscard]] bool isIpv6() const noexcept { return std::holds_alternative<ip::v6::Header>(network); }
+    [[nodiscard]] bool hasIpv6Ext() const noexcept { return !ipv6_ext.empty(); }
     [[nodiscard]] bool isArp() const noexcept { return std::holds_alternative<arp::Header>(network); }
     [[nodiscard]] bool isTcp() const noexcept { return std::holds_alternative<tcp::Header>(transport); }
     [[nodiscard]] bool isUdp() const noexcept { return std::holds_alternative<udp::Header>(transport); }
@@ -55,6 +57,7 @@ struct Packet {
     [[nodiscard]] const std::vector<vlan::Header>& vlan() const noexcept { return vlan_tags; }
     [[nodiscard]] const ip::v4::Header* ipv4() const noexcept { return std::get_if<ip::v4::Header>(&network); }
     [[nodiscard]] const ip::v6::Header* ipv6() const noexcept { return std::get_if<ip::v6::Header>(&network); }
+    [[nodiscard]] const std::vector<ip::v6::ext::Header>& ipv6Extensions() const noexcept { return ipv6_ext; }
     [[nodiscard]] const arp::Header* arp() const noexcept { return std::get_if<arp::Header>(&network); }
     [[nodiscard]] const tcp::Header* tcp() const noexcept { return std::get_if<tcp::Header>(&transport); }
     [[nodiscard]] const udp::Header* udp() const noexcept { return std::get_if<udp::Header>(&transport); }

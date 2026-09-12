@@ -73,6 +73,7 @@ set(PROTOCOL_TESTS
     vlan
     ipv4
     ipv6
+    ipv6_ext
     arp
     tcp
     udp

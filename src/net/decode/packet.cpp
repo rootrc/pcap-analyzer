@@ -34,6 +34,7 @@ void Packet::setTransportFromProtocol(uint8_t protocol) noexcept {
 void Packet::reset() noexcept {
     vlan_tags.clear();
     network = std::monostate{};
+    ipv6_ext.clear();
     transport = std::monostate{};
 }
 
@@ -45,6 +46,9 @@ std::string Packet::toString() const noexcept {
     }
     if (ipv4()) oss << *ipv4() << '\n';
     if (ipv6()) oss << *ipv6() << '\n';
+    for (const net::ip::v6::ext::Header& ext: ipv6_ext) {
+        oss << ext << "\n";
+    }
     if (arp()) oss << *arp() << '\n';
     if (udp()) oss << *udp() << '\n';
     if (tcp()) oss << *tcp() << '\n';
@@ -80,6 +84,18 @@ std::string Packet::toJson() const noexcept {
 
     printProtocol(ipv4());
     printProtocol(ipv6());
+
+    if (!ipv6_ext.empty()) {
+        if (!first) oss << ",\n";
+        oss << "  \"ipv6_ext\": [\n";
+        for (size_t i = 0; i < ipv6_ext.size(); ++i) {
+            if (i) oss << ",\n";
+            oss << util::indent(ipv6_ext[i].toJson().erase(0, 12), "    ");
+        }
+        oss << "\n  ]";
+        first = false;
+    }
+
     printProtocol(arp());
     printProtocol(udp());
     printProtocol(tcp());
