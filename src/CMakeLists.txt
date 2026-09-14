@@ -37,9 +37,11 @@ add_executable(analyzer
     cli/cli.cpp
 )
 
-set_target_properties(analyzer PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
-)
+if(NOT PCAP_SANITIZE)
+    set_target_properties(analyzer PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+endif()
 
 target_link_libraries(analyzer
     PRIVATE
