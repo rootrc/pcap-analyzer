@@ -21,7 +21,9 @@ bool FlowKey::operator==(const FlowKey& o) const noexcept {
 bool FlowKey::normalize() noexcept {
     int cmp = memcmp(src_ip, dst_ip, 16);
     if (cmp > 0 || (cmp == 0 && src_port > dst_port)) {
-        std::swap(src_port, dst_port);
+        uint16_t tmp_port = src_port;
+        src_port = dst_port;
+        dst_port = tmp_port;
         uint8_t tmp[16];
         memcpy(tmp, src_ip, 16);
         memcpy(src_ip, dst_ip, 16);
