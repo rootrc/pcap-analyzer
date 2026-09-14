@@ -32,6 +32,7 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian, 
     header.src_ip = toHost32(header.src_ip, endian);
     header.dst_ip = toHost32(header.dst_ip, endian);
     
+    if (header.total_length < header.header_length()) return ParseError::MalformedHeader;
     if (header.total_length > span.size()) return ParseError::UnexpectedEof;
     span = span.subspan(header.header_length(), header.total_length - header.header_length());
     return ParseError::None;
@@ -66,14 +67,16 @@ std::ostream& printIp(std::ostream& os, const uint8_t ip[4]) {
 bool addressFromString(std::string_view text, uint8_t out[4]) noexcept {
     int octets = 0;
     int value = 0;
+    int digits = 0;
     for (size_t i = 0; i <= text.size(); ++i) {
         if (i < text.size() && text[i] >= '0' && text[i] <= '9') {
             value = value * 10 + (text[i] - '0');
-            if (value > 255) return false;
+            if (value > 255 || ++digits > 3) return false;
         } else if (i == text.size() || text[i] == '.') {
-            if (value == 0 || octets > 3) return false;
+            if (digits == 0 || octets > 3) return false;
             out[octets++] = static_cast<uint8_t>(value);
             value = 0;
+            digits = 0;
         } else {
             return false;
         }
