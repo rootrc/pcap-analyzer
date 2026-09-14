@@ -56,7 +56,7 @@ See [docs/architecture.md](docs/architecture.md) for a diagram of the read → d
 |---|---|
 | Language | C++20 |
 | Build system | CMake ≥ 3.16 |
-| Testing | GoogleTest (`gtest_discover_tests` via CTest) |
+| Testing | GoogleTest (`gtest_discover_tests` via CTest), libFuzzer, ASan + UBSan |
 | Capture format | libpcap classic format (`.pcap`), Ethernet link-layer only |
 | Platform APIs | POSIX `mmap` (Linux/macOS) / Windows memory-mapped files, used to read capture files without copying them into a buffer |
 
@@ -198,6 +198,16 @@ ctest --test-dir build --progress
 ```
 
 Each protocol and capture-format module (Ethernet, VLAN, IPv4, IPv6, ARP, TCP, UDP, ICMP, ICMPv6, DNS, HTTP, and the pcap reader itself) has its own GoogleTest binary, discovered and run individually via `ctest`; see [tests/CMakeLists.txt](tests/CMakeLists.txt) for the full list.
+
+### Fuzzing & sanitizers
+
+The parsers are **fuzzed** with [libFuzzer](https://llvm.org/docs/LibFuzzer.html): it feeds them millions of generated inputs, starting from real packets, to find anything that crashes or misbehaves. Tests and fuzzers run under AddressSanitizer and UndefinedBehaviorSanitizer, which catch memory errors and undefined behavior. Every input that has caused a bug is saved in `fuzz/regressions/` and replayed in CI, and each fix also gets a unit test, so fixed bugs stay fixed.
+
+```bash
+./scripts/fuzz.sh fuzz_http 300      # requires Clang
+```
+
+See [docs/fuzzing.md](docs/fuzzing.md) for details.
 
 ## Known Limitations / Future Improvements
 

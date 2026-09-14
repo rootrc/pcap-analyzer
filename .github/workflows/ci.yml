@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -78,3 +81,50 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure -j 4
+
+  fuzz:
+    name: Fuzz (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [fuzz_packet, fuzz_dns, fuzz_http, fuzz_pcap_header, fuzz_capture, fuzz_address]
+    env:
+      FUZZ_SECONDS: ${{ github.event_name == 'schedule' && 900 || 60 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_FUZZERS=ON -DBUILD_TESTING=OFF
+
+      - name: Build
+        run: cmake --build build-fuzz -j --target ${{ matrix.target }} fuzz_seeds
+
+      - name: Restore accumulated corpus
+        uses: actions/cache@v4
+        with:
+          path: corpus-work
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.target }}-
+
+      - name: Replay seeds and past crashes
+        run: |
+          ./build-fuzz/fuzz/fuzz_seeds unpack seeds --target ${{ matrix.target }}
+          ./build-fuzz/fuzz/${{ matrix.target }} -runs=0 seeds/${{ matrix.target }} fuzz/regressions/${{ matrix.target }}
+
+      - name: Fuzz
+        run: |
+          mkdir -p crashes corpus-work
+          DICT=""
+          [ -f fuzz/dicts/${{ matrix.target }}.dict ] && DICT="-dict=fuzz/dicts/${{ matrix.target }}.dict"
+          ./build-fuzz/fuzz/${{ matrix.target }} $DICT \
+            -max_total_time=$FUZZ_SECONDS -rss_limit_mb=2048 -timeout=10 -print_final_stats=1 \
+            -artifact_prefix=crashes/ \
+            corpus-work seeds/${{ matrix.target }} fuzz/regressions/${{ matrix.target }}
+
+      - name: Upload crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crashes-${{ matrix.target }}
+          path: crashes/

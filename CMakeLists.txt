@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(CTest)
 
 set(PCAP_SANITIZE "" CACHE STRING "Comma-separated sanitizers for every target, e.g. address,undefined (GCC/Clang only)")
+option(BUILD_FUZZERS "Build libFuzzer targets under fuzz/ (requires Clang)" OFF)
 
 if(PCAP_SANITIZE)
     if(MSVC)
@@ -18,10 +19,22 @@ if(PCAP_SANITIZE)
     add_link_options(-fsanitize=${PCAP_SANITIZE})
 endif()
 
+if(BUILD_FUZZERS)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(FATAL_ERROR "BUILD_FUZZERS requires Clang (libFuzzer); configure with -DCMAKE_CXX_COMPILER=clang++")
+    endif()
+    add_compile_options(-fsanitize=fuzzer-no-link,address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=address,undefined)
+endif()
+
 set(PCAP_ANALYZER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_subdirectory(src)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
+endif()
+
+if(BUILD_TESTING OR BUILD_FUZZERS)
+    add_subdirectory(fuzz)
 endif()

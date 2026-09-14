@@ -1,6 +1,7 @@
 .vscode/
 build/
 build-asan/
+build-fuzz/
 *.o
 *.out
 *.exe
@@ -10,3 +11,7 @@ cmake_install.cmake
 Makefile
 /analyzer
 /*.pcap
+crash-*
+leak-*
+timeout-*
+oom-*

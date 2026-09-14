@@ -37,7 +37,7 @@ add_executable(analyzer
     cli/cli.cpp
 )
 
-if(NOT PCAP_SANITIZE)
+if(NOT PCAP_SANITIZE AND NOT BUILD_FUZZERS)
     set_target_properties(analyzer PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
     )
