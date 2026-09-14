@@ -54,6 +54,18 @@ Reader::Reader(const std::filesystem::path& path, Decoder::Config config, bool d
     span_ = std::span<const uint8_t>{static_cast<const uint8_t*>(m), size};
     ::madvise(const_cast<uint8_t*>(span_.data()), span_.size(), MADV_SEQUENTIAL);
 #endif
+    mapped_data_ = span_.data();
+    mapped_size_ = span_.size();
+    init();
+}
+
+Reader::Reader(std::span<const uint8_t> data, Decoder::Config config, bool detailed_bench)
+    : span_(data), decoder_(benchmark_, config) {
+    benchmark_.setDetailed(detailed_bench);
+    init();
+}
+
+void Reader::init() {
     benchmark_.setBytes(span_.size());
     benchmark_.start(Benchmark::Phase::FileHeader);
     readFileHeader();
@@ -62,11 +74,11 @@ Reader::Reader(const std::filesystem::path& path, Decoder::Config config, bool d
 
 Reader::~Reader() {
 #ifdef _WIN32
-    if (span_.data()) UnmapViewOfFile(span_.data());
+    if (mapped_data_) UnmapViewOfFile(mapped_data_);
     if (mapping_) CloseHandle(mapping_);
     if (file_ != INVALID_HANDLE_VALUE) CloseHandle(file_);
 #else
-    if (span_.data()) ::munmap(const_cast<uint8_t*>(span_.data()), span_.size());
+    if (mapped_data_) ::munmap(const_cast<uint8_t*>(mapped_data_), mapped_size_);
     if (fd_ != -1) ::close(fd_);
 #endif
 }

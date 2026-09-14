@@ -25,6 +25,7 @@ namespace net::pcap {
 class Reader {
 public:
     explicit Reader(const std::filesystem::path& path, Decoder::Config config = {}, bool detailed_bench = false);
+    explicit Reader(std::span<const uint8_t> data, Decoder::Config config = {}, bool detailed_bench = false);
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
     ~Reader();
@@ -62,6 +63,8 @@ private:
     int fd_ = -1;
 #endif
     std::span<const uint8_t> span_;
+    const uint8_t* mapped_data_ = nullptr;
+    size_t mapped_size_ = 0;
     Capture capture_{};
     FileHeader file_header_{};
     Benchmark benchmark_;
@@ -76,6 +79,7 @@ private:
     static Packet::TransportHeader transportFromProtocol(uint8_t protocal) noexcept;
 
     ParseError readFileHeader();
+    void init();
 };
 
 }
