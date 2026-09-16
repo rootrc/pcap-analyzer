@@ -69,8 +69,9 @@ private:
     FileHeader file_header_{};
     Benchmark benchmark_;
     Decoder decoder_;
-    bool is_nsec_;
-    Endian endian_;
+    bool is_nsec_ = false;
+    Endian endian_ = Endian::Little;
+    ParseError header_err_ = ParseError::None;
     uint64_t skipped_ = 0;
     ParseError last_skip_err_ = ParseError::None;
     bool json_ = false;

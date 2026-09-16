@@ -68,7 +68,7 @@ Reader::Reader(std::span<const uint8_t> data, Decoder::Config config, bool detai
 void Reader::init() {
     benchmark_.setBytes(span_.size());
     benchmark_.start(Benchmark::Phase::FileHeader);
-    readFileHeader();
+    header_err_ = readFileHeader();
     benchmark_.stop(Benchmark::Phase::FileHeader);
 }
 
@@ -114,6 +114,7 @@ void Reader::print(std::ostream& os, const Capture& out) const {
 }
 
 ParseError Reader::readPacket() {
+    if (header_err_ != ParseError::None) return header_err_;
     while (true) {
         if (span_.size() < PACKET_HEADER_LEN) {
             // decoder_.finish();

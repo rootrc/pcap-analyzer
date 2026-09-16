@@ -42,11 +42,11 @@ std::string Header::toString() const noexcept {
         oss << std::dec;
     };
     auto printHw = [&](const uint8_t* p) {
-        if (htype == HTYPE_ETHERNET) ethernet::printMac(oss, p);
+        if (htype == HTYPE_ETHERNET && hlen == 6) ethernet::printMac(oss, p);
         else printHex(p, hlen);
     };
     auto printProto = [&](const uint8_t* p) {
-        if (ptype == ethernet::ETHERTYPE_IPV4) ip::v4::printIp(oss, p);
+        if (ptype == ethernet::ETHERTYPE_IPV4 && plen == 4) ip::v4::printIp(oss, p);
         else printHex(p, plen);
     };
 
@@ -79,11 +79,11 @@ std::string Header::toJson() const noexcept {
         oss << std::dec;
     };
     auto printHw = [&](const uint8_t* p) {
-        if (htype == HTYPE_ETHERNET) ethernet::printMac(oss, p);
+        if (htype == HTYPE_ETHERNET && hlen == 6) ethernet::printMac(oss, p);
         else printHex(p, hlen);
     };
     auto printProto = [&](const uint8_t* p) {
-        if (ptype == ethernet::ETHERTYPE_IPV4) ip::v4::printIp(oss, p);
+        if (ptype == ethernet::ETHERTYPE_IPV4 && plen == 4) ip::v4::printIp(oss, p);
         else printHex(p, plen);
     };
 

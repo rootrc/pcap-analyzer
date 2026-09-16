@@ -44,30 +44,33 @@ std::ostream& printIp(std::ostream& os, const uint8_t ip[16]) {
     int bestStart = -1;
     int bestLen = 0;
     for (int i = 0; i < 16; i += 2) {
-        if (ip[i] << 8 != 0 || ip[i + 1] != 0) continue;
+        if (ip[i] != 0 || ip[i + 1] != 0) continue;
 
         int start = i;
-        while (i < 16 && ip[i + 2] << 8 == 0 && ip[i + 3] == 0) {
+        while (i + 2 < 16 && ip[i + 2] == 0 && ip[i + 3] == 0) {
             i += 2;
         }
 
         int len = i - start;
-        if (len > bestLen && len > 0) {
+        if (len > bestLen) {
             bestStart = start;
             bestLen = len;
         }
     }
     if (bestLen < 2) bestStart = -1;
 
+    auto flags = os.flags();
     for (int i = 0; i < 16; i += 2) {
         if (i == bestStart) {
-            os << ":";
+            os << ':';
             i += bestLen;
+            if (i + 2 == 16) os << ':';
             continue;
         }
         if (i) os << ':';
         os << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(ip[i]) << std::setw(2) << static_cast<int>(ip[i+1]);
     }
+    os.flags(flags);
     return os;
 }
 
@@ -98,7 +101,7 @@ bool addressFromString(std::string_view text, uint8_t out[16]) noexcept {
     while (i < text.size()) {
         uint32_t value = 0;
         int digits = 0;
-        for (int d = hexVal(text[i]); i < text.size() && d >= 0; ++i) {
+        for (int d; i < text.size() && (d = hexVal(text[i])) >= 0; ++i) {
             value = value * 16 + static_cast<uint32_t>(d);
             if (++digits > 4) return false;
         }

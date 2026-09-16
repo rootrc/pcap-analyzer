@@ -201,7 +201,7 @@ Each protocol and capture-format module (Ethernet, VLAN, IPv4, IPv6, ARP, TCP, U
 
 ### Fuzzing & sanitizers
 
-The parsers are **fuzzed** with [libFuzzer](https://llvm.org/docs/LibFuzzer.html): it feeds them millions of generated inputs, starting from real packets, to find anything that crashes or misbehaves. Tests and fuzzers run under AddressSanitizer and UndefinedBehaviorSanitizer, which catch memory errors and undefined behavior. Every input that has caused a bug is saved in `fuzz/regressions/` and replayed in CI, and each fix also gets a unit test, so fixed bugs stay fixed.
+The parsers are **fuzzed** with [libFuzzer](https://llvm.org/docs/LibFuzzer.html): it feeds them millions of generated inputs, starting from real packets, to find anything that crashes or misbehaves. Tests and fuzzers run under AddressSanitizer and UndefinedBehaviorSanitizer, which catch memory errors and undefined behavior. Every input that has caused a bug is saved in `fuzz/regressions/` and replayed in CI, so fixed bugs stay fixed.
 
 ```bash
 ./scripts/fuzz.sh fuzz_http 300      # requires Clang

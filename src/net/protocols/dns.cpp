@@ -90,6 +90,10 @@ ParseError parse(std::span<const uint8_t>& span, Header& header, Endian endian) 
     const uint8_t* dns_base = span.data();
     span = span.subspan(HEADER_LEN);
 
+    const size_t min_bytes = header.qdcount * (1 + QUESTION_HEADER_LEN) +
+        (static_cast<size_t>(header.ancount) + header.nscount + header.arcount) * (1 + RESOURCE_HEADER_LEN);
+    if (span.size() < min_bytes) return ParseError::UnexpectedEof;
+
     header.questions.resize(header.qdcount);
     for (net::dns::Question& q : header.questions) {
         if (auto err = parseQuestion(span, dns_base, q, endian); err != ParseError::None) return err;
