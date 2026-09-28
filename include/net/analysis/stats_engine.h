@@ -27,7 +27,6 @@ private:
 
     size_t print_limit = 0;
 
-    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlowsByBytes() const;
     std::vector<std::pair<uint8_t, uint64_t>> sortedProtocolsByBytes(std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow) const;
     void printFlow(std::ostream& os, const FlowKey& key, const FlowTable::Flow& flow) const;
 };

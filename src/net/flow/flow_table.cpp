@@ -25,6 +25,7 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
     }
     FlowKey key{};
     if (auto err = keyFromPacket(capture.pkt, key); err != ParseError::None) return err;
+    const bool is_reverse = key.normalize();
     if (out_key) *out_key = key;
     if (out_is_new) *out_is_new = false;
 
@@ -49,7 +50,7 @@ ParseError FlowTable::addPacket(const net::pcap::Capture& capture, FlowKey* out_
     Flow& flow = it->second;
     if (out_flow) *out_flow = &flow;
     flow.last_seen = capture.ts_us;
-    flow.is_reverse = key.normalize();
+    flow.is_reverse = is_reverse;
     FlowStats& stats = flow.is_reverse ? flow.rev_stats : flow.fwd_stats;
     ++stats.packets;
     stats.bytes += capture.packetHeader.incl_len;
@@ -126,7 +127,10 @@ const std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> FlowTable::
     for (const auto& [key, flow] : completed_) flows.emplace_back(&key, &flow);
     for (const auto& [key, flow] : flows_) flows.emplace_back(&key, &flow);
     std::sort(flows.begin(), flows.end(), [](const auto& a, const auto& b) {
-        return a.second->totalBytes() > b.second->totalBytes();
+        if (a.second->totalBytes() != b.second->totalBytes()) {
+            return a.second->totalBytes() > b.second->totalBytes();
+        }
+        return std::memcmp(a.first, b.first, sizeof(FlowKey)) < 0;
     });
     return flows;
 }

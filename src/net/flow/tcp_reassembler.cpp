@@ -168,7 +168,8 @@ void TcpReassembler::ingest(uint32_t seq, const std::span<const uint8_t> span) {
         next_seq += static_cast<uint32_t>(span.size());
         drain();
     } else if (static_cast<int32_t>(seq - next_seq) > 0) {
-        auto it = std::lower_bound(out_of_order.begin(), out_of_order.end(), seq, [](const Segment& s, uint32_t v) { return s.seq < v; });
+        const uint32_t base = next_seq;
+        auto it = std::lower_bound(out_of_order.begin(), out_of_order.end(), seq, [base](const Segment& s, uint32_t v) { return (s.seq - base) < (v - base); });
         if (it != out_of_order.end() && it->seq == seq) {
             if (span.size() > it->data.size()) {
                 if (ooo_bytes + span.size() - it->data.size() <= MAX_OOO_BYTES) {
@@ -195,10 +196,15 @@ void TcpReassembler::ingest(uint32_t seq, const std::span<const uint8_t> span) {
 
 void TcpReassembler::drain() {
     size_t len = 0;
-    while (len < out_of_order.size() && out_of_order[len].seq == next_seq) {
+    while (len < out_of_order.size()) {
         const Segment& segment = out_of_order[len];
-        assembled.insert(assembled.end(), segment.data.begin(), segment.data.end());
-        next_seq += static_cast<uint32_t>(segment.data.size());
+        int32_t delta = static_cast<int32_t>(segment.seq - next_seq);
+        if (delta > 0) break;
+        size_t covered = static_cast<size_t>(static_cast<uint32_t>(-delta));
+        if (covered < segment.data.size()) {
+            assembled.insert(assembled.end(), segment.data.begin() + covered, segment.data.end());
+            next_seq += static_cast<uint32_t>(segment.data.size() - covered);
+        }
         ooo_bytes -= segment.data.size();
         ++len;
     }

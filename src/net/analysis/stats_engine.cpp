@@ -2,6 +2,7 @@
 #include <net/util/text.h>
 
 #include <algorithm>
+#include <cstring>
 #include <iomanip>
 #include <map>
 #include <sstream>
@@ -12,19 +13,6 @@ namespace net {
 
 StatsEngine::StatsEngine(const FlowTable& flowTable, const AppDecoder& appDecoder, const DnsTable& dnsTable, const Benchmark& benchmark, size_t print_limit)
     : flowTable_(flowTable), appDecoder_(appDecoder), dnsTable_(dnsTable), benchmark_(benchmark), print_limit(print_limit) {}
-
-std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> StatsEngine::sortedFlowsByBytes() const {
-    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow;
-    sortedFlow.reserve(flowTable_.completed().size() + flowTable_.flows().size());
-    for (const auto& [k, f] : flowTable_.completed()) {
-        sortedFlow.emplace_back(&k, &f);
-    }
-    for (const auto& [k, f] : flowTable_.flows()) {
-        sortedFlow.emplace_back(&k, &f);
-    }
-    std::sort(sortedFlow.begin(), sortedFlow.end(), [](const auto& a, const auto& b) { return a.second->totalBytes() > b.second->totalBytes(); });
-    return sortedFlow;
-}
 
 std::vector<std::pair<uint8_t, uint64_t>> StatsEngine::sortedProtocolsByBytes(std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow) const {
     std::unordered_map<uint8_t, uint64_t> protocolBytes;
@@ -82,7 +70,7 @@ void StatsEngine::printFlow(std::ostream& os, const FlowKey& key, const FlowTabl
 }
 
 void StatsEngine::printDns(std::ostream& os) const noexcept {
-    std::map<std::string, std::vector<std::string>> resolved;
+    std::map<std::string, std::vector<std::pair<DnsTable::IpKey, std::string>>> resolved;
 
     for (const auto& [ip, domains] : dnsTable_.domainsByIp()) {
         std::ostringstream oss;
@@ -93,8 +81,15 @@ void StatsEngine::printDns(std::ostream& os) const noexcept {
         }
 
         for (const std::string& domain : domains) {
-            resolved[domain].push_back(oss.str());
+            resolved[domain].emplace_back(ip, oss.str());
         }
+    }
+
+    for (auto& [name, addrs] : resolved) {
+        std::sort(addrs.begin(), addrs.end(), [](const auto& a, const auto& b) {
+            if (a.first.isIpv4 != b.first.isIpv4) return a.first.isIpv4;
+            return std::memcmp(a.first.ip, b.first.ip, sizeof(a.first.ip)) < 0;
+        });
     }
 
     os << "  names resolved    " << resolved.size() << '\n';
@@ -108,7 +103,7 @@ void StatsEngine::printDns(std::ostream& os) const noexcept {
         os << "  " << std::left << std::setw(48) << name << ' ';
         for (size_t i = 0; i < addrs.size(); ++i) {
             if (i) os << ", ";
-            os << addrs[i];
+            os << addrs[i].second;
         }
         os << '\n';
         ++printed;
@@ -167,7 +162,7 @@ void StatsEngine::printBenchmark(std::ostream& os) const noexcept {
 }
 
 std::string StatsEngine::toString() const noexcept {
-    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = sortedFlowsByBytes();
+    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = flowTable_.allFlows();
     std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols = sortedProtocolsByBytes(sortedFlow);
 
     std::ostringstream oss;
@@ -208,7 +203,7 @@ void jsonStats(std::ostream& os, const char* label, const FlowTable::FlowStats& 
 }
 
 std::string StatsEngine::toJson() const noexcept {
-    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = sortedFlowsByBytes();
+    std::vector<std::pair<const FlowKey*, const FlowTable::Flow*>> sortedFlow = flowTable_.allFlows();
     std::vector<std::pair<uint8_t, uint64_t>> sortedProtocols = sortedProtocolsByBytes(sortedFlow);
     std::ostringstream oss;
     oss << "\"stats_engine\": {\n"
