@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
+#include <utility>
+#include <vector>
 
 namespace randomgen {
 
@@ -13,5 +15,18 @@ inline uint8_t randRange8 (uint8_t lo, uint8_t  hi) { return lo + (std::rand() %
 inline uint16_t randRange16(uint16_t lo, uint16_t hi) { return lo + (std::rand() % (hi - lo + 1)); }
 inline uint32_t randRange32(uint32_t lo, uint32_t hi) { return lo + (std::rand() % (hi - lo + 1)); }
 inline void init(unsigned seed = static_cast<unsigned>(std::time(nullptr))) { std::srand(seed); }
+
+inline std::vector<uint8_t> randomBytes(size_t len) {
+    std::vector<uint8_t> data(len);
+    for (uint8_t& byte : data) byte = rand8();
+    return data;
+}
+
+template <typename T>
+inline void shuffle(std::vector<T>& values) {
+    for (size_t i = values.size(); i > 1; --i) {
+        std::swap(values[i - 1], values[randRange32(0, static_cast<uint32_t>(i - 1))]);
+    }
+}
 
 }

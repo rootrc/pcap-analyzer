@@ -66,6 +66,7 @@ set(CAPTURE_TESTS
 
 set(DECODE_TESTS
     packet_decoder
+    app_decoder
 )
 
 set(PROTOCOL_TESTS
@@ -83,6 +84,12 @@ set(PROTOCOL_TESTS
     http
 )
 
+set(FLOW_TESTS
+    tcp_reassembler
+    flow_table
+)
+
 add_module_tests(capture ${CAPTURE_TESTS})
 add_module_tests(decode ${DECODE_TESTS})
 add_module_tests(protocols ${PROTOCOL_TESTS})
+add_module_tests(flow ${FLOW_TESTS})

@@ -13,6 +13,7 @@ void makeIPv6Header(uint8_t* data, uint8_t next_header, uint16_t payload_length 
 size_t makeIPv6ExtHeader(uint8_t* data, uint8_t type, uint8_t next_header, uint8_t hdr_ext_len);
 size_t makeIPv6ExtHeader(uint8_t* data, uint8_t next_header, uint8_t* out_type = nullptr);
 void makeArpHeader(uint8_t* data);
+net::tcp::Header makeTcpSegmentHeader(uint32_t seq, uint8_t flags = 0x10);
 void makeTcpHeader(uint8_t* data, uint64_t pseudo_sum, uint8_t data_offset, size_t payload_len);
 void makeTcpHeader(uint8_t* data, const net::ip::v4::Header& ip, uint8_t data_offset, size_t payload_len = 0);
 void makeTcpHeader(uint8_t* data, const net::ip::v6::Header& ip, uint8_t data_offset, size_t payload_len = 0);
@@ -21,7 +22,7 @@ void makeUdpHeader(uint8_t* data, const net::ip::v4::Header& ip, uint16_t payloa
 void makeUdpHeader(uint8_t* data, const net::ip::v6::Header& ip, uint16_t payload_length = 0);
 void makeIcmpHeader(uint8_t* data, size_t payload_len = 0);
 void makeIcmpv6Header(uint8_t* data, const net::ip::v6::Header& ip, size_t payload_len = 0);
-void makeDnsHeader(uint8_t* data);
+size_t makeDnsHeader(uint8_t* data);
 void makeHttpHeader(uint8_t* data);
 
 }

@@ -143,9 +143,6 @@ void makeArpHeader(uint8_t* data) {
     memcpy(data, &h, net::arp::MIN_HEADER_LEN);
 }
 
-// A bare header for driving TcpReassembler directly, rather than bytes for a parser.
-// The default flags are a plain ACK: what seeds a stream and what carries data once it is
-// established. Assign by value only -- tcp::Header is #pragma pack(1).
 net::tcp::Header makeTcpSegmentHeader(uint32_t seq, uint8_t flags) {
     net::tcp::Header header{};
     header.data_offset_reserved = 0x50;
@@ -278,7 +275,7 @@ void makeIcmpv6Header(uint8_t* data, const net::ip::v6::Header& ip, size_t paylo
     data[3] = h.checksum & 0xFF;
 }
 
-void makeDnsHeader(uint8_t* data) {
+size_t makeDnsHeader(uint8_t* data) {
     static constexpr const char* names[] = {
         "example.com", "foo.bar.com", "mail.example.org",
         "test.local", "api.service.net", "cdn.example.io",
@@ -365,7 +362,7 @@ void makeDnsHeader(uint8_t* data) {
     std::memcpy(data + pos, &wq, sizeof(wq));
     pos += sizeof(wq);
 
-    if (rtype == QUERY || rtype == NXDOMAIN) return;
+    if (rtype == QUERY || rtype == NXDOMAIN) return pos;
 
     if (rtype == A || rtype == MULTI_A) {
         for (uint16_t i = 0; i < ancount; ++i) {
@@ -419,6 +416,8 @@ void makeDnsHeader(uint8_t* data) {
         pos = writeRRHeader(pos, net::dns::TYPE_MX, ttl, static_cast<uint16_t>(rdata_end - rdata_start));
         pos = rdata_end;
     }
+
+    return pos;
 }
 
 std::string randomToken(size_t min_len = 3, size_t max_len = 12) {
