@@ -143,6 +143,17 @@ void makeArpHeader(uint8_t* data) {
     memcpy(data, &h, net::arp::MIN_HEADER_LEN);
 }
 
+// A bare header for driving TcpReassembler directly, rather than bytes for a parser.
+// The default flags are a plain ACK: what seeds a stream and what carries data once it is
+// established. Assign by value only -- tcp::Header is #pragma pack(1).
+net::tcp::Header makeTcpSegmentHeader(uint32_t seq, uint8_t flags) {
+    net::tcp::Header header{};
+    header.data_offset_reserved = 0x50;
+    header.flags = flags;
+    header.seq_number = seq;
+    return header;
+}
+
 void makeTcpHeader(uint8_t* data, uint64_t pseudo_sum, uint8_t data_offset, size_t payload_len) {
     net::tcp::Header h{};
 
@@ -511,9 +522,11 @@ void makeHttpResponse(uint8_t* data) {
 }
 
 void makeHttpHeader(uint8_t* data) {
-    if (std::rand() % 2 == 0) makeHttpRequest(data);
-    else makeHttpResponse(data);
-    makeHttpResponse(data);
+    if (std::rand() % 2 == 0) {
+        makeHttpRequest(data);
+    } else {
+        makeHttpResponse(data);
+    }
 }
 
 }
