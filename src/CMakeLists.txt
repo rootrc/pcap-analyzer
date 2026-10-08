@@ -47,3 +47,8 @@ target_link_libraries(analyzer
     PRIVATE
         network_lib
 )
+
+target_compile_definitions(analyzer
+    PRIVATE
+        PCAP_ANALYZER_VERSION="${PROJECT_VERSION}"
+)

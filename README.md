@@ -26,7 +26,7 @@ The project was built to demonstrate protocol-level networking knowledge and sys
 - **Fuzzed and sanitizer-tested** — six libFuzzer harnesses run in CI under ASan + UBSan; every bug they found (6 so far, logged in [docs/fuzzing.md](docs/fuzzing.md)) is fixed and its crashing input replayed on every push.
 - **Portable** — built and tested in CI on Linux (GCC, Clang), macOS (AppleClang), and Windows (MSVC).
 - **JSON output** — `-j` emits `--flows` and `--packets` as JSON for downstream tooling.
-- **Built-in phase benchmarking** — always-on timing of file-header parsing, per-packet header parsing, and decoding (broken down further into wire-format parsing, flow lookup, and app-layer decode), surfaced via `-b`/`--bench`.
+- **Built-in phase benchmarking** — `-b`/`--bench` times file-header parsing, per-packet header parsing, and decoding (broken down further into wire-format parsing, flow lookup, TCP reassembly, and app-layer decode). The per-packet phases are only timed when `-b` is given, so normal runs pay no clock overhead.
 
 ## Supported Protocols (L1–L7)
 
@@ -119,7 +119,7 @@ Run the built binary against any classic-format `.pcap` file:
 | `-p`, `--packets` | Every decoded packet and its layers (not included in `--all`). |
 | `-a`, `--all` | All of the above except `--packets`. |
 | `-j`, `--json` | Print `--packets`/`--flows` as JSON instead of text. No effect on the other sections. |
-| `-o`, `--out DIR` | Write each section to its own file in `DIR` (`summary.txt`, `flows.txt`, `http.txt`, `dns.txt`, `bench.txt`, `packets.txt`) instead of stdout, creating `DIR` if needed. |
+| `-o`, `--out DIR` | Dump each section to its own file in `DIR` |
 | `-n`, `--limit N` | Print at most N rows per section (`0` = no limit). |
 | `-C`, `--no-checksum` | Accept packets with bad IP/TCP/UDP/ICMP checksums. |
 | `-t`, `--timeout SEC` | Retire an active flow after `SEC` seconds (default: `0` = never). |
@@ -129,9 +129,10 @@ Run the built binary against any classic-format `.pcap` file:
 | `--src-port N` | Keep only packets whose source port is `N`. |
 | `--dst-port N` | Keep only packets whose destination port is `N`. |
 | `--proto NAME` | Keep only packets of this L4 protocol (`tcp`, `udp`, `icmp`, `icmpv6`, or a decimal IP protocol number). |
+| `-V`, `--version` | Print the version and exit. |
 | `-h`, `--help` | Display the help message. |
 
-The five filter options are **directional** (`--src-ip`/`--src-port` match the address/port seen as the packet's source, `--dst-*` its destination — the two directions of a flow are matched independently) and **combine with AND**. A non-matching packet is dropped before decoding: it is absent from every section and is *not* counted toward "packets skipped". `0.0.0.0`, port `0`, and IP protocol `0` cannot be used as filter values.
+The five filter options are **directional** (`--src-ip`/`--src-port` match the address/port seen as the packet's source, `--dst-*` its destination — the two directions of a flow are matched independently) and **combine with AND**. A non-matching packet is dropped right after its L2–L4 headers are parsed, before flow tracking: it is absent from every section and is *not* counted toward "packets skipped". `0.0.0.0`, port `0`, and IP protocol `0` cannot be used as filter values.
 
 If no output-selection option is given, `analyzer` defaults to `--summary --flows` — or, when `--out` is given, to every section.
 
@@ -169,8 +170,8 @@ FlowTable (744 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
   (5.62%)  130.117.72.100:443 -> 172.16.255.1:10638 (TCP)  fwd=354pkts/496KB avg=1436B  rev=170pkts/9525B avg=56B  TCP=Closed/TimeWait  rate=228.65Kbps
   (2.32%)  192.168.3.131:58789 -> 209.17.73.30:80 (TCP)  fwd=64pkts/3901B avg=60B  rev=144pkts/205KB avg=1459B  TCP=Closed/TimeWait  rate=193.50Kbps
   (2.27%)  192.168.3.131:58790 -> 209.17.73.30:80 (TCP)  fwd=63pkts/3847B avg=61B  rev=140pkts/200KB avg=1463B  TCP=Closed/TimeWait  rate=188.74Kbps
-  (2.25%)  192.168.3.131:57243 -> 204.14.234.85:8443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
   (2.25%)  192.168.3.131:57243 -> 204.14.234.85:443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
+  (2.25%)  192.168.3.131:57243 -> 204.14.234.85:8443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
   ... limit reached
 }
 ```

@@ -17,12 +17,16 @@
 #include <vector>
 #include <map>
 
+#ifndef PCAP_ANALYZER_VERSION
+#define PCAP_ANALYZER_VERSION "unknown"
+#endif
+
 using namespace net;
 
 namespace {
 
 constexpr const char* kProgram = "analyzer";
-constexpr const char* kPacketsFile = "packets.txt";
+constexpr const char* kVersion = PCAP_ANALYZER_VERSION;
 
 struct Options {
     std::string path;
@@ -37,6 +41,7 @@ struct Options {
     net::Decoder::Config config;
     uint64_t idle_timeout_us = FlowTable::DEFAULT_IDLE_TIMEOUT_US;
     bool help = false;
+    bool version = false;
 };
 
 bool matches(const char* arg, const char* shortFlag, const char* longFlag) {
@@ -63,10 +68,11 @@ void printUsage(std::ostream& os) {
         "  -C, --no-checksum  accept packets with bad IP/TCP/UDP/ICMP checksums\n"
         "  -t, --timeout SEC  retire an active flow after SEC seconds (default: 0 = never)\n"
         "  -i, --idle SEC     retire a flow after SEC idle seconds (default: 30)\n"
+        "  -V, --version      print the version and exit\n"
         "  -h, --help         this message\n"
         "\n"
         "filtering (directional, AND-combined; non-matching packets are dropped\n"
-        "before decoding and excluded from every section and the skip counter)\n"
+        "before flow tracking and excluded from every section and the skip counter)\n"
         "      --src-ip ADDR   keep only packets from this IPv4/IPv6 address\n"
         "      --dst-ip ADDR   keep only packets to this IPv4/IPv6 address\n"
         "      --src-port N    keep only packets from this port\n"
@@ -106,6 +112,9 @@ bool parseArgs(int argc, char** argv, Options& out) {
 
         if (matches(arg, "-h", "--help")) {
             out.help = true;
+            return true;
+        } else if (matches(arg, "-V", "--version")) {
+            out.version = true;
             return true;
         } else if (matches(arg, "-f", "--flows")) {
             out.show_flows = true;
@@ -210,7 +219,7 @@ bool parseArgs(int argc, char** argv, Options& out) {
         }
     }
 
-    if (!out.help && out.path.empty()) {
+    if (!out.help && !out.version && out.path.empty()) {
         std::cerr << kProgram << ": no capture file given\n";
         return false;
     }
@@ -289,6 +298,10 @@ int cli(int argc, char** argv) {
         printUsage(std::cout);
         return 0;
     }
+    if (options.version) {
+        std::cout << kProgram << ' ' << kVersion << '\n';
+        return 0;
+    }
 
     const std::filesystem::path dir = options.out_dir;
     if (!options.out_dir.empty()) {
@@ -306,15 +319,16 @@ int cli(int argc, char** argv) {
         std::vector<std::string> written;
         bool write_failed = false;
 
+        const char* packets_name = options.json ? "packets.json" : "packets.txt";
         std::ofstream packets_file;
         std::ostream* out = nullptr;
         if (options.show_packets) {
             if (options.out_dir.empty()) {
                 out = &std::cout;
             } else {
-                packets_file.open(dir / kPacketsFile);
+                packets_file.open(dir / packets_name);
                 if (!packets_file) {
-                    std::cerr << kProgram << ": cannot write " << (dir / kPacketsFile).string() << '\n';
+                    std::cerr << kProgram << ": cannot write " << (dir / packets_name).string() << '\n';
                     return 2;
                 }
                 out = &packets_file;
@@ -337,10 +351,10 @@ int cli(int argc, char** argv) {
             if (!options.out_dir.empty()) {
                 packets_file.close();
                 if (!packets_file) {
-                    std::cerr << kProgram << ": failed writing " << (dir / kPacketsFile).string() << '\n';
+                    std::cerr << kProgram << ": failed writing " << (dir / packets_name).string() << '\n';
                     write_failed = true;
                 } else {
-                    written.push_back(kPacketsFile);
+                    written.push_back(packets_name);
                 }
             }
         } else {
@@ -365,7 +379,7 @@ int cli(int argc, char** argv) {
 
         if (options.show_summary) emit("summary.txt", [&](std::ostream& os) { printSummary(os, reader); });
         if (options.show_flows) {
-            emit("flows.txt", [&](std::ostream& os) {
+            emit(options.json ? "flows.json" : "flows.txt", [&](std::ostream& os) {
                 if (options.json) os << "{\n" << util::indent(reader.statsEngine().toJson(), "  ") << "\n}\n";
                 else os << reader.statsEngine() << '\n';
             });
@@ -379,7 +393,7 @@ int cli(int argc, char** argv) {
                       << (written.size() == 1 ? " file to " : " files to ") << dir.string() << '\n';
             for (const std::string& name : written) {
                 std::cout << "  " << name;
-                if (name == kPacketsFile) std::cout << "  (" << packets_written << " packets)";
+                if (name == packets_name) std::cout << "  (" << packets_written << " packets)";
                 std::cout << '\n';
             }
         }

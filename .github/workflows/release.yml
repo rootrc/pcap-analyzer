@@ -37,6 +37,17 @@ jobs:
       - name: Test
         run: ctest --test-dir build --build-config Release --output-on-failure
 
+      - name: Check version matches tag
+        if: runner.os == 'Linux'
+        run: |
+          expected="analyzer ${GITHUB_REF_NAME#v}"
+          expected="${expected%%-*}"
+          actual="$(./analyzer --version)"
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::tag $GITHUB_REF_NAME but binary reports '$actual' (bump project(VERSION) in CMakeLists.txt)"
+            exit 1
+          fi
+
       # Multi-config generators (MSVC) append the config name to RUNTIME_OUTPUT_DIRECTORY.
       - name: Package (Linux/macOS)
         if: runner.os != 'Windows'
@@ -66,3 +77,4 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
