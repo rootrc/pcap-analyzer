@@ -3,7 +3,8 @@
 [![CI](https://github.com/rootrc/pcap-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/rootrc/pcap-analyzer/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-informational)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
+[![Release](https://img.shields.io/github/v/release/rootrc/pcap-analyzer)](https://github.com/rootrc/pcap-analyzer/releases/latest)
 
 ## Overview
 
@@ -22,6 +23,9 @@ The project was built to demonstrate protocol-level networking knowledge and sys
 - **Flow tracking** — 5-tuple flow keys with configurable idle/active timeouts (`-i`/`-t`, see below) and per-direction byte/packet counters.
 - **Zero runtime dependencies** — the core library and CLI use only the C++ standard library and OS APIs (mmap on POSIX, memory-mapped files on Windows); GoogleTest is only needed to build the test suite.
 - **Copy-minimizing design** — decoded layers operate on buffer views (`std::span`) into the memory-mapped capture rather than copying data; the only copy made is for buffering out-of-order TCP segments.
+- **Fuzzed and sanitizer-tested** — six libFuzzer harnesses run in CI under ASan + UBSan; every bug they found (6 so far, logged in [docs/fuzzing.md](docs/fuzzing.md)) is fixed and its crashing input replayed on every push.
+- **Portable** — built and tested in CI on Linux (GCC, Clang), macOS (AppleClang), and Windows (MSVC).
+- **JSON output** — `-j` emits `--flows` and `--packets` as JSON for downstream tooling.
 - **Built-in phase benchmarking** — always-on timing of file-header parsing, per-packet header parsing, and decoding (broken down further into wire-format parsing, flow lookup, and app-layer decode), surfaced via `-b`/`--bench`.
 
 ## Supported Protocols (L1–L7)
@@ -67,11 +71,16 @@ See [docs/architecture.md](docs/architecture.md) for a diagram of the read → d
 - **CMake 3.16 or newer** (declared in [CMakeLists.txt](CMakeLists.txt))
 - **A C++20-capable compiler**
   - Linux: GCC or Clang (developed against GCC 15)
-  - Windows: MinGW-w64 (the provided build script targets the `MinGW Makefiles` CMake generator)
-- **GoogleTest development package** — only required if you want to build and run the test suite (`libgtest-dev` on Debian/Ubuntu, or any install discoverable by CMake's `find_package(GTest REQUIRED)`)
+  - macOS: AppleClang (Xcode command-line tools)
+  - Windows: MSVC (Visual Studio), or MinGW-w64 via the provided `build.bat` (`MinGW Makefiles` generator)
+- **GoogleTest** — only needed for the test suite. An installed copy (e.g. `libgtest-dev`) is used if CMake finds one; otherwise it is fetched from GitHub on first configure, which needs network access
 - **Git**, to clone the repository
 
-### Installation
+### Prebuilt binaries
+
+Linux, macOS, and Windows binaries are attached to each [GitHub release](https://github.com/rootrc/pcap-analyzer/releases/latest).
+
+### Building from source
 
 ```bash
 git clone https://github.com/rootrc/pcap-analyzer.git
@@ -90,7 +99,7 @@ cd pcap-analyzer
 .\scripts\build.bat
 ```
 
-Both scripts configure CMake into a `build/` directory with testing disabled and build the `analyzer` executable, which is placed in the project root (`RUNTIME_OUTPUT_DIRECTORY` is set to the source root in [src/CMakeLists.txt](src/CMakeLists.txt)).
+Both scripts configure CMake into a `build/` directory as a Release build with testing disabled and build the `analyzer` executable, which is placed in the project root (`RUNTIME_OUTPUT_DIRECTORY` is set to the source root in [src/CMakeLists.txt](src/CMakeLists.txt)).
 
 ## Usage
 
@@ -147,7 +156,6 @@ analyzer: wrote 6 files to dump
 ```
 
 ```
-ian@DESKTOP-7CEPI8N:~/projects/pcap-analyzer$ ./analyzer samples/smallFlows.pcap -n 5
 summary
   packets decoded   14261
   packets skipped   0
@@ -165,6 +173,7 @@ FlowTable (744 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
   (2.25%)  192.168.3.131:57243 -> 204.14.234.85:443 (TCP)  fwd=103pkts/63KB avg=630B  rev=148pkts/139KB avg=965B  TCP=Established/Established  rate=22.26Kbps
   ... limit reached
 }
+```
 
 ## Development
 
@@ -178,7 +187,7 @@ FlowTable (744 flows, showing 5)  [TCP: 99.13%  UDP: 0.82%  ICMP: 0.06%] {
 Internally this runs:
 
 ```bash
-cmake -S . -B build -DBUILD_TESTING=OFF
+cmake -S . -B build -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
@@ -216,7 +225,7 @@ See [docs/fuzzing.md](docs/fuzzing.md) for details.
 - **Offline analysis only** — there is no live-capture mode; input must be a capture file on disk.
 - **Single-threaded** — capture files are processed sequentially; large files are read via mmap but decoding itself does not parallelize.
 - **HTTP/1.x only** — no HTTP/2 or HTTP/3 (QUIC) support.
-- **Console output only** — results are printed to stdout; there's no JSON/CSV export or programmatic API for downstream tooling yet.
+- **Partial JSON output** — `-j` covers `--flows` and `--packets` only; `--http`, `--dns`, `--summary`, and `--bench` are text-only, and there is no CSV export or library API for downstream tooling.
 
 ## Credits
 

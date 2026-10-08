@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-latest
+            asset: analyzer-linux-x86_64.tar.gz
+          - name: macOS arm64
+            os: macos-latest
+            asset: analyzer-macos-arm64.tar.gz
+          - name: Windows x86_64
+            os: windows-latest
+            asset: analyzer-windows-x86_64.zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+
+      - name: Build
+        run: cmake --build build --config Release -j
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      # Multi-config generators (MSVC) append the config name to RUNTIME_OUTPUT_DIRECTORY.
+      - name: Package (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: tar -czf ${{ matrix.asset }} analyzer README.md LICENSE
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path Release/analyzer.exe, README.md, LICENSE -DestinationPath ${{ matrix.asset }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
